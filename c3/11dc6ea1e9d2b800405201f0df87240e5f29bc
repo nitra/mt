@@ -1,0 +1,72 @@
+npm/lib/tests/state.test.mjs
+  s_62ec3315d01380::t_8d4f285a56fcc8 201,204-205
+npm/lib/core/config.mjs
+  s_62ec3315d01380::t_7ef7c919bb7352 30
+npm/lib/tests/setup.test.mjs
+  s_62ec3315d01380::t_8d4f285a56fcc8 48-81
+package.json
+  s_62ec3315d01380::t_bd2151fe066641 22
+  s_62ec3315d01380::t_7ef7c919bb7352 10
+npm/lib/core/state.mjs
+  s_62ec3315d01380::t_83450f1f01bd1b 5,71,103,107-109
+CLAUDE.md
+  s_62ec3315d01380::t_bd2151fe066641 40-41
+npm/lib/tests/docs.test.mjs
+  s_62ec3315d01380::t_670606337afa8b 1-29
+npm/lib/tests/run.test.mjs
+  s_62ec3315d01380::t_0f846ac8e641fd 6,29-34,45
+  s_62ec3315d01380::t_8d4f285a56fcc8 1-5,7-28,35-44,46-50
+npm/lib/core/worktree.mjs
+  s_62ec3315d01380::t_14bee3462c526c 37
+  s_62ec3315d01380::t_6956d93905f50f 113
+  s_62ec3315d01380::t_0ba964e123902f 109
+  s_62ec3315d01380::t_83450f1f01bd1b 45,48,59,70,145-151
+npm/lib/commands/run.mjs
+  s_62ec3315d01380::t_83450f1f01bd1b 21,97,143,162,164,168-170,173
+  s_62ec3315d01380::t_bec8956dbda29a 140
+npm/README.md
+  s_62ec3315d01380::t_7ef7c919bb7352 17,19,27
+npm/docs/mt.md
+  s_62ec3315d01380::t_e27ded44d0f995 108,110,412,426,617,734,736-737,768,776,783,832,837,845,881-882,940,945,1140,1211-1212,1254,1335,1340,1343-1344,1366,1374,1386
+npm/lib/tests/config.test.mjs
+  s_62ec3315d01380::t_670606337afa8b 12-15
+npm/lib/cli.mjs
+  s_62ec3315d01380::t_0f846ac8e641fd 40
+  s_62ec3315d01380::t_ca93b531a27994 73,76-107,128-134,144
+  s_62ec3315d01380::t_83450f1f01bd1b 138
+npm/lib/tests/worktree.test.mjs
+  s_62ec3315d01380::t_8d4f285a56fcc8 1-40
+npm/lib/commands/setup.mjs
+  s_62ec3315d01380::t_83450f1f01bd1b 11-13,18-34,44-46,56-57,87-99,102-107,121,126
+npm/lib/tests/package.test.mjs
+  s_62ec3315d01380::t_670606337afa8b 1-7,9-33,35-37
+  s_62ec3315d01380::t_0f846ac8e641fd 8,34
+npm/package.json
+  s_62ec3315d01380::t_7ef7c919bb7352 10,12,18,30-31
+npm/lib/tests/cli.test.mjs
+  s_62ec3315d01380::t_ca93b531a27994 34-35,38-39
+  s_62ec3315d01380::t_8d4f285a56fcc8 1,5-8,41,43
+  s_62ec3315d01380::t_b297ca1923e12b 36-37
+docs/adr/260607-0632-видалення-n-cursor-flow-та-уніфікація-під-n-cursor-graph.md
+  s_62ec3315d01380::t_e27ded44d0f995 15-17,30,38,45,49,52,55-56,60,67,93,96,99-100,105,108,112,119,135
+.n-cursor.json
+  s_62ec3315d01380::t_bd2151fe066641 25
+AGENTS.md
+  s_62ec3315d01380::t_bd2151fe066641 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "c311dc6ea1e9d2b800405201f0df87240e5f29bc",
+  "prompts": {},
+  "sessions": {
+    "s_62ec3315d01380": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea57a-67f1-7962-837c-f62d09f088d9",
+        "model": "gpt-5.5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
