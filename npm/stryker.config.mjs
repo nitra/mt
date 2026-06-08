@@ -14,5 +14,5 @@ export default {
   incremental: true,
   incrementalFile: 'reports/stryker/incremental.json',
   // Покриваємо production-код. Test-файли Stryker виключає за іменем (`*.test.*`) автоматично.
-  mutate: ['index.js', 'bin/**/*.js', '!**/*.test.{js,mjs}', '!**/tests/**']
+  mutate: ['index.js', 'bin/**/*.js', 'lib/**/*.mjs', '!**/*.test.{js,mjs}', '!**/tests/**']
 }

@@ -7,23 +7,27 @@
     "bun",
     "cli"
   ],
-  "homepage": "https://github.com/vitaliytv/7n#readme",
+  "homepage": "https://github.com/nitra/mt#readme",
   "bugs": {
-    "url": "https://github.com/vitaliytv/7n/issues"
+    "url": "https://github.com/nitra/mt/issues"
   },
   "license": "ISC",
   "author": "vitaliytv@nitralabs.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vitaliytv/7n.git"
+    "url": "git+https://github.com/nitra/mt.git"
   },
   "bin": {
-    "n": "bin/n.js"
+    "mt": "bin/mt.js"
   },
   "files": [
     "bin",
-    "README.md",
+    "docs",
+    "lib",
     "types",
+    "index.js",
+    "README.md",
+    "CHANGELOG.md",
     "!**/*.test.mjs"
   ],
   "type": "module",
@@ -36,7 +40,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "start": "bun ./bin/n.js"
+    "start": "bun ./bin/mt.js"
   },
   "dependencies": {},
   "engines": {

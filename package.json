@@ -7,7 +7,7 @@
   ],
   "type": "module",
   "scripts": {
-    "start": "bun ./npm/bin/7.js",
+    "start": "bun ./npm/bin/mt.js",
     "test": "vitest run",
     "lint": "bun run lint-ga && bun run lint-js && bun run lint-security && bun run lint-text && oxfmt .",
     "lint-ga": "n-cursor lint-ga",

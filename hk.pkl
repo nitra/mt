@@ -8,7 +8,7 @@ local linters = new Mapping<String, Step> {
             "npm/types/index.d.ts"
         )
         check_first = false
-        fix = "cd npm && bunx -p typescript tsc -p tsconfig.emit-types.json && find types -type f ! -path 'types/index.d.ts' -delete && find types -depth -type d -empty -delete"
+        fix = "cd npm && bunx -p typescript tsc -p tsconfig.emit-types.json"
     }
     ["npm-changelog"] {
         glob = List("npm/**")

@@ -1,25 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+export { runMtCli, COMMAND_NAMES, DEFAULT_HANDLERS } from './lib/cli.mjs'
+export { getBody, serializeYaml } from './lib/core/frontmatter.mjs'
+export { padNNN, latestPendingAuditNNN, latestAuditResultNNN } from './lib/core/nnn.mjs'
+export { findTasks, getActiveWorktrees, parseWorktreeList } from './lib/core/scanner.mjs'
 
-const HELP = `@7n/mt — CLI
-
-Використання:
-  npx @7n/mt <команда> [аргументи]
-
-Команди:
-  version         Показати версію
-  help            Показати цю довідку
-
-Опції:
-  -h, --help      Показати довідку
-  -v, --version   Показати версію
-`
-
-/**
- * Повертає version пакета з його package.json.
- * @returns {string} версія пакета
- */
-export function version() {
-  const pkgPath = fileURLToPath(new URL('package.json', import.meta.url))
-  return JSON.parse(readFileSync(pkgPath, 'utf8')).version
-}
+export const version = '0.1.0'
