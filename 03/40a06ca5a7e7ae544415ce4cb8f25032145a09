@@ -1,0 +1,53 @@
+.cursor/rules/n-js-run.mdc
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 71,77
+CLAUDE.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 6
+.cursor/rules/n-image-compress.mdc
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 23
+.claude/hooks/capture-decisions.sh
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 202
+.gitignore
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 18-19
+.cursor/skills/n-adr-normalize/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 9,72
+.cursor/skills/n-taze/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 9,72
+bun.lock
+  s_0adc9332cefeb7::t_37cececd61cf9a 9,18,24-26,30-1463
+.claude/hooks/normalize-decisions.sh
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 410,412-414,416-418,451
+.cursor/rules/n-ci4.mdc
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 337
+package.json
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 22
+.cursor/skills/n-lint/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 8,71
+.cursor/skills/n-coverage-fix/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 8,71
+.cursor/rules/n-security.mdc
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 21,27
+.cursor/skills/n-fix/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 8,71
+.cspell.json
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 65-129
+.cursor/skills/n-start-check/SKILL.md
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 9,21
+.cursor/rules/n-npm-module.mdc
+  s_0adc9332cefeb7::t_0a5cdc4ff06a32 127,133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "0340a06ca5a7e7ae544415ce4cb8f25032145a09",
+  "prompts": {},
+  "sessions": {
+    "s_0adc9332cefeb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c18754ec-1682-4f3a-8d22-f88954a11d8d",
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
