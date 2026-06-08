@@ -1,0 +1,119 @@
+npm/lib/core/scanner.mjs
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 115-119,182
+  s_0adc9332cefeb7::t_bc2d3847de8eae 46-48
+  s_0adc9332cefeb7::t_cc0433ed2890f2 45,49,219
+  s_0adc9332cefeb7::t_615a99285303aa 62
+npm/index.js
+  s_0adc9332cefeb7::t_b0c6c5f6ebd61e 2-4
+npm/lib/commands/audit.mjs
+  s_0adc9332cefeb7::t_cc0433ed2890f2 67
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 101-108
+  s_0adc9332cefeb7::t_855d143733c4b9 135,137-138
+  s_0adc9332cefeb7::t_ea3eb07cea7e8b 60
+npm/lib/commands/done.mjs
+  s_0adc9332cefeb7::t_d7f9975e116c3a 62
+  s_0adc9332cefeb7::t_cc0433ed2890f2 69
+  s_0adc9332cefeb7::t_2db5861bf43dab 14
+npm/docs/mt.md
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 118,137-142,144,171-175,177,179,183,187,191,195-205,218,222,225-231,244,247-253,271-272,274-275,299-300,305,309,314,338,340,344,348,352-355,374,376,378,382,387,391-404,435,437,441-445,459,461,478,480,517-527,882,888,900,974-978,980-981,1332-1402
+  s_0adc9332cefeb7::t_30d083ec5f31e0 153,532,538,564,629,636,646,657,666,677,691,700,708,770,891,898,925,943,961
+  s_0adc9332cefeb7::t_16a8f52fda559b 575
+  s_0adc9332cefeb7::t_b82b9595c16140 733
+  s_0adc9332cefeb7::t_d1924ab9eee653 774
+npm/lib/commands/watch.mjs
+  s_0adc9332cefeb7::t_cc0433ed2890f2 42
+  s_0adc9332cefeb7::t_55c22e175e72f3 36
+npm/lib/tests/cli.test.mjs
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 7-20
+  s_0adc9332cefeb7::t_1fb47190b0eaf2 25
+npm/lib/commands/scan.mjs
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 73-87
+  s_0adc9332cefeb7::t_f33f4801181087 31
+  s_0adc9332cefeb7::t_cc0433ed2890f2 37
+npm/lib/commands/run.mjs
+  s_0adc9332cefeb7::t_cc0433ed2890f2 65,234
+  s_0adc9332cefeb7::t_6cc2c9a90d72b9 25
+  s_0adc9332cefeb7::t_4486a8652d3de3 228
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 81,83,108-109,134-138,180-190,206-208,287-298,333-344
+  s_0adc9332cefeb7::t_2d17d2c65ea1a9 199,201-202
+  s_0adc9332cefeb7::t_67a0f70b81de73 20
+  s_0adc9332cefeb7::t_e7fba5efe1cd12 71,73-75,78
+npm/lib/commands/spawn.mjs
+  s_0adc9332cefeb7::t_e7fd91751bf16e 38
+npm/lib/tests/config.test.mjs
+  s_0adc9332cefeb7::t_34edfdef5f1000 27
+npm/lib/tests/verify.test.mjs
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 25,30,54,79-80,101-102
+  s_0adc9332cefeb7::t_c90b8900bad819 16
+npm/.changes/260608-1121.md
+  s_0adc9332cefeb7::t_290cb618f6c5bf 1-4,6
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 5
+npm/lib/core/state.mjs
+  s_0adc9332cefeb7::t_268faa7bfa10bb 14-18
+  s_0adc9332cefeb7::t_275a8aa9eb3b71 121
+  s_0adc9332cefeb7::t_1024c52f969ab0 139
+npm/stryker.config.mjs
+  s_0adc9332cefeb7::t_d64dedb02910db 17
+npm/README.md
+  s_0adc9332cefeb7::t_04e08890dc0977 1-42
+npm/lib/tests/state.test.mjs
+  s_0adc9332cefeb7::t_e41ed4fb45edd7 109-110
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 2,96-98
+npm/lib/commands/verify.mjs
+  s_0adc9332cefeb7::t_f83d550d01da1d 50
+npm/lib/commands/init.mjs
+  s_0adc9332cefeb7::t_9c1585f7e3d969 51
+npm/lib/core/worktree.mjs
+  s_0adc9332cefeb7::t_cc0433ed2890f2 23,40,49-51,58,65,80,105,136-137,154,185
+npm/lib/commands/invalidate.mjs
+  s_0adc9332cefeb7::t_cc0433ed2890f2 40
+  s_0adc9332cefeb7::t_2945c917ade33d 33
+npm/lib/cli.mjs
+  s_0adc9332cefeb7::t_84382b2781d078 75-78
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 2-15,33
+npm/lib/commands/status.mjs
+  s_0adc9332cefeb7::t_be6b7f904be83b 54
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 19-21,23-25,96-109
+  s_0adc9332cefeb7::t_cc0433ed2890f2 22,27,60
+npm/lib/commands/plan.mjs
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 129-141
+  s_0adc9332cefeb7::t_8d7aa3b82f24df 60
+npm/lib/commands/failed.mjs
+  s_0adc9332cefeb7::t_6bf5aa9f581dac 58
+npm/lib/core/frontmatter.mjs
+  s_0adc9332cefeb7::t_659e430459d1e9 221
+  s_0adc9332cefeb7::t_5ddf7593495207 48
+  s_0adc9332cefeb7::t_2e2f218d1be95b 177
+  s_0adc9332cefeb7::t_e89d101197e43c 193
+  s_0adc9332cefeb7::t_08f06163676dc8 14-17
+  s_0adc9332cefeb7::t_9743741bc66454 210
+npm/lib/commands/setup.mjs
+  s_0adc9332cefeb7::t_c42ae22b6acfe9 11
+  s_0adc9332cefeb7::t_d545a1003fd447 30
+  s_0adc9332cefeb7::t_916c6f172061f4 39-41,45-46,53-55,59-60,76-78
+npm/lib/commands/kill.mjs
+  s_0adc9332cefeb7::t_131c192daaadf1 109
+  s_0adc9332cefeb7::t_ab5404e69ef2cc 66
+  s_0adc9332cefeb7::t_2c748658145699 21-23
+  s_0adc9332cefeb7::t_cc0433ed2890f2 74
+  s_0adc9332cefeb7::t_e227aa7769bafc 41
+npm/lib/tests/setup.test.mjs
+  s_0adc9332cefeb7::t_c549f0a95e30a9 21
+  s_0adc9332cefeb7::t_a88b4eb682f7e1 15-20,35-40,54-59,70-75,87-93,106,108-113,124-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "d82164e1126d78bf394d327899ca2c16c84eb464",
+  "prompts": {},
+  "sessions": {
+    "s_0adc9332cefeb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c18754ec-1682-4f3a-8d22-f88954a11d8d",
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
