@@ -1,0 +1,33 @@
+npm/lib/core/scanner.mjs
+  s_0adc9332cefeb7::t_f2088fa5bf2c8e 1-235
+npm/lib/core/frontmatter.mjs
+  s_0adc9332cefeb7::t_8455786d6d5095 1-224
+npm/lib/tests/state.test.mjs
+  s_0adc9332cefeb7::t_4fd9f1ba4d292b 1-212
+npm/lib/tests/config.test.mjs
+  s_0adc9332cefeb7::t_3ccad8915cb245 1-81
+npm/lib/core/state.mjs
+  s_0adc9332cefeb7::t_acb825355ddfe4 1-157
+npm/lib/core/worktree.mjs
+  s_0adc9332cefeb7::t_4ca8314c3edd4d 1-193
+npm/lib/core/nnn.mjs
+  s_0adc9332cefeb7::t_1f0328d1e84dd5 1-127
+npm/lib/core/config.mjs
+  s_0adc9332cefeb7::t_fb2309c9f33019 1-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "7dd50b7d206e56c1e4b47a32e9d6cb35b0c5eeec",
+  "prompts": {},
+  "sessions": {
+    "s_0adc9332cefeb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c18754ec-1682-4f3a-8d22-f88954a11d8d",
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
