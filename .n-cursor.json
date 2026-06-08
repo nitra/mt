@@ -1,0 +1,34 @@
+{
+  "$schema": "https://unpkg.com/@nitra/cursor/schemas/n-cursor.json",
+  "rules": [
+    "adr",
+    "bun",
+    "changelog",
+    "ci4",
+    "feedback",
+    "flow",
+    "ga",
+    "image-compress",
+    "js-lint",
+    "js-lint-ci",
+    "js-run",
+    "npm-module",
+    "security",
+    "test",
+    "text",
+    "worktree"
+  ],
+  "ignore": [".worktrees"],
+  "skills": [
+    "adr-normalize",
+    "coverage-fix",
+    "fix",
+    "fix-tests",
+    "lint",
+    "llm-patch",
+    "publish-telegram",
+    "start-check",
+    "taze",
+    "worktree"
+  ]
+}

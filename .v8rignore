@@ -1,0 +1,6 @@
+.vscode/extensions.json
+.vscode/settings.json
+.git/**
+.cursor/hooks.json
+npm/tsconfig.emit-types.json
+.marksman.toml

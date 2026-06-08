@@ -1,0 +1,46 @@
+{
+  "name": "@7n/mt",
+  "version": "0.1.0",
+  "description": "CLI-утиліта @7n/mt",
+  "keywords": [
+    "7n",
+    "bun",
+    "cli"
+  ],
+  "homepage": "https://github.com/vitaliytv/7n#readme",
+  "bugs": {
+    "url": "https://github.com/vitaliytv/7n/issues"
+  },
+  "license": "ISC",
+  "author": "vitaliytv@nitralabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitaliytv/7n.git"
+  },
+  "bin": {
+    "n": "bin/n.js"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "types",
+    "!**/*.test.mjs"
+  ],
+  "type": "module",
+  "main": "./index.js",
+  "types": "./types/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "start": "bun ./bin/n.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "bun": ">=1.3",
+    "node": ">=24"
+  }
+}

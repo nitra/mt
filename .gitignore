@@ -1,0 +1,17 @@
+node_modules/
+dist/
+
+*.secret
+
+.claude/hooks/*.log
+.claude/hooks/.normalize-state
+.claude/hooks/.normalize.lock
+.claude/worktrees/
+.worktrees/
+**/.stryker-tmp/
+
+# Stryker mutation testing (test.mdc)
+**/reports/stryker/
+
+# Test artifacts: coverage (test.mdc)
+**/coverage/
