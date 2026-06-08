@@ -1,0 +1,29 @@
+npm/package.json
+  s_0adc9332cefeb7::t_49cbfd4f9b23c3 21,25-26,28-30
+  s_0adc9332cefeb7::t_88ed2ac87f7f4c 42
+npm/bin/mt.js
+  s_0adc9332cefeb7::t_6ec33887391f98 1-4
+npm/lib/tests/cli.test.mjs
+  s_0adc9332cefeb7::t_7075f710a8e8ba 1-22
+npm/index.js
+  s_0adc9332cefeb7::t_a788c0ba20816e 1,3
+npm/lib/cli.mjs
+  s_0adc9332cefeb7::t_6ecd8dd14dd375 1-5,8-23,36-76,78,80-85,87-91
+  s_0adc9332cefeb7::t_6390ebdcdb1767 6-7,24-35,77,79,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "57318b7aeecc1d1664d8883fca277e55d5e147ab",
+  "prompts": {},
+  "sessions": {
+    "s_0adc9332cefeb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c18754ec-1682-4f3a-8d22-f88954a11d8d",
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
