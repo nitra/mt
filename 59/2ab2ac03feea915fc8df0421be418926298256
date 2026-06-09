@@ -1,0 +1,23 @@
+scanner/src/lib.rs
+  s_074ba88ac02ada::t_ba60ba6d2453d2 1-424
+scanner/Cargo.toml
+  s_074ba88ac02ada::t_e7979bf23d5cbf 1-15
+scanner/src/main.rs
+  s_074ba88ac02ada::t_9dfb97ce5fe3cb 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "592ab2ac03feea915fc8df0421be418926298256",
+  "prompts": {},
+  "sessions": {
+    "s_074ba88ac02ada": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "523a2d0e-a2db-4ca8-ad75-b13d453965a4",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
