@@ -76,3 +76,9 @@ Chosen option: "B1 — окремий sync-крок, безумовно", becaus
 **Причина:** для `adr` гейт коректний — продюсер (ADR Stop-hook) і тумблер — одна сутність; якщо правило вимкнено, артефактів нема. Для worktree продюсер (`mt init` / `worktree-cli`) є `alwaysApply: true` і незалежний від worktree-rule — гейт за правилом розсинхронізував би ігнорування з реальним продюсером.
 
 Наслідки: репо, де worktree-rule вимкнено але `mt init` використовується, не отримує брудний `git status`. Репо без worktree — несе один зайвий ignore-рядок (idempotent noop).
+
+## Update 2026-06-01
+
+Деталі реалізації sync-кроку: функція `syncGitignoreWorktree(projectRoot)` — тонка обгортка над `ensureGitignoreEntries` з єдиним патерном `.worktrees/`. Підключена у `runSync()` як окремий `runSyncStep` поза `syncClaudeConfig`, щоб уникнути блокування раннім `return` при `claude-config: false`. Нові файли: `npm/scripts/lib/sync-gitignore-worktree.mjs` (модуль), `npm/scripts/lib/tests/sync-gitignore-worktree.test.mjs` (4 тести). Усі 16 тестів зелені (коміт `e0f5e52`). Зміни також у: `npm/bin/n-cursor.js` (import + `runSyncStep`), `docs/specs/2026-06-01-worktree-add-gitignore.md`, `docs/plans/2026-06-01-worktree-add-gitignore.md`.
+
+Паралельне рішення тієї ж сесії: coverage gate повністю прибрано з `DEFAULT_GATES` у `reviewer.mjs` (Stryker, 215 файлів / 28 552 мутантів, блокував turnstile для тривіальних L1-змін); турнікет лишав лише `lint` (коміт `84bf217`). Це рішення невдовзі переглянуто: coverage повернено у scoped-режимі через `--changed` — див. `20260601-220027-coverage-gate-scoped-changed-від-base-commit.md`.
