@@ -23,3 +23,10 @@ Chosen option: "Додати `scanner/target/` до кореневого `.gitig
 - Додано правило: `scanner/target/`
 - `scanner/Cargo.toml`: пакет `mt-scanner`, edition 2021, `[[bin]]` → бінарний крейт.
 - Рішення щодо `Cargo.lock` базується на офіційній рекомендації Rust/Cargo для бінарних крейтів.
+
+## Update 2026-06-11
+
+Замінено `scanner/target/` → `target/` у `.gitignore`. Кореневий `Cargo.toml` визначає Cargo workspace (`members = ["scanner"]`), тому Rust складає артефакти в кореневий `target/`, а не в `scanner/target/`. Стара директива `scanner/target/` не ігнорувала реальну директорію збірки — виправлено.
+
+- Файл: `.gitignore`, рядок 5
+- Workspace config: `Cargo.toml` (root) — `[workspace] members = ["scanner"]`
