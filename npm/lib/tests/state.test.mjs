@@ -1,18 +1,23 @@
 import { describe, expect, test } from 'vitest'
-import { NODE_STATES, deriveCompositeState, deriveNodeState, isComposite, sanitizeTaskName } from '../core/state.mjs'
+import { NODE_STATES, deriveNodeState, isComposite, sanitizeTaskName } from '../core/state.mjs'
 
-// ------- NODE_STATES order -------
+// ------- NODE_STATES -------
 
 describe('NODE_STATES', () => {
-  test('contains all 7 states', () => {
+  test('contains all 12 spec states in order', () => {
     expect(NODE_STATES).toEqual([
-      'needs-plan',
+      'unassigned',
+      'pending',
       'waiting',
+      'blocked',
+      'plan-review',
+      'spawned',
       'running',
+      'stalled',
       'pending-audit',
       'resolved',
       'failed',
-      'invalidated'
+      'unresolvable'
     ])
   })
 })
@@ -30,42 +35,6 @@ describe('sanitizeTaskName', () => {
 
   test('empty string returns empty string', () => {
     expect(sanitizeTaskName('')).toBe('')
-  })
-})
-
-// ------- deriveCompositeState precedence -------
-
-describe('deriveCompositeState – precedence', () => {
-  test('invalidated > resolved', () => {
-    expect(deriveCompositeState(['resolved', 'invalidated'])).toBe('invalidated')
-  })
-
-  test('invalidated > running', () => {
-    expect(deriveCompositeState(['running', 'invalidated'])).toBe('invalidated')
-  })
-
-  test('failed > running (no invalidated)', () => {
-    expect(deriveCompositeState(['running', 'failed'])).toBe('failed')
-  })
-
-  test('running > pending-audit (no failed/invalidated)', () => {
-    expect(deriveCompositeState(['pending-audit', 'running'])).toBe('running')
-  })
-
-  test('pending-audit > resolved (no running/failed/invalidated)', () => {
-    expect(deriveCompositeState(['resolved', 'pending-audit'])).toBe('pending-audit')
-  })
-
-  test('all resolved → resolved', () => {
-    expect(deriveCompositeState(['resolved', 'resolved', 'resolved'])).toBe('resolved')
-  })
-
-  test('mixed waiting/needs-plan → waiting (fallback)', () => {
-    expect(deriveCompositeState(['waiting', 'needs-plan'])).toBe('waiting')
-  })
-
-  test('empty array → waiting', () => {
-    expect(deriveCompositeState([])).toBe('waiting')
   })
 })
 
@@ -102,108 +71,411 @@ describe('isComposite', () => {
   })
 })
 
-// ------- deriveNodeState precedence -------
+// ------- deriveNodeState helpers -------
 
 /**
- * Helper: creates a virtual FS and returns the derived state.
- * @param {{ files: string[], taskContent?: string, activeWorktrees?: string[] }} opts опції тесту
- * @returns {string} деривований стан задачі
+ * Будує віртуальну FS і повертає деривований стан задачі.
+ * @param {{
+ *   files: string[],
+ *   fileContents?: Record<string, string>,
+ *   activeWorktrees?: string[],
+ *   relPath?: string,
+ *   agentRetryMax?: number
+ * }} opts
  */
-function stateFrom({ files, taskContent = '---\nmode: agent\n---\n', activeWorktrees = [] }) {
+function stateFrom({
+  files,
+  fileContents = {},
+  activeWorktrees = [],
+  relPath,
+  agentRetryMax
+}) {
   const dir = '/task'
   const fileSet = new Set(files)
 
-  const deps = {
+  const fsDeps = {
     existsSync: p => {
       if (p === `${dir}/task.md`) return fileSet.has('task.md')
-      // for child task.md in isComposite
+      // isComposite child check
       return false
     },
     readdirSync: d => {
       if (d === dir) return files
+      // deps/ directory — empty by default
       return []
     },
     readFileSync: (p, _enc) => {
-      if (p === `${dir}/task.md`) return taskContent
-      // run files with result:failed
-      if (p.includes('/run_') && p.endsWith('.md')) return 'result: failed'
+      const name = p.replace(`${dir}/`, '')
+      if (name in fileContents) return fileContents[name]
       return ''
     }
   }
 
-  return deriveNodeState(dir, new Set(activeWorktrees), deps)
+  return deriveNodeState(dir, new Set(activeWorktrees), {
+    ...fsDeps,
+    ...(relPath !== undefined ? { relPath } : {}),
+    ...(agentRetryMax !== undefined ? { agentRetryMax } : {})
+  })
 }
 
-describe('deriveNodeState – precedence', () => {
-  test('needs-plan when task.md is absent', () => {
-    expect(stateFrom({ files: [] })).toBe('needs-plan')
+// ------- unassigned -------
+
+describe('deriveNodeState — unassigned', () => {
+  test('unassigned when task.md is absent', () => {
+    expect(stateFrom({ files: [] })).toBe('unassigned')
   })
 
-  test('needs-plan when only task.md exists and mode is human', () => {
-    const state = stateFrom({
-      files: ['task.md'],
-      taskContent: '---\nmode: human\n---\n'
+  test('unassigned when task.md exists but no a.md/h.md', () => {
+    expect(stateFrom({ files: ['task.md'] })).toBe('unassigned')
+  })
+
+  test('unassigned when readdirSync throws', () => {
+    const state = deriveNodeState(
+      '/task',
+      new Set(),
+      {
+        existsSync: p => p === '/task/task.md',
+        readdirSync: () => { throw new Error('EPERM') },
+        readFileSync: () => ''
+      }
+    )
+    expect(state).toBe('unassigned')
+  })
+})
+
+// ------- pending -------
+
+describe('deriveNodeState — pending', () => {
+  test('pending when h.md exists and no fact', () => {
+    expect(stateFrom({ files: ['task.md', 'h.md'] })).toBe('pending')
+  })
+
+  test('pending with h.md and plan (no a.md)', () => {
+    expect(stateFrom({ files: ['task.md', 'h.md', 'plan_001.md'] })).toBe('pending')
+  })
+})
+
+// ------- waiting -------
+
+describe('deriveNodeState — waiting', () => {
+  test('waiting when a.md exists and no runs', () => {
+    expect(stateFrom({ files: ['task.md', 'a.md'] })).toBe('waiting')
+  })
+
+  test('waiting when a.md exists and has plan', () => {
+    expect(stateFrom({ files: ['task.md', 'a.md', 'plan_001.md'] })).toBe('waiting')
+  })
+
+  test('waiting when failed_streak < agentRetryMax (default 3)', () => {
+    // 2 runs, no facts → streak = 2 < 3 → waiting
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'run_002.md']
+      })
+    ).toBe('waiting')
+  })
+
+  test('waiting when failed_streak = agentRetryMax - 1', () => {
+    // streak = 2 with default agentRetryMax = 3
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'run_002.md']
+      })
+    ).toBe('waiting')
+  })
+})
+
+// ------- failed -------
+
+describe('deriveNodeState — failed', () => {
+  test('failed when failed_streak >= agentRetryMax (default 3)', () => {
+    // 3 runs, no facts → streak = 3
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'run_002.md', 'run_003.md']
+      })
+    ).toBe('failed')
+  })
+
+  test('failed with custom agentRetryMax=1 and streak=1', () => {
+    // 1 run, no fact → streak = 1 >= 1
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md'],
+        agentRetryMax: 1
+      })
+    ).toBe('failed')
+  })
+
+  test('not failed when streak resets after new fact (streak < threshold)', () => {
+    // run_001 failed, fact_001 created (resolved), run_002 failed → streak = 2-1 = 1
+    // But fact_001 exists → resolved (checked before failed)
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'fact_001.md', 'run_002.md']
+      })
+    ).not.toBe('failed')
+  })
+})
+
+// ------- unresolvable -------
+
+describe('deriveNodeState — unresolvable', () => {
+  test('unresolvable when unresolvable.md exists and no fact', () => {
+    expect(stateFrom({ files: ['task.md', 'a.md', 'unresolvable.md'] })).toBe('unresolvable')
+  })
+
+  test('unresolvable takes precedence over a.md waiting', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'unresolvable.md']
+      })
+    ).toBe('unresolvable')
+  })
+})
+
+// ------- running -------
+
+describe('deriveNodeState — running', () => {
+  test('running when running_<pid>_until_<ts> marker file exists', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'running_4821_until_1234567890']
+      })
+    ).toBe('running')
+  })
+
+  test('running when active worktree matches sanitized relPath', () => {
+    // relPath = 'my-task', worktree = 'my-task-1234567890'
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md'],
+        activeWorktrees: ['my-task-1234567890'],
+        relPath: 'my-task'
+      })
+    ).toBe('running')
+  })
+
+  test('running with nested relPath (cross-level)', () => {
+    // relPath = 'research/analyze' → sanitized = 'research-analyze'
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md'],
+        activeWorktrees: ['research-analyze-1234567890'],
+        relPath: 'research/analyze'
+      })
+    ).toBe('running')
+  })
+
+  test('not running when worktree name does not match relPath', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md'],
+        activeWorktrees: ['other-task-1234567890'],
+        relPath: 'my-task'
+      })
+    ).toBe('waiting')
+  })
+})
+
+// ------- plan-review -------
+
+describe('deriveNodeState — plan-review', () => {
+  test('plan-review for composite plan without approve/reject', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'plan_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n## Children\n'
+        }
+      })
+    ).toBe('plan-review')
+  })
+
+  test('not plan-review for atomic plan (decision: atomic)', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'plan_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: atomic\n---\n## Approach\n'
+        }
+      })
+    ).toBe('waiting')
+  })
+
+  test('not plan-review when composite plan has plan-approved_NNN.md', () => {
+    // spawned — needs isComposite; with no child task.md, falls back to null
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'plan_001.md', 'plan-approved_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n'
+        }
+      })
+    ).toBe('waiting') // no children detected (isComposite=false) → not spawned → falls to waiting
+  })
+
+  test('plan-review for composite plan even with h.md (human composite)', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'h.md', 'plan_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n'
+        }
+      })
+    ).toBe('plan-review')
+  })
+})
+
+// ------- spawned -------
+
+describe('deriveNodeState — spawned', () => {
+  test('spawned when composite plan approved and children exist', () => {
+    const state = deriveNodeState('/parent', new Set(), {
+      existsSync: p => {
+        if (p === '/parent/task.md') return true
+        if (p === '/parent/child/task.md') return true
+        return false
+      },
+      readdirSync: d => {
+        if (d === '/parent') return ['task.md', 'a.md', 'plan_001.md', 'plan-approved_001.md', 'child']
+        return []
+      },
+      readFileSync: (p, _enc) => {
+        if (p === '/parent/plan_001.md') return '---\nschema_version: 1\ndecision: composite\n---\n'
+        return ''
+      }
     })
-    expect(state).toBe('needs-plan')
+    expect(state).toBe('spawned')
+  })
+})
+
+// ------- pending-audit -------
+
+describe('deriveNodeState — pending-audit', () => {
+  test('pending-audit when pending-audit_NNN exists without audit-result', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'pending-audit_001.md']
+      })
+    ).toBe('pending-audit')
   })
 
-  test('waiting when plan_001.md exists', () => {
-    expect(stateFrom({ files: ['task.md', 'plan_001.md'] })).toBe('waiting')
+  test('pending-audit only for latest fact NNN', () => {
+    // fact_001 has pending-audit, but fact_002 exists without pending-audit → resolved
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'pending-audit_001.md', 'fact_002.md']
+      })
+    ).toBe('resolved')
+  })
+})
+
+// ------- resolved -------
+
+describe('deriveNodeState — resolved', () => {
+  test('resolved when fact_NNN.md exists without pending-audit', () => {
+    expect(stateFrom({ files: ['task.md', 'a.md', 'fact_001.md'] })).toBe('resolved')
   })
 
-  test('waiting when mode:agent and no other signal', () => {
-    const state = stateFrom({
-      files: ['task.md'],
-      taskContent: '---\nmode: agent\n---\n'
-    })
-    expect(state).toBe('waiting')
+  test('resolved when audit-result is success', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'pending-audit_001.md', 'audit-result_001.md'],
+        fileContents: {
+          'audit-result_001.md': '---\nschema_version: 1\nresult: success\n---\n'
+        }
+      })
+    ).toBe('resolved')
   })
 
-  test('running when active worktree matches sanitized name', () => {
-    // dir = /task, nodeName = 'task', sanitizeTaskName('task') = 'task'
-    const state = stateFrom({
-      files: ['task.md'],
-      activeWorktrees: ['task-1234567890'],
-      taskContent: '---\nmode: agent\n---\n'
-    })
-    expect(state).toBe('running')
+  test('not resolved when audit-result is failed (fact rejected)', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'pending-audit_001.md', 'audit-result_001.md'],
+        fileContents: {
+          'audit-result_001.md': '---\nschema_version: 1\nresult: failed\n---\n'
+        }
+      })
+    ).toBe('waiting')
   })
 
-  test('failed when run_001.md has result:failed and no fact', () => {
-    const state = stateFrom({
-      files: ['task.md', 'plan_001.md', 'run_001.md'],
-      taskContent: '---\nmode: agent\n---\n'
-    })
-    expect(state).toBe('failed')
+  test('resolved takes precedence over unresolvable', () => {
+    // resolved > unresolvable per spec priority
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'unresolvable.md']
+      })
+    ).toBe('resolved')
+  })
+})
+
+// ------- priority chain -------
+
+describe('deriveNodeState — priority chain', () => {
+  test('pending-audit > resolved when open audit cycle on latest fact', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'pending-audit_001.md']
+      })
+    ).toBe('pending-audit')
   })
 
-  test('pending-audit when pending-audit_001.md exists without audit-result', () => {
-    const state = stateFrom({
-      files: ['task.md', 'pending-audit_001.md']
-    })
-    expect(state).toBe('pending-audit')
+  test('resolved > unresolvable', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'fact_001.md', 'unresolvable.md']
+      })
+    ).toBe('resolved')
   })
 
-  test('resolved when fact_001.md exists', () => {
-    const state = stateFrom({
-      files: ['task.md', 'fact_001.md']
-    })
-    expect(state).toBe('resolved')
+  test('unresolvable > running marker', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'running_1_until_9999999999', 'unresolvable.md']
+      })
+    ).toBe('unresolvable')
   })
 
-  test('invalidated when sentinel file exists (highest priority)', () => {
-    const state = stateFrom({
-      files: ['task.md', 'fact_001.md', 'invalidated']
-    })
-    expect(state).toBe('invalidated')
+  test('running > plan-review', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'plan_001.md', 'running_1_until_9999999999'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n'
+        }
+      })
+    ).toBe('running')
   })
 
-  test('invalidated > pending-audit > resolved full precedence chain', () => {
-    // invalidated beats everything
-    expect(stateFrom({ files: ['task.md', 'fact_001.md', 'pending-audit_001.md', 'invalidated'] })).toBe('invalidated')
-    // pending-audit must remain visible even when its fact exists
-    expect(stateFrom({ files: ['task.md', 'fact_001.md', 'pending-audit_001.md'] })).toBe('pending-audit')
-    // pending-audit beats running when no active worktree
-    expect(stateFrom({ files: ['task.md', 'pending-audit_001.md'] })).toBe('pending-audit')
+  test('plan-review > waiting (a.md)', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'plan_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n'
+        }
+      })
+    ).toBe('plan-review')
+  })
+
+  test('plan-review > pending (h.md)', () => {
+    expect(
+      stateFrom({
+        files: ['task.md', 'h.md', 'plan_001.md'],
+        fileContents: {
+          'plan_001.md': '---\nschema_version: 1\ndecision: composite\n---\n'
+        }
+      })
+    ).toBe('plan-review')
+  })
+
+  test('failed has lowest priority — unresolvable wins', () => {
+    // 3 runs (streak=3>=3), but unresolvable.md → unresolvable
+    expect(
+      stateFrom({
+        files: ['task.md', 'a.md', 'run_001.md', 'run_002.md', 'run_003.md', 'unresolvable.md']
+      })
+    ).toBe('unresolvable')
   })
 })

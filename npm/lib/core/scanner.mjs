@@ -2,7 +2,7 @@
  * DAG-сканер задач.
  *
  * Рекурсивно обходить mt_dir, знаходить всі задачі (директорії з task.md),
- * читає їх залежності з task.md front-matter, деривує стани та виконує
+ * читає їх залежності з deps/ директорії, деривує стани та виконує
  * топологічне сортування (Kahn's algorithm).
  *
  * FS ін'єктується. Нічого не пише на диск.
@@ -11,7 +11,6 @@ import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { parseFrontMatter } from './frontmatter.mjs'
 import { deriveNodeState, isComposite } from './state.mjs'
 
 /**
@@ -25,6 +24,12 @@ import { deriveNodeState, isComposite } from './state.mjs'
  *   children: string[]
  * }} TaskInfo
  */
+
+/**
+ * Директорії, які пропускаються при рекурсивному скані.
+ * deps/ — залежності (не вузли); history/ — архів; стандартні артефакти.
+ */
+const SKIP_DIRS = new Set(['deps', 'history', 'node_modules', 'target', 'dist', 'build'])
 
 /**
  * Рекурсивно знаходить всі задачі DAG у mt_dir.
@@ -63,15 +68,12 @@ export function findTasks(mtDir, deps = {}) {
       })
     }
 
-    // Рекурсивно шукаємо дочірні директорії
     for (const name of entries) {
-      // Пропускаємо зарезервовані та приховані директорії/файли
-      if (name.startsWith('.') || name.includes('.')) continue
+      // Пропускаємо файли (містять '.'), приховані директорії та зарезервовані директорії
+      if (name.startsWith('.') || name.includes('.') || SKIP_DIRS.has(name)) continue
       const childDir = join(dir, name)
-      // Перевіряємо що це директорія (якщо має subdirs або task.md)
       const childRelPath = prefix ? `${prefix}/${name}` : name
       try {
-        // Перевірка що childDir — дійсно директорія
         readdir(childDir)
         scan(childDir, childRelPath)
       } catch {
@@ -85,13 +87,63 @@ export function findTasks(mtDir, deps = {}) {
 }
 
 /**
+ * Читає залежності вузла з директорії deps/.
+ * ls -R deps/ → strip .md → dep-id (відносно mt/).
+ * Cross-level: deps/research/analyze.md → dep-id = research/analyze.
+ * @param {string} taskDir абсолютний шлях до директорії задачі
+ * @param {(d: string) => string[]} readdir функція читання директорії
+ * @returns {string[]} список dep-id
+ */
+function readDepsFromDir(taskDir, readdir) {
+  return collectDeps(join(taskDir, 'deps'), '', readdir)
+}
+
+/**
+ * Рекурсивно збирає dep-id з директорії deps/.
+ * @param {string} dir поточна директорія
+ * @param {string} prefix накопичений префікс шляху
+ * @param {(d: string) => string[]} readdir функція читання директорії
+ * @returns {string[]}
+ */
+function collectDeps(dir, prefix, readdir) {
+  let entries
+  try {
+    entries = readdir(dir)
+  } catch {
+    return []
+  }
+
+  const deps = []
+  for (const entry of entries) {
+    if (entry.startsWith('.')) continue
+    if (entry.endsWith('.md')) {
+      // Файл залежності: strip .md → dep-id
+      deps.push(prefix ? `${prefix}/${entry.slice(0, -3)}` : entry.slice(0, -3))
+    } else {
+      // Піддиректорія — крос-рівнева залежність
+      const subDir = join(dir, entry)
+      const subPrefix = prefix ? `${prefix}/${entry}` : entry
+      try {
+        readdir(subDir)
+        deps.push(...collectDeps(subDir, subPrefix, readdir))
+      } catch {
+        // не директорія
+      }
+    }
+  }
+  return deps
+}
+
+/**
  * Сканує DAG і повертає всі задачі з деривованими станами.
+ * Другий прохід: вузли з a.md та невирішеними deps → стан 'blocked'.
  * @param {string} mtDir абсолютний шлях до mt/
  * @param {Set<string>} activeWorktrees активні worktree імена
  * @param {{
  *   readdirSync?: (d: string) => string[],
  *   existsSync?: (p: string) => boolean,
- *   readFileSync?: (p: string, enc: string) => string
+ *   readFileSync?: (p: string, enc: string) => string,
+ *   agentRetryMax?: number
  * }} [deps] ін'єкції
  * @returns {TaskInfo[]} список задач
  */
@@ -99,27 +151,24 @@ export function scanTasks(mtDir, activeWorktrees, deps = {}) {
   const readdir = deps.readdirSync ?? readdirSync
   const exists = deps.existsSync ?? existsSync
   const readFile = deps.readFileSync ?? ((p, enc) => readFileSync(p, enc))
+  const agentRetryMax = deps.agentRetryMax ?? 3
 
   const found = findTasks(mtDir, { readdirSync: readdir, existsSync: exists, readFileSync: readFile })
 
-  return found.map(({ dir, relPath }) => {
-    let fm = {}
-    try {
-      const taskContent = readFile(join(dir, 'task.md'), 'utf8')
-      fm = parseFrontMatter(taskContent)
-    } catch {
-      // порожній front-matter
-    }
+  const nodes = found.map(({ dir, relPath }) => {
+    // Залежності — з директорії deps/, а не з task.md frontmatter
+    const taskDeps = readDepsFromDir(dir, readdir)
 
-    const taskDeps = Array.isArray(fm.deps) ? fm.deps.map(String) : []
     const state = deriveNodeState(dir, activeWorktrees, {
       readdirSync: readdir,
       readFileSync: readFile,
-      existsSync: exists
+      existsSync: exists,
+      relPath,
+      agentRetryMax
     })
+
     const composite = isComposite(dir, { readdirSync: readdir, existsSync: exists })
 
-    // Дочірні задачі
     let children = []
     if (composite) {
       let entries
@@ -150,6 +199,16 @@ export function scanTasks(mtDir, activeWorktrees, deps = {}) {
       children
     }
   })
+
+  // Другий прохід: 'waiting' вузли з невирішеними deps → 'blocked'
+  const nodeMap = new Map(nodes.map(n => [n.id, n]))
+  for (const node of nodes) {
+    if (node.state === 'waiting' && node.deps.some(dep => nodeMap.get(dep)?.state !== 'resolved')) {
+      node.state = 'blocked'
+    }
+  }
+
+  return nodes
 }
 
 /**
@@ -186,7 +245,6 @@ export function topoSort(tasks) {
     }
   }
 
-  // Якщо є цикли — додаємо решту у кінець
   if (sorted.length < tasks.length) {
     for (const t of tasks) {
       if (!sorted.includes(t)) sorted.push(t)

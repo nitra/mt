@@ -1,30 +1,38 @@
 /**
  * Деривація стану задачі з файлової системи (immutable file-presence protocol).
  *
- * Стан визначається виключно наявністю файлів у mt/<task>/:
- *   invalidated > pending-audit > resolved > running > failed > waiting > needs-plan
+ * Стан — derived: durable lifecycle визначається артефактами вузла.
+ * Пріоритет (відповідно до специфікації):
+ *   pending-audit > resolved > unresolvable > (stalled — потребує remote) >
+ *   running > plan-review > spawned > waiting/blocked > pending > unassigned > failed
  *
- * Чиста функція — FS ін'єктується. Не пише нічого на диск.
+ * Чиста функція — FS ін'єктується. Нічого не пише на диск.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { hasPendingAudit, latestFactNNN } from './nnn.mjs'
+import { parseFrontMatter } from './frontmatter.mjs'
 
-/** Regex для run_NNN.md файлів. */
-const RUN_FILE_RE = /^run_\d+\.md$/
-/** Regex для plan_NNN.md файлів. */
-const PLAN_FILE_RE = /^plan_\d+\.md$/
+const RUN_FILE_RE = /^run_(\d+)\.md$/
+const FACT_FILE_RE = /^fact_(\d+)\.md$/
+const PLAN_FILE_RE = /^plan_(\d+)\.md$/
+/** Локальний runtime marker running_<pid>_until_<ts>. */
+const RUNNING_MARKER_RE = /^running_\d+_until_/
 
-/** Всі можливі стани задачі. */
+/** Всі можливі стани задачі відповідно до специфікації. */
 export const NODE_STATES = /** @type {const} */ ([
-  'needs-plan',
+  'unassigned',
+  'pending',
   'waiting',
+  'blocked',
+  'plan-review',
+  'spawned',
   'running',
+  'stalled',
   'pending-audit',
   'resolved',
   'failed',
-  'invalidated'
+  'unresolvable'
 ])
 
 /**
@@ -44,111 +52,7 @@ export function isComposite(taskDir, deps = {}) {
     return false
   }
 
-  return entries.some(name => {
-    const childTask = join(taskDir, name, 'task.md')
-    return exists(childTask)
-  })
-}
-
-/**
- * Деривує composite-стан з масиву станів дочірніх задач.
- * @param {string[]} childStates масив станів дочірніх задач
- * @returns {string} агрегований стан
- */
-export function deriveCompositeState(childStates) {
-  if (childStates.length === 0) return 'waiting'
-  if (childStates.some(s => s === 'invalidated')) return 'invalidated'
-  if (childStates.some(s => s === 'failed')) return 'failed'
-  if (childStates.some(s => s === 'running')) return 'running'
-  if (childStates.some(s => s === 'pending-audit')) return 'pending-audit'
-  if (childStates.every(s => s === 'resolved')) return 'resolved'
-  return 'waiting'
-}
-
-/**
- * Деривує стан однієї задачі з присутності файлів.
- *
- * Пріоритет: invalidated > pending-audit > resolved > running > failed > waiting > needs-plan
- * @param {string} taskDir абсолютний шлях до директорії задачі
- * @param {Set<string>} activeWorktrees set імен активних worktree (наприклад, 'my-task-1234567890')
- * @param {{
- *   readdirSync?: (d: string) => string[],
- *   readFileSync?: (p: string, enc: string) => string,
- *   existsSync?: (p: string) => boolean
- * }} [deps] ін'єкції
- * @returns {string} стан задачі
- */
-export function deriveNodeState(taskDir, activeWorktrees, deps = {}) {
-  const readdir = deps.readdirSync ?? readdirSync
-  const readFile = deps.readFileSync ?? ((p, enc) => readFileSync(p, enc))
-  const exists = deps.existsSync ?? existsSync
-
-  // Файл task.md обов'язковий
-  if (!exists(join(taskDir, 'task.md'))) {
-    return 'needs-plan'
-  }
-
-  let files
-  try {
-    files = readdir(taskDir)
-  } catch {
-    return 'needs-plan'
-  }
-
-  const fileSet = new Set(files)
-
-  // 1. invalidated — sentinel файл
-  if (fileSet.has('invalidated')) return 'invalidated'
-
-  // 2. pending-audit — є pending-audit_NNN.md без відповідного audit-result_NNN.md
-  const { has: hasPending } = hasPendingAudit(taskDir, readdir)
-  if (hasPending) return 'pending-audit'
-
-  // 3. resolved — є fact_NNN.md і немає invalidated або незавершеного аудиту
-  const factNNN = latestFactNNN(taskDir, readdir)
-  if (factNNN !== null) return 'resolved'
-
-  // 4. running — активний worktree існує (перевіряємо за prefix task dir name)
-  const taskName = taskDir.split('/').findLast(Boolean) ?? ''
-  if (activeWorktrees.size > 0) {
-    for (const wt of activeWorktrees) {
-      // worktree name: sanitized-task-path-epoch
-      if (wt.includes(sanitizeTaskName(taskName))) return 'running'
-    }
-  }
-
-  // 5. failed — є run_NNN.md з result:failed, без fact_NNN.md і без активного worktree
-  const runFiles = files.filter(f => RUN_FILE_RE.test(f))
-  if (runFiles.length > 0) {
-    // Перевіряємо останній run файл
-    let hasFailedRun = false
-    for (const runFile of runFiles) {
-      try {
-        const content = readFile(join(taskDir, runFile), 'utf8')
-        if (content.includes('result: failed') || content.includes('result:failed')) {
-          hasFailedRun = true
-        }
-      } catch {
-        // пропускаємо нечитабельні файли
-      }
-    }
-    if (hasFailedRun) return 'failed'
-  }
-
-  // 6. waiting — є plan_NNN.md АБО mode:agent
-  const hasPlan = files.some(f => PLAN_FILE_RE.test(f))
-  if (hasPlan) return 'waiting'
-
-  // Читаємо mode з task.md
-  try {
-    const taskContent = readFile(join(taskDir, 'task.md'), 'utf8')
-    if (taskContent.includes('mode: agent')) return 'waiting'
-  } catch {
-    // пропускаємо
-  }
-
-  // 7. needs-plan — task.md є, mode:human (default), немає plan_NNN.md
-  return 'needs-plan'
+  return entries.some(name => exists(join(taskDir, name, 'task.md')))
 }
 
 /**
@@ -158,4 +62,171 @@ export function deriveNodeState(taskDir, activeWorktrees, deps = {}) {
  */
 export function sanitizeTaskName(name) {
   return name.replaceAll(/[^a-zA-Z0-9_-]/g, '-')
+}
+
+/**
+ * Знаходить максимальний NNN серед файлів що відповідають regex.
+ * @param {string[]} files список файлів
+ * @param {RegExp} re regex з групою захоплення числа
+ * @returns {number} максимальний NNN або 0
+ */
+function maxNNNFromFiles(files, re) {
+  let max = 0
+  for (const f of files) {
+    const m = f.match(re)
+    if (m) {
+      const n = parseInt(m[1], 10)
+      if (n > max) max = n
+    }
+  }
+  return max
+}
+
+/**
+ * Обчислює failed_streak з імен файлів — без читання вмісту.
+ * failed_streak = max(NNN серед run_*.md) - max(NNN серед fact_*.md; 0 якщо немає)
+ * @param {string[]} files список файлів директорії
+ * @returns {number} лічильник поточної серії невдач
+ */
+function computeFailedStreak(files) {
+  return maxNNNFromFiles(files, RUN_FILE_RE) - maxNNNFromFiles(files, FACT_FILE_RE)
+}
+
+/**
+ * Визначає стан актуального fact_NNN.md: 'pending-audit', 'resolved', або null.
+ *
+ * Єдиний виняток із правила "стан з імен файлів": читає frontmatter audit-result_NNN.md
+ * лише якщо він існує — для визначення result: success | failed.
+ *
+ * @param {string} taskDir шлях до директорії задачі
+ * @param {string[]} files список файлів
+ * @param {(p: string, enc: string) => string} readFile функція читання файлу
+ * @returns {'pending-audit' | 'resolved' | null}
+ */
+function getAcceptedFactState(taskDir, files, readFile) {
+  const maxFact = maxNNNFromFiles(files, FACT_FILE_RE)
+  if (maxFact === 0) return null
+
+  const nnnStr = String(maxFact).padStart(3, '0')
+  const fileSet = new Set(files)
+  const pendingAuditFile = `pending-audit_${nnnStr}.md`
+
+  if (!fileSet.has(pendingAuditFile)) return 'resolved'
+
+  const auditResultFile = `audit-result_${nnnStr}.md`
+  if (!fileSet.has(auditResultFile)) return 'pending-audit'
+
+  try {
+    const fm = parseFrontMatter(readFile(join(taskDir, auditResultFile), 'utf8'))
+    return fm.result === 'success' ? 'resolved' : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Визначає composite-стан плану: 'plan-review', 'spawned', або null.
+ * Читає frontmatter актуального plan_NNN.md для перевірки decision: composite.
+ *
+ * @param {string} taskDir шлях до директорії задачі
+ * @param {string[]} files список файлів
+ * @param {Set<string>} fileSet сет файлів
+ * @param {(p: string, enc: string) => string} readFile функція читання
+ * @param {(d: string) => string[]} readdir функція readdir
+ * @param {(p: string) => boolean} exists функція existsSync
+ * @returns {'plan-review' | 'spawned' | null}
+ */
+function getCompositePlanState(taskDir, files, fileSet, readFile, readdir, exists) {
+  const maxPlan = maxNNNFromFiles(files, PLAN_FILE_RE)
+  if (maxPlan === 0) return null
+
+  const nnnStr = String(maxPlan).padStart(3, '0')
+
+  let decision = 'atomic'
+  try {
+    const fm = parseFrontMatter(readFile(join(taskDir, `plan_${nnnStr}.md`), 'utf8'))
+    decision = fm.decision ?? 'atomic'
+  } catch {
+    // дефолт atomic
+  }
+
+  if (decision !== 'composite') return null
+
+  const hasApproved = fileSet.has(`plan-approved_${nnnStr}.md`)
+  const hasRejected = fileSet.has(`plan-rejected_${nnnStr}.md`)
+
+  if (!hasApproved && !hasRejected) return 'plan-review'
+  if (hasApproved && isComposite(taskDir, { readdirSync: readdir, existsSync: exists })) return 'spawned'
+
+  return null
+}
+
+/**
+ * Деривує стан однієї задачі з присутності файлів.
+ *
+ * `blocked` встановлюється зовнішнім другим проходом у scanTasks
+ * (потребує станів усіх dep-вузлів). З цієї функції `a.md`-вузол
+ * повертає 'waiting'; scanTasks перевизначає на 'blocked' якщо потрібно.
+ *
+ * @param {string} taskDir абсолютний шлях до директорії задачі
+ * @param {Set<string>} activeWorktrees set імен активних worktree
+ * @param {{
+ *   agentRetryMax?: number,
+ *   relPath?: string,
+ *   readdirSync?: (d: string) => string[],
+ *   readFileSync?: (p: string, enc: string) => string,
+ *   existsSync?: (p: string) => boolean
+ * }} [deps] ін'єкції та параметри
+ * @returns {string} стан задачі
+ */
+export function deriveNodeState(taskDir, activeWorktrees, deps = {}) {
+  const agentRetryMax = deps.agentRetryMax ?? 3
+  const readdir = deps.readdirSync ?? readdirSync
+  const readFile = deps.readFileSync ?? ((p, enc) => readFileSync(p, enc))
+  const exists = deps.existsSync ?? existsSync
+
+  if (!exists(join(taskDir, 'task.md'))) return 'unassigned'
+
+  let files
+  try {
+    files = readdir(taskDir)
+  } catch {
+    return 'unassigned'
+  }
+  const fileSet = new Set(files)
+
+  // 1 + 2. pending-audit / resolved — через прийнятий fact
+  const factState = getAcceptedFactState(taskDir, files, readFile)
+  if (factState === 'pending-audit') return 'pending-audit'
+  if (factState === 'resolved') return 'resolved'
+
+  // 3. unresolvable — термінальний маркер-файл
+  if (fileSet.has('unresolvable.md')) return 'unresolvable'
+
+  // 4. stalled — потребує remote claim ref; пропускаємо в локальному скані
+
+  // 5. running — локальний running_<pid>_until_<ts> маркер або активний worktree
+  const hasRunningMarker = files.some(f => RUNNING_MARKER_RE.test(f))
+  const relPath = deps.relPath ?? taskDir.split('/').findLast(Boolean) ?? ''
+  const sanitizedPath = sanitizeTaskName(relPath.replaceAll('/', '-'))
+  const hasActiveWorktree =
+    sanitizedPath.length > 0 && [...activeWorktrees].some(wt => wt.startsWith(sanitizedPath))
+  if (hasRunningMarker || hasActiveWorktree) return 'running'
+
+  // 6 + 7. plan-review / spawned — composite план без approve або з approve + дітьми
+  const compositePlanState = getCompositePlanState(taskDir, files, fileSet, readFile, readdir, exists)
+  if (compositePlanState) return compositePlanState
+
+  // 8. waiting / failed — a.md визначає виконавця (агент)
+  if (fileSet.has('a.md')) {
+    const streak = computeFailedStreak(files)
+    if (streak >= agentRetryMax) return 'failed'
+    return 'waiting'
+  }
+
+  // 9. pending — h.md визначає виконавця (людина)
+  if (fileSet.has('h.md')) return 'pending'
+
+  // 10. unassigned — немає виконавця
+  return 'unassigned'
 }

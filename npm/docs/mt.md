@@ -1,5 +1,7 @@
 # Архітектура: Динамічний Самомодифікований Граф Задач
 
+> Версія документа: **0.2.0** — відповідає `@7n/mt@0.2.0`
+
 ## Назва структури
 
 **Рекурсивний складений ОАГ** (орієнтований ациклічний граф) — із динамічним розкладом вузлів та файловим сховищем стану.
@@ -1836,3 +1838,21 @@ git ls-remote origin 'refs/mt/claims/*'
 | Security                       | `skill_profiles` (allowlist/network/fs-scope), secrets через ENV-broker (ніколи у файлах), PII поза репо (`assignee` handle + `.mt/directory.json`)                                                    |
 | Монорепо                       | Кожен workspace має свій `mt/`; `MT_DIR` env вказує поточний; один watch на mt/ root; worktrees спільні (git root)                                                                                    |
 | Моніторинг                     | `mt scan` — durable стан із файлів + runtime ownership через `git ls-remote` claim refs                                                                                                               |
+
+---
+
+## Changelog
+
+### 0.2.0 — 2026-06-11
+
+Початкова версійована редакція документа. Охоплює повний контракт MT на момент релізу `@7n/mt@0.2.0`:
+
+- Файловий контракт вузла (task.md, a.md/h.md, deps/, plan/run/fact/audit)
+- Стани вузла та пріоритет derived-переходів
+- CLI-контракт (`mt init / plan / run / done / audit / failed / spawn / kill / invalidate / scan`)
+- Fenced publish protocol + atomic CAS claim через GitHub custom refs
+- Політика ретраїв (retry ladder)
+- Аудит-потік (pending-audit → clarification → amended → audit-result)
+- Wrapper-скрипт, `mt watch`, EngineerAgent, ескалація до unresolvable
+- Security model (sandbox profiles, secrets broker, PII поза репо)
+- Конфіг `.mt.json`, bootstrap, наскрізний приклад, SWOT, зведена таблиця рішень

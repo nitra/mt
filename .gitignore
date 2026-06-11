@@ -1,8 +1,8 @@
 node_modules/
 dist/
 
-# Rust build artifacts (scanner)
-scanner/target/
+# Rust build artifacts
+target/
 
 *.secret
 

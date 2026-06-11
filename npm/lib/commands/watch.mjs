@@ -100,11 +100,36 @@ export default function watch(args, deps = {}) {
     }
   }
 
-  // 3. Needs-plan задачі
-  const needsPlan = allNodes.filter(n => n.state === 'needs-plan')
-  if (needsPlan.length > 0) {
-    log(`[watch] needs-plan (${needsPlan.length}) — потрібне планування:`)
-    for (const n of needsPlan) {
+  // 3. Задачі що потребують людської уваги
+  const unassigned = allNodes.filter(n => n.state === 'unassigned')
+  if (unassigned.length > 0) {
+    log(`[watch] unassigned (${unassigned.length}) — немає виконавця:`)
+    for (const n of unassigned) {
+      log(`  - ${n.path}`)
+    }
+  }
+
+  const pendingNodes = allNodes.filter(n => n.state === 'pending')
+  if (pendingNodes.length > 0) {
+    log(`[watch] pending (${pendingNodes.length}) — чекають людину:`)
+    for (const n of pendingNodes) {
+      log(`  - ${n.path}`)
+    }
+  }
+
+  const planReview = allNodes.filter(n => n.state === 'plan-review')
+  if (planReview.length > 0) {
+    log(`[watch] plan-review (${planReview.length}) — чекають approve:`)
+    for (const n of planReview) {
+      log(`  - ${n.path}`)
+    }
+  }
+
+  const unresolvable = allNodes.filter(n => n.state === 'unresolvable')
+  if (unresolvable.length > 0) {
+    needsAttention = true
+    log(`[watch] unresolvable (${unresolvable.length}) — вичерпано спроби:`)
+    for (const n of unresolvable) {
       log(`  - ${n.path}`)
     }
   }

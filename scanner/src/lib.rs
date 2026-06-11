@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -9,13 +10,16 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum TaskState {
     Unassigned,
-    HumanPending,
-    Waiting,
-    Running,
-    PendingAudit,
-    Resolved,
-    Failed,
-    Invalidated,
+    Pending,       // h.md exists
+    Waiting,       // a.md exists, deps resolved
+    Blocked,       // a.md exists, deps not resolved
+    PlanReview,    // composite plan awaiting human approval
+    Spawned,       // children materialized, not all resolved
+    Running,       // running_<pid>_until_<ts> sentinel present
+    PendingAudit,  // open audit cycle
+    Resolved,      // accepted fact exists
+    Failed,        // failed_streak >= agent_retry_max
+    Unresolvable,  // unresolvable.md exists (terminal)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,6 +30,9 @@ pub struct TaskNode {
     pub deps: Vec<String>,
     pub mode: String,
     pub budget_sec: Option<u64>,
+    pub budget_hard_sec: Option<u64>,
+    pub deadline: Option<String>,
+    pub hint: Option<String>,
     pub created_at: Option<String>,
     pub children: Vec<TaskNode>,
     pub is_composite: bool,
@@ -42,11 +49,20 @@ pub struct WorkspaceInfo {
 struct Frontmatter {
     created_at: Option<String>,
     budget_sec: Option<u64>,
+    budget_hard_sec: Option<u64>,
+    deadline: Option<String>,
+    hint: Option<String>,
 }
 
 impl Default for Frontmatter {
     fn default() -> Self {
-        Self { created_at: None, budget_sec: None }
+        Self {
+            created_at: None,
+            budget_sec: None,
+            budget_hard_sec: None,
+            deadline: None,
+            hint: None,
+        }
     }
 }
 
@@ -68,8 +84,11 @@ fn parse_frontmatter(content: &str) -> Frontmatter {
             let key = t[..pos].trim();
             let val = t[pos + 1..].trim();
             match key {
-                "created_at" => fm.created_at = Some(val.to_string()),
-                "budget_sec" => fm.budget_sec = val.parse().ok(),
+                "created_at"      => fm.created_at      = Some(val.to_string()),
+                "budget_sec"      => fm.budget_sec      = val.parse().ok(),
+                "budget_hard_sec" => fm.budget_hard_sec = val.parse().ok(),
+                "deadline"        => fm.deadline        = Some(val.to_string()),
+                "hint"            => fm.hint            = Some(val.to_string()),
                 _ => {}
             }
         }
@@ -77,21 +96,38 @@ fn parse_frontmatter(content: &str) -> Frontmatter {
     fm
 }
 
-// ── State detection ───────────────────────────────────────────────────────────
+// ── NNN helpers ───────────────────────────────────────────────────────────────
 
-fn has_files_matching(dir: &Path, prefix: &str, suffix: &str) -> bool {
-    fs::read_dir(dir).ok().is_some_and(|entries| {
-        entries.flatten().any(|e| {
+fn max_nnn(dir: &Path, prefix: &str, suffix: &str) -> u64 {
+    fs::read_dir(dir)
+        .ok()
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().map(|t| t.is_file()).unwrap_or(false))
+        .filter_map(|e| {
             let n = e.file_name();
             let s = n.to_string_lossy();
-            s.starts_with(prefix) && s.ends_with(suffix)
+            if s.starts_with(prefix) && s.ends_with(suffix) {
+                s[prefix.len()..s.len() - suffix.len()].parse::<u64>().ok()
+            } else {
+                None
+            }
         })
-    })
+        .max()
+        .unwrap_or(0)
 }
+
+fn failed_streak(dir: &Path) -> u64 {
+    max_nnn(dir, "run_", ".md").saturating_sub(max_nnn(dir, "fact_", ".md"))
+}
+
+// ── State detection ───────────────────────────────────────────────────────────
 
 fn has_pending_audit(dir: &Path) -> bool {
     let Ok(entries) = fs::read_dir(dir) else { return false };
     for e in entries.flatten() {
+        if e.file_type().map(|t| !t.is_file()).unwrap_or(true) { continue; }
         let n = e.file_name();
         let s = n.to_string_lossy();
         if s.starts_with("pending-audit_") && s.ends_with(".md") {
@@ -104,50 +140,122 @@ fn has_pending_audit(dir: &Path) -> bool {
     false
 }
 
-fn has_running_sentinel(dir: &Path) -> bool {
-    fs::read_dir(dir).ok().is_some_and(|entries| {
-        entries.flatten().any(|e| e.file_name().to_string_lossy().starts_with("running_"))
-    })
+// Reads result: field from audit-result frontmatter (only exception to name-based state rule).
+fn audit_result_success(path: &Path) -> bool {
+    let Ok(content) = fs::read_to_string(path) else { return false };
+    let lines: Vec<&str> = content.lines().collect();
+    if lines.first().map(|l| l.trim()) != Some("---") { return false; }
+    let end = lines[1..].iter().position(|l| l.trim() == "---").map(|i| i + 1).unwrap_or(lines.len());
+    for line in &lines[1..end] {
+        if let Some(val) = line.trim().strip_prefix("result:") {
+            return val.trim() == "success";
+        }
+    }
+    false
 }
 
-fn is_running_worktree(node_path: &str, project_root: &Path) -> bool {
-    let worktrees = project_root.join(".worktrees");
-    if !worktrees.is_dir() { return false; }
-    let prefix = node_path.replace(['/', ' '], "-").to_lowercase();
-    fs::read_dir(&worktrees).ok().is_some_and(|entries| {
+fn has_accepted_fact(dir: &Path) -> bool {
+    let nnn = max_nnn(dir, "fact_", ".md");
+    if nnn == 0 { return false; }
+    let nnn_s = format!("{nnn:03}");
+    let pending = dir.join(format!("pending-audit_{nnn_s}.md"));
+    if !pending.exists() { return true; }
+    // Audit requested — check if it completed with success.
+    let result_path = dir.join(format!("audit-result_{nnn_s}.md"));
+    if !result_path.exists() { return false; }
+    audit_result_success(&result_path)
+}
+
+fn has_running_sentinel(dir: &Path) -> bool {
+    fs::read_dir(dir).ok().is_some_and(|entries| {
         entries.flatten().any(|e| {
-            e.file_type().map(|t| t.is_dir()).unwrap_or(false)
-                && e.file_name().to_string_lossy().starts_with(&prefix)
+            e.file_type().map(|t| t.is_file()).unwrap_or(false)
+                && e.file_name().to_string_lossy().starts_with("running_")
         })
     })
 }
 
-fn aggregate_composite_state(children: &[TaskNode]) -> TaskState {
-    if children.iter().all(|c| c.state == TaskState::Resolved) {
-        return TaskState::Resolved;
+fn plan_decision(dir: &Path, nnn: u64) -> Option<String> {
+    let content = fs::read_to_string(dir.join(format!("plan_{nnn:03}.md"))).ok()?;
+    let lines: Vec<&str> = content.lines().collect();
+    if lines.first()?.trim() != "---" { return None; }
+    let end = lines[1..].iter().position(|l| l.trim() == "---").map(|i| i + 1).unwrap_or(lines.len());
+    for line in &lines[1..end] {
+        if let Some(val) = line.trim().strip_prefix("decision:") {
+            return Some(val.trim().to_string());
+        }
     }
-    if children.iter().any(|c| matches!(c.state, TaskState::Running | TaskState::PendingAudit)) {
-        return TaskState::Running;
-    }
-    if children.iter().any(|c| c.state == TaskState::Failed)
-        && !children.iter().any(|c| c.state == TaskState::Running)
-    {
-        return TaskState::Failed;
-    }
-    TaskState::Waiting
+    None
 }
 
-fn detect_state(dir: &Path, children: &[TaskNode], node_path: &str, project_root: &Path) -> TaskState {
-    if !children.is_empty() { return aggregate_composite_state(children); }
-    if has_files_matching(dir, "fact_", ".md") { return TaskState::Resolved; }
-    if has_pending_audit(dir) { return TaskState::PendingAudit; }
-    if has_running_sentinel(dir) || is_running_worktree(node_path, project_root) {
+fn check_plan_review(dir: &Path) -> Option<TaskState> {
+    let nnn = max_nnn(dir, "plan_", ".md");
+    if nnn == 0 { return None; }
+    if plan_decision(dir, nnn).as_deref() != Some("composite") { return None; }
+    if dir.join(format!("plan-approved_{nnn:03}.md")).exists() { return None; }
+    if dir.join(format!("plan-rejected_{nnn:03}.md")).exists() { return None; }
+    Some(TaskState::PlanReview)
+}
+
+// Priority per spec:
+// pending-audit > resolved > unresolvable > (stalled — needs remote) > running >
+// plan-review > spawned > waiting/blocked > pending > unassigned > failed
+fn detect_state(dir: &Path, children: &[TaskNode], agent_retry_max: u64) -> TaskState {
+    if dir.join("unresolvable.md").exists() {
+        return TaskState::Unresolvable;
+    }
+    if has_pending_audit(dir) {
+        return TaskState::PendingAudit;
+    }
+    if has_accepted_fact(dir) {
+        return TaskState::Resolved;
+    }
+    if has_running_sentinel(dir) {
         return TaskState::Running;
     }
-    if has_files_matching(dir, "run_", ".md") { return TaskState::Failed; }
-    if dir.join("a.md").exists() { return TaskState::Waiting; }
-    if dir.join("h.md").exists() { return TaskState::HumanPending; }
+    if let Some(st) = check_plan_review(dir) {
+        return st;
+    }
+    // Spawned: children materialized (plan approved), not all resolved.
+    if !children.is_empty() {
+        return TaskState::Spawned;
+    }
+    // Atomic: failed only after streak exhausted; before that stays waiting.
+    if max_nnn(dir, "run_", ".md") > 0 && failed_streak(dir) >= agent_retry_max {
+        return TaskState::Failed;
+    }
+    if dir.join("a.md").exists() {
+        return TaskState::Waiting; // may be upgraded to Blocked in post-processing
+    }
+    if dir.join("h.md").exists() {
+        return TaskState::Pending;
+    }
     TaskState::Unassigned
+}
+
+// ── Blocked post-processing ───────────────────────────────────────────────────
+
+fn build_state_map(nodes: &[TaskNode], map: &mut HashMap<String, TaskState>) {
+    for node in nodes {
+        map.insert(node.path.clone(), node.state.clone());
+        build_state_map(&node.children, map);
+    }
+}
+
+fn apply_blocked(nodes: &mut [TaskNode], state_map: &HashMap<String, TaskState>) {
+    for node in nodes.iter_mut() {
+        if node.state == TaskState::Waiting && !node.deps.is_empty() {
+            let blocked = node.deps.iter().any(|dep_id| {
+                state_map.get(dep_id).map_or(true, |s| *s != TaskState::Resolved)
+            });
+            if blocked {
+                node.state = TaskState::Blocked;
+            }
+        }
+        if !node.children.is_empty() {
+            apply_blocked(&mut node.children, state_map);
+        }
+    }
 }
 
 // ── Deps ──────────────────────────────────────────────────────────────────────
@@ -180,7 +288,7 @@ fn read_deps_dir(node_dir: &Path) -> Vec<String> {
 
 // ── Node scanner ──────────────────────────────────────────────────────────────
 
-fn scan_dir(dir: &Path, tasks_root: &Path, project_root: &Path) -> Option<TaskNode> {
+fn scan_dir(dir: &Path, tasks_root: &Path, agent_retry_max: u64) -> Option<TaskNode> {
     if !dir.join("task.md").exists() { return None; }
 
     let content = fs::read_to_string(dir.join("task.md")).unwrap_or_default();
@@ -192,6 +300,7 @@ fn scan_dir(dir: &Path, tasks_root: &Path, project_root: &Path) -> Option<TaskNo
 
     let deps = read_deps_dir(dir);
 
+    // Scan children; skip history/ and other non-node dirs (no task.md = None).
     let mut children: Vec<TaskNode> = Vec::new();
     if let Ok(entries) = fs::read_dir(dir) {
         let mut subdirs: Vec<_> = entries
@@ -200,7 +309,7 @@ fn scan_dir(dir: &Path, tasks_root: &Path, project_root: &Path) -> Option<TaskNo
             .collect();
         subdirs.sort_by_key(|e| e.file_name());
         for sub in subdirs {
-            if let Some(child) = scan_dir(&sub.path(), tasks_root, project_root) {
+            if let Some(child) = scan_dir(&sub.path(), tasks_root, agent_retry_max) {
                 children.push(child);
             }
         }
@@ -210,9 +319,9 @@ fn scan_dir(dir: &Path, tasks_root: &Path, project_root: &Path) -> Option<TaskNo
     let id = dir.file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
     let path = dir
         .strip_prefix(tasks_root)
-        .map(|p| p.to_string_lossy().into_owned())
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
         .unwrap_or_else(|_| id.clone());
-    let state = detect_state(dir, &children, &path, project_root);
+    let state = detect_state(dir, &children, agent_retry_max);
 
     Some(TaskNode {
         id,
@@ -221,6 +330,9 @@ fn scan_dir(dir: &Path, tasks_root: &Path, project_root: &Path) -> Option<TaskNo
         deps,
         mode: mode.to_string(),
         budget_sec: fm.budget_sec,
+        budget_hard_sec: fm.budget_hard_sec,
+        deadline: fm.deadline,
+        hint: fm.hint,
         created_at: fm.created_at,
         children,
         is_composite,
@@ -341,6 +453,14 @@ fn scan_for_workspaces(
     }
 }
 
+fn read_agent_retry_max(project_root: &Path) -> u64 {
+    fs::read_to_string(project_root.join(".mt.json"))
+        .ok()
+        .and_then(|c| serde_json::from_str::<serde_json::Value>(&c).ok())
+        .and_then(|v| v.get("agent_retry_max").and_then(|v| v.as_u64()))
+        .unwrap_or(3)
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /// Сканує `tasks_dir` і повертає дерево вузлів.
@@ -350,6 +470,7 @@ pub fn scan_tasks(tasks_dir: String) -> Result<Vec<TaskNode>, String> {
         return Err(format!("Directory not found: {tasks_dir}"));
     }
     let project_root = dir.parent().unwrap_or(&dir).to_path_buf();
+    let agent_retry_max = read_agent_retry_max(&project_root);
 
     let mut entries: Vec<_> = fs::read_dir(&dir)
         .map_err(|e| e.to_string())?
@@ -358,7 +479,17 @@ pub fn scan_tasks(tasks_dir: String) -> Result<Vec<TaskNode>, String> {
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
-    Ok(entries.iter().filter_map(|e| scan_dir(&e.path(), &dir, &project_root)).collect())
+    let mut nodes: Vec<TaskNode> = entries
+        .iter()
+        .filter_map(|e| scan_dir(&e.path(), &dir, agent_retry_max))
+        .collect();
+
+    // Post-processing: mark Waiting → Blocked where deps are not yet resolved.
+    let mut state_map = HashMap::new();
+    build_state_map(&nodes, &mut state_map);
+    apply_blocked(&mut nodes, &state_map);
+
+    Ok(nodes)
 }
 
 /// Знаходить усі mt/ директорії у репо, починаючи від `start_dir`.

@@ -16,15 +16,20 @@ import { listActiveWorktrees } from '../core/worktree.mjs'
 
 /** Кольори для стану (ANSI). */
 const STATE_COLORS = {
-  'needs-plan': '\u001B[33m', // жовтий
-  waiting: '\u001B[36m', // блакитний
-  running: '\u001B[34m', // синій
-  'pending-audit': '\u001B[35m', // фіолетовий
-  resolved: '\u001B[32m', // зелений
-  failed: '\u001B[31m', // червоний
-  invalidated: '\u001B[90m' // сірий
+  unassigned: '[33m', // жовтий
+  pending: '[33m', // жовтий
+  waiting: '[36m', // блакитний
+  blocked: '[90m', // сірий
+  'plan-review': '[33m', // жовтий
+  spawned: '[36m', // блакитний
+  running: '[34m', // синій
+  stalled: '[90m', // сірий
+  'pending-audit': '[35m', // фіолетовий
+  resolved: '[32m', // зелений
+  failed: '[31m', // червоний
+  unresolvable: '[31m' // червоний
 }
-const RESET = '\u001B[0m'
+const RESET = '[0m'
 
 /**
  * Повертає colored рядок стану (якщо TTY).

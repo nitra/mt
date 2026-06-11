@@ -61,13 +61,16 @@ export default function scan(args, deps = {}) {
   // Знаходимо проблемні задачі
   const failed = sorted.filter(n => n.state === 'failed')
   const pendingAudit = sorted.filter(n => n.state === 'pending-audit')
-  const needsPlan = sorted.filter(n => n.state === 'needs-plan')
+  const unassigned = sorted.filter(n => n.state === 'unassigned')
+  const pending = sorted.filter(n => n.state === 'pending')
+  const planReview = sorted.filter(n => n.state === 'plan-review')
+  const unresolvable = sorted.filter(n => n.state === 'unresolvable')
 
   // Знаходимо готові до запуску (waiting + deps resolved)
   const nodeMap = new Map(sorted.map(n => [n.id, n]))
   const ready = sorted.filter(n => n.state === 'waiting' && areDepsResolved(n, nodeMap))
 
-  const hasProblems = failed.length > 0
+  const hasProblems = failed.length > 0 || unresolvable.length > 0
 
   if (jsonMode) {
     console.log(
@@ -78,7 +81,10 @@ export default function scan(args, deps = {}) {
           counts: stateCounts,
           failed: failed.map(n => n.path),
           pending_audit: pendingAudit.map(n => n.path),
-          needs_plan: needsPlan.map(n => n.path),
+          unassigned: unassigned.map(n => n.path),
+          pending: pending.map(n => n.path),
+          plan_review: planReview.map(n => n.path),
+          unresolvable: unresolvable.map(n => n.path),
           ready: ready.map(n => n.path)
         },
         null,
@@ -97,14 +103,29 @@ export default function scan(args, deps = {}) {
       for (const n of failed) log(`  - ${n.path}`)
     }
 
+    if (unresolvable.length > 0) {
+      log(`\nunresolvable (${unresolvable.length}):`)
+      for (const n of unresolvable) log(`  - ${n.path}`)
+    }
+
     if (pendingAudit.length > 0) {
       log(`\npending-audit (${pendingAudit.length}):`)
       for (const n of pendingAudit) log(`  - ${n.path}`)
     }
 
-    if (needsPlan.length > 0) {
-      log(`\nneeds-plan (${needsPlan.length}):`)
-      for (const n of needsPlan) log(`  - ${n.path}`)
+    if (planReview.length > 0) {
+      log(`\nplan-review (${planReview.length}) — чекають approve:`)
+      for (const n of planReview) log(`  - ${n.path}`)
+    }
+
+    if (unassigned.length > 0) {
+      log(`\nunassigned (${unassigned.length}) — немає виконавця:`)
+      for (const n of unassigned) log(`  - ${n.path}`)
+    }
+
+    if (pending.length > 0) {
+      log(`\npending (${pending.length}) — чекають людину:`)
+      for (const n of pending) log(`  - ${n.path}`)
     }
 
     if (ready.length > 0) {
@@ -112,7 +133,7 @@ export default function scan(args, deps = {}) {
       for (const n of ready) log(`  - ${n.path}`)
     }
 
-    if (!hasProblems && failed.length === 0) {
+    if (!hasProblems) {
       log('\nscan: OK')
     }
   }
