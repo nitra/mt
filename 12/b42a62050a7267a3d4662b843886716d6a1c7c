@@ -1,0 +1,29 @@
+npm/.changes/1781193317546-29bc10.md
+  s_5b1aefcfa2b021::t_16f07c0e5a8cb8 1-5
+npm/docs/mt.md
+  s_5b1aefcfa2b021::t_1371d0817fd12e 1741
+  s_5b1aefcfa2b021::t_7138b8e536df37 1562-1636
+  s_5b1aefcfa2b021::t_83b310ced658cd 1464
+  s_5b1aefcfa2b021::t_053c8b51bdc521 1748
+  s_5b1aefcfa2b021::t_cb9e9a28ff60f5 1208
+  s_5b1aefcfa2b021::t_e161296c663a20 1787
+  s_5b1aefcfa2b021::t_1e80bf9be335f8 533-534
+  s_5b1aefcfa2b021::t_f4d8986567a726 495-497
+  s_5b1aefcfa2b021::t_4e2907cf5b9bbb 1756-1757
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "12b42a62050a7267a3d4662b843886716d6a1c7c",
+  "prompts": {},
+  "sessions": {
+    "s_5b1aefcfa2b021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df940a14-b0e4-44e3-b694-ac6c06ef8e3f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
