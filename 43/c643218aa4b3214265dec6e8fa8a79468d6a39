@@ -1,0 +1,83 @@
+npm/lib/core/scanner.mjs
+  s_612b5cbe3d13e0::t_381ee47f3ff80d 5,28-33,72-73,89-136,139,145-146,154,158-160,165-167,169,202-211
+npm/lib/commands/status.mjs
+  s_612b5cbe3d13e0::t_bce514970d3dc2 19-30,32
+npm/lib/tests/state.test.mjs
+  s_612b5cbe3d13e0::t_2673237754175c 2,4,7,9-10,12-14,16,20,74,77-84,86-92,96,99,104,108-109,114-118,121-125,128-129,132-142,144,146-150,153-154,156,158-162,165-166,169,171-172,174-245,248-347,349-470,473-479
+  s_612b5cbe3d13e0::t_89c0bb0c3adf75 170,173
+Cargo.lock
+  s_dbe13aa5d11ab9::t_a76fc74f1881c0 1-107
+npm/lib/commands/scan.mjs
+  s_612b5cbe3d13e0::t_8387e6e789f345 64-67,73,84-87,106-110,116-128,136
+docs/adr/20260611-193311-gitignore-перехід-з-scanner-target-на-кореневий-target.md
+  s_dbe13aa5d11ab9::t_909efd1497bbf8 1-38
+npm/docs/mt.md
+  s_679e8318e0b588::t_07a6550dd377d1 1841-1858
+  s_679e8318e0b588::t_c028a61ffd4c73 3-4
+npm/lib/core/state.mjs
+  s_612b5cbe3d13e0::t_3f203da588c715 4-7,9,14,16-20,22,24-25,27-29,31,35,55,59-137,139-161,167-170,172,174-175,179,183,188,194,198-224,227-228,230-231
+.gitignore
+  s_88c1b3274fd5b2::t_af9cdd69590120 4-5
+docs/omlx-ua-docs-bench.py
+  s_5b1aefcfa2b021::t_2844b95a6ec229 1-301
+scanner/src/lib.rs
+  s_45c44550c72f34::t_f0aa4784c43ef6 1,13-22,33-35,52-54,59-65,87-91,99,101-108,111-115,117-122,125-126,130,143-166,169-170,172-173,178-210,213,216-224,227-233,236-257,291,303,312,322,324,333-335,456-463,473,482-492
+npm/lib/commands/watch.mjs
+  s_612b5cbe3d13e0::t_5028791174a104 103-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "43c643218aa4b3214265dec6e8fa8a79468d6a39",
+  "prompts": {},
+  "sessions": {
+    "s_45c44550c72f34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a13ef9f9-0817-4ab2-b8d6-42d8e1a68631",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_5b1aefcfa2b021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df940a14-b0e4-44e3-b694-ac6c06ef8e3f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_612b5cbe3d13e0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b512c097-7a00-4594-9d03-c6749168fb5c",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_679e8318e0b588": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e605000d-e1f7-46f8-b670-03443e4243ee",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_88c1b3274fd5b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2731a38a-334c-462c-8cc8-008eba144091",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_dbe13aa5d11ab9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9057f9c6-c99e-4582-b55f-a189e141df39",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
