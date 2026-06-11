@@ -1,0 +1,19 @@
+.github/workflows/npm-publish.yml
+  s_5b1aefcfa2b021::t_b23dcd46e82283 9,16,19,25-28,35-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "bc8dc6fbfd628be93fc6687b4894b4ef3fc2544d",
+  "prompts": {},
+  "sessions": {
+    "s_5b1aefcfa2b021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df940a14-b0e4-44e3-b694-ac6c06ef8e3f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
