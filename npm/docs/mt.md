@@ -181,6 +181,10 @@ claim SHA та `lease_until`; takeover створює новий `token` і зб
 **Fencing:** перед publish runner повторно читає claim ref і перевіряє exact claim SHA, `token`, `generation` та
 `lease_until`. Runner, який втратив claim, не має права оновлювати `main`, навіть якщо його локальний процес ще живий.
 
+**Межа fencing — лише Git publish.** Після takeover старий runner може продовжувати виконання і видавати зовнішні side effects (платіж, API-запит, зміна БД, deployment, відправлення повідомлення) — fencing не зупиняє локальний процес. Гарантія системи: **single publish owner** (лише один runner може записати результат у `main`), а не mutual exclusion виконання.
+
+Для задач із зовнішніми side effects слід або: (а) передавати `generation` як fencing token у зовнішню систему, або (б) забезпечити idempotency key на кожному зовнішньому виклику. Задачі, де side effects неможливо зробити idempotent, **не повинні** автоматично takeover-итись — очікуйте ручного втручання після grace period.
+
 Custom refs підтверджено практичним push/read/delete тестом на GitHub. Вони не з'являються у звичайному списку
 branches і не fetch-яться стандартним refspec, тому MT завжди використовує explicit `git ls-remote`, `git fetch`
 та повне ім'я ref. GitHub branch protection rules на `refs/mt/*` не поширюються; право їх змінювати визначається
@@ -1169,8 +1173,7 @@ MT при setup перевіряє, що remote рекламує atomic push cap
 і відкриває PR із claim token у metadata.
 Integration bot перевіряє exact claim SHA/token, merge-ить PR і лише після успішного merge CAS-видаляє claim.
 
-Protocol гарантує mutual exclusion лише для compliant MT runners. Щоб fencing було security boundary, прямий push
-людей/агентів у `main` забороняється branch protection; єдиний writer — fenced direct-publish identity або integration bot.
+Protocol гарантує **single Git publisher** (лише один runner може записати результат у `main`) для compliant MT runners; mutual exclusion виконання не гарантується — zombie-runner після takeover може продовжувати роботу до власного завершення. Щоб fencing було security boundary, прямий push людей/агентів у `main` забороняється branch protection; єдиний writer — fenced direct-publish identity або integration bot.
 
 **Lifecycle-операції йдуть тим самим шляхом:** `mt init`, `mt spawn --approve|--reject`, `mt invalidate`, `mt kill` —
 це теж мутації `mt/` у `main`. Кожна виконує зміни в тимчасовому індексі/worktree і публікує їх через fenced publish
@@ -1822,7 +1825,7 @@ git ls-remote origin 'refs/mt/claims/*'
 | Merge після аудиту             | `mt run --actor auditor`; success → fenced publish або protected-main integration bot                                                                                                                 |
 | Orphan worktree                | Expired claim + run ref → explicit resume або debug; orphan ніколи не дає publish ownership                                                                                                           |
 | Оркестратор                    | `mt run --auto` (one-shot, post-merge hook) + `mt watch` (periodic rescan, 5 хв)                                                                                                                      |
-| Mutual exclusion               | Create-only claim push: перший accepted, concurrent runners отримують rejected non-fast-forward/CAS                                                                                                   |
+| Single publish owner           | Create-only claim push: перший accepted, concurrent runners отримують rejected non-fast-forward/CAS. Гарантується лише один writer у `main`; mutual exclusion виконання не гарантується — для non-idempotent side effects потрібен `generation` як fencing token або явна заборона auto-takeover |
 | Init без --mode                | вузол `unassigned` + CLI warning; виконавця призначають явно (`mt init --mode` або touch `a.md`/`h.md`)                                                                                                   |
 | Actor/Mode                     | `a.md` = агент (model_tier, skills); `h.md` = людина (qualification); немає = `unassigned`. Стан `waiting` = a.md є, deps resolved (runner обирає plan або run); `pending` = h.md є, runner пропускає |
 | Spawn специфікація             | mode та атрибути кожної дитини — per-child у `## Children` плану; дитина без `mode` → validation error на `--approve`                                                                                                                           |
