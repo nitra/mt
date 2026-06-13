@@ -1,0 +1,35 @@
+docs/adr/20260613-071723-заміна-js-сканера-на-rust-шим.md
+  s_2d7aef41a1d1de::t_263bf7afeb5633 1,3-4,7-8,12-14,18-31,38-41,43,45
+docs/adr/20260613-073949-fs-робота-в-rust-worktree-running.md
+  s_2d7aef41a1d1de::t_263bf7afeb5633 1,3-4,8,12-13,17,21-23,27-33,35,37
+npm/docs/mt.md
+  s_5fd98740e6ec1b::t_4dc2f5a297cee8 1861
+  s_5fd98740e6ec1b::t_2833d04d0b5bad 1202
+  s_5fd98740e6ec1b::t_a45c0834245f72 874
+docs/adr/20260613-084500-prebuilt-scanner-binary-delivery.md
+  s_2d7aef41a1d1de::t_263bf7afeb5633 78-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "b5a05b7b236c5d7344edab0436c7c494c1ce8b3c",
+  "prompts": {},
+  "sessions": {
+    "s_2d7aef41a1d1de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ebfff-e2d5-70c1-9c87-cfd93b1b283f",
+        "model": "gpt-5.4-mini"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_5fd98740e6ec1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aed62faa-1a62-4a87-9c86-e7918fd91fb2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": null
+    }
+  }
+}
