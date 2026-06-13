@@ -880,10 +880,10 @@ mt kill <path>
 mt invalidate <path>
 ```
 
-- Архівує **весь version chain**: `fact_*.md`, `run_*.md`, `pending-audit_*.md`, `audit-result_*.md`, `clarification_*.md`, `amended_*.md` → `mt/<node>/history/<ts>-invalidate/`; видаляє `run-summary.md`
+- Архівує **весь version chain** цільового вузла: `fact_*.md`, `run_*.md`, `pending-audit_*.md`, `audit-result_*.md`, `clarification_*.md`, `amended_*.md` → `mt/<node>/history/<ts>-invalidate/`; видаляє `run-summary.md`
 - `task.md`, `a.md`/`h.md`, `deps/`, `plan_*` (+ `plan-approved/rejected_*`) залишаються; вузол повертається до `waiting`
 - Нова chain стартує з NNN=001 без колізій — у директорії не лишається жодного NNN-файла попередньої chain
-- Cascade вниз по нащадках (кожен отримує `mt invalidate` рекурсивно)
+- **Cascade відкладений** — нащадки не архівуються одразу. Оскільки upstream більше не `resolved`, вони природно переходять у `blocked` (їх `fact_*.md` залишаються нетронутими). Cascade запускається лише після порівняння hash нового факту
 - Не пише `invalidated` sentinel — стан derived автоматично з відсутності `fact_*.md`
 
 ```
@@ -1400,12 +1400,19 @@ predecessor у стані resolved (прийнятий fact)
 patch(analyze) →
   mt invalidate analyze →
     архівує analyze/fact_*.md → analyze повертається у waiting
-    каскад: mt invalidate synthesize, report → архівує їх fact_*.md → ...
+    synthesize, report → fact_*.md лишаються, стан = blocked (upstream не resolved)
+
+  analyze re-runs → новий fact_001.md →
+    hash однаковий → analyze resolved, synthesize/report розблоковуються (cascade не потрібен)
+    hash різний   → mt invalidate synthesize → mt invalidate report → cascade вниз
 ```
 
-`mt kill` — завжди cascade: видаляє вузол і весь downstream через `git rm -r` + архів у `.history/`.
+`mt kill` — завжди eager cascade: видаляє вузол і весь downstream через `git rm -r` + архів у `.history/`.
 
-**Differential cascade при re-run після invalidate:** `mt done` порівнює content-addressed hash нового `fact_NNN.md` з hash останнього fact попередньої chain (з `history/<ts>-invalidate/`). Hash покриває і вміст fact, і вміст усіх ref-цілей — однаковий hash ⇒ результат справді ідентичний → залежні вузли залишаються `resolved` (їх `fact_*.md` не зачіпається). Різний hash → каскад `mt invalidate` продовжується вниз.
+**Deferred differential cascade (поведінка за замовчуванням):** `mt invalidate` архівує лише version chain цільового вузла; нащадки не чіпаються й переходять у `blocked` через природну відсутність resolved upstream. Після re-run `mt done` порівнює content-addressed hash нового `fact_NNN.md` з hash останнього fact попередньої chain (з `history/<ts>-invalidate/`). Hash покриває і вміст fact, і вміст усіх ref-цілей:
+
+- **Однаковий hash** → результат ідентичний → нащадки повертаються у свої попередні стани без жодної архівації; їх `fact_*.md` нетронуті.
+- **Різний hash** → `mt done` запускає `mt invalidate` на кожному прямому нащадку (рекурсивно, той самий deferred механізм).
 
 ---
 
@@ -1828,7 +1835,7 @@ git ls-remote origin 'refs/mt/claims/*'
 | Межа immutability              | До worktree — вільно; після — тільки нові файли                                                                                                                                                       |
 | Патч залежного вузла           | Kill наступників (топологічний порядок), потім патч                                                                                                                                                   |
 | Самовідновлення                | EngineerAgent — мета-рівень, необмежений доступ; тригер: `failed_streak ≥ agent_retry_max`                                                                                                                                                       |
-| Інвалідація                    | `mt invalidate`: архівує весь version chain (fact/run/pending-audit/audit-result/clarification/amended) → history/, нова chain з 001; cascade вниз. `mt kill`: archive + git rm вузла; `--no-cascade` — escape hatch                                                        |
+| Інвалідація                    | `mt invalidate`: архівує version chain лише цільового вузла → history/, нова chain з 001; нащадки переходять у `blocked` (facts нетронуті). Після re-run `mt done` порівнює hash: однаковий → нащадки розблоковуються без архівації; різний → cascade `mt invalidate` вниз. `mt kill`: eager archive + git rm вузла і downstream; `--no-cascade` — escape hatch |
 | Deps blocked-invalid           | Dep задоволений ↔ dep `resolved` (прийнятий fact); dep на аудиті → `blocked`; dep без `fact_*.md` → `blocked-invalid-dep`, skip                                                                                                                              |
 | Збіжність                      | Часовий бюджет на спробу + streak-пороги зміни актора (`agent_retry_max` → engineer, далі → unresolvable); `budget_total_sec` — сумарний ліміт chain                                                                                                                                                                   |
 | Retry ladder                   | `failed_streak = max(run NNN) - max(fact NNN)`; драбина: базова → diagnose-first → alternative-approach (+`model_tier: +1`, `skills_add`); конфіг `retry_ladder`, per-node у `a.md`                    |
