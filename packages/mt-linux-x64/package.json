@@ -1,0 +1,22 @@
+{
+  "name": "@7n/mt-linux-x64",
+  "version": "0.2.0",
+  "description": "Prebuilt mt-scanner binary for Linux x64 (static musl — covers glibc & musl distros)",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitra/mt.git"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "mt-scanner"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

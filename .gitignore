@@ -4,6 +4,10 @@ dist/
 # Rust build artifacts
 target/
 
+# Prebuilt scanner binaries are produced by CI, never committed
+packages/*/mt-scanner
+packages/*/mt-scanner.exe
+
 *.secret
 
 .claude/hooks/*.log

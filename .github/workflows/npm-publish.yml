@@ -4,20 +4,71 @@ on:
   push:
     paths:
       - 'npm/**'
+      - 'scanner/**'
+      - 'packages/**'
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
+  # ── Збірка prebuilt-бінарників mt-scanner по платформах ──────────────────────
+  build-binaries:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: macos-14 # native Apple Silicon
+            target: aarch64-apple-darwin
+            pkg: mt-darwin-arm64
+            zig: false
+          - os: ubuntu-latest # static musl через cargo-zigbuild (покриває весь Linux x64)
+            target: x86_64-unknown-linux-musl
+            pkg: mt-linux-x64
+            zig: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cargo-zigbuild (Linux musl)
+        if: ${{ matrix.zig }}
+        run: |
+          pip install ziglang
+          cargo install --locked cargo-zigbuild
+
+      - name: Build (zigbuild)
+        if: ${{ matrix.zig }}
+        run: cargo zigbuild --release --target ${{ matrix.target }} --manifest-path scanner/Cargo.toml
+
+      - name: Build (native)
+        if: ${{ !matrix.zig }}
+        run: cargo build --release --target ${{ matrix.target }} --manifest-path scanner/Cargo.toml
+
+      - name: Stage binary into platform package
+        run: |
+          cp "target/${{ matrix.target }}/release/mt-scanner" "packages/${{ matrix.pkg }}/mt-scanner"
+          chmod +x "packages/${{ matrix.pkg }}/mt-scanner"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.pkg }}
+          path: packages/${{ matrix.pkg }}/mt-scanner
+          if-no-files-found: error
+
+  # ── Release-bump + публікація платформних підпакетів і головного @7n/mt ──────
   release-publish:
+    needs: build-binaries
     runs-on: ubuntu-latest
     permissions:
       contents: write # commit-back версії + git-тег
-      id-token: write # КРИТИЧНО для OIDC!
+      id-token: write # OIDC + provenance
 
     steps:
       - uses: actions/checkout@v6
@@ -37,10 +88,34 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Download platform binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: packages # → packages/<pkg>/mt-scanner
+
       - name: Release (bump + CHANGELOG + tag)
         run: npx @nitra/cursor release
 
-      - name: Publish package
+      # Платформні підпакети версіонуються в lockstep з @7n/mt; optionalDependencies
+      # головного пакета теж синхронізуються з новою версією перед публікацією.
+      - name: Sync platform versions to @7n/mt
+        run: |
+          VERSION=$(node -p "require('./npm/package.json').version")
+          echo "Publishing version $VERSION"
+          for pkg in mt-darwin-arm64 mt-linux-x64; do
+            V="$VERSION" node -e "const f='packages/'+process.argv[1]+'/package.json';const p=require('./'+f);p.version=process.env.V;require('fs').writeFileSync(f, JSON.stringify(p,null,2)+'\n')" "$pkg"
+            chmod +x "packages/$pkg/mt-scanner"
+          done
+          V="$VERSION" node -e "const f='npm/package.json';const p=require('./'+f);for(const k of Object.keys(p.optionalDependencies||{}))p.optionalDependencies[k]=process.env.V;require('fs').writeFileSync(f, JSON.stringify(p,null,2)+'\n')"
+
+      - name: Publish platform subpackages (must precede main)
+        run: |
+          for pkg in mt-darwin-arm64 mt-linux-x64; do
+            npm publish "packages/$pkg" --access public --provenance
+          done
+
+      - name: Publish main package
         uses: JS-DevTools/npm-publish@v4.1.5
         with:
           package: npm/package.json
+          provenance: true

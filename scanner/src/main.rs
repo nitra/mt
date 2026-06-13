@@ -3,9 +3,24 @@ use std::process;
 
 fn usage() -> ! {
     eprintln!("Usage:");
-    eprintln!("  mt-scanner scan <tasks_dir>      — scan tasks in directory, output JSON array");
-    eprintln!("  mt-scanner workspaces [<dir>]    — discover workspaces from dir (or cwd), output JSON array");
+    eprintln!("  mt-scanner scan <tasks_dir> [--worktrees a,b,c]  — scan tasks, output JSON array");
+    eprintln!("      --worktrees: comma-list of active worktree names (overrides git discovery)");
+    eprintln!("  mt-scanner workspaces [<dir>]                    — discover workspaces, output JSON array");
     process::exit(1);
+}
+
+/// Parses an optional `--worktrees a,b,c` flag. Returns None if the flag is absent,
+/// Some(vec) (possibly empty) when present.
+fn parse_worktrees_arg(args: &[String]) -> Option<Vec<String>> {
+    let pos = args.iter().position(|a| a == "--worktrees")?;
+    let raw = args.get(pos + 1).map(String::as_str).unwrap_or("");
+    Some(
+        raw.split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect(),
+    )
 }
 
 fn main() {
@@ -16,7 +31,10 @@ fn main() {
         "scan" => {
             if args.len() < 3 { usage(); }
             let tasks_dir = args[2].clone();
-            match mt_scanner::scan_tasks(tasks_dir) {
+            // --worktrees overrides discovery; otherwise discover via git from tasks_dir.
+            let worktrees = parse_worktrees_arg(&args)
+                .unwrap_or_else(|| mt_scanner::discover_worktrees(&PathBuf::from(&tasks_dir)));
+            match mt_scanner::scan_tasks(tasks_dir, worktrees) {
                 Ok(nodes) => println!("{}", serde_json::to_string_pretty(&nodes).unwrap()),
                 Err(e) => { eprintln!("Error: {e}"); process::exit(2); }
             }

@@ -61,8 +61,8 @@ JS-шар залишається тонким адаптером: запуска
 Зберігає **публічну сигнатуру** (щоб не чіпати 6 команд):
 
 - `scanTasks(mtDir, activeWorktrees, deps = {})`:
-  1. `bin = deps.binPath ?? resolveScannerBin()`
-  2. `run = deps.spawnSync ?? spawnSync` → `run(bin, ['scan', mtDir, ...wtArgs], { encoding: 'utf8' })`, де `wtArgs` — `--worktrees a,b,c` **лише** якщо `activeWorktrees` передали явно (тести/спец-кейси); у проді аргумент опускається і Rust сам виявляє worktree (§5)
+  1. `bin = deps.binPath ?? scannerBin()`
+  2. `run = deps.spawnSync ?? spawnSync` → `run(bin, ['scan', mtDir, ...wtArgs], { encoding: 'utf8', maxBuffer })`, де `wtArgs` — `--worktrees a,b,c`, якщо `activeWorktrees` **непорожній** (уникає повторного git, бо команда вже його обчислила); інакше аргумент опускається і Rust сам виявляє worktree через `git worktree list` (§5)
   3. `status !== 0` → `throw new Error('mt-scanner failed: ' + stderr)`
   4. `tree = JSON.parse(stdout)`
   5. `nodes = flatten(tree, mtDir)` — рекурсивно, з мапінгом полів §3
@@ -109,7 +109,7 @@ running, якщо node.state ∈ {PlanReview, Spawned, Waiting, Blocked, Pending
 ### 5.3 Наслідки для JS
 
 - `scanner.getActiveWorktrees`/`parseWorktreeList` більше **не потрібні для скану**. Залишити їх лише якщо їх використовує path створення worktree (`mt run`); інакше — видалити з публічного експорту. Уточнити на кроці §8.5.
-- `activeWorktrees`-параметр `scanTasks` стає опційним прокидуванням у `--worktrees` (тести); прод його не передає.
+- `activeWorktrees`-параметр `scanTasks` прокидується в `--worktrees`, коли непорожній (команди вже його обчислюють через `listActiveWorktrees`); інакше Rust сам discovery. Чисте FS-сканування лишається повністю в Rust.
 
 ## 6. Доставка бінарника
 
