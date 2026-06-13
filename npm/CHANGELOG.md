@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2026-06-13
+
+### Changed
+
+- Уточнення протоколу mt.md: single publish owner, deferred cascade, GC refs, spawn failure handling, recovery tree, claim_grace_sec limits, integration bot atomic push
+
 ## [0.3.0] - 2026-06-13
 
 ### Changed
