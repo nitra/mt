@@ -1,0 +1,61 @@
+npm/docs/mt.md
+  s_fb2ac605516911::t_fa4739a1ebdc83 183-192
+  s_fb2ac605516911::t_057ac45eee83b0 885-886,889-890
+  s_5fd98740e6ec1b::t_536d2add373782 1476
+  s_fb2ac605516911::t_d37c81bf581193 1884
+  s_fb2ac605516911::t_f043cc5c74467c 127
+  s_05d3bdc0306f57::t_6997a5adc36047 1312-1319
+  s_fb2ac605516911::t_85024ecb9b3ab1 134
+  s_832a9ce473b080::t_692be9390f5de0 913
+  s_5fd98740e6ec1b::t_abf2df30816bb8 1483
+  s_fb2ac605516911::t_3e954e1d477939 1343,1345-1351,1354
+  s_fb2ac605516911::t_c8de75c5d22d5e 1527
+  s_fb2ac605516911::t_a2be6e90c6b97b 196,201
+  s_fb2ac605516911::t_3167604d4dcfc2 1577-1578
+  s_fb2ac605516911::t_42e3b5b451c37b 896-908
+  s_fb2ac605516911::t_e1fc64ce782ab0 197-200
+  s_05d3bdc0306f57::t_eb36a34ef74918 1299,1305-1307
+  s_fb2ac605516911::t_3f1c429ffc6574 137
+docs/adr/20260613-114228-уточнення-гарантій-mt-протоколу-single-publish-owner-та-архі.md
+  s_05d3bdc0306f57::t_3ad5b2b4dd9649 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "bc58029534b77d934a7f57d4880a78b73d5eda3f",
+  "prompts": {},
+  "sessions": {
+    "s_05d3bdc0306f57": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c51a9136-8b0a-4304-bdbb-d7566a84008b",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": null
+    },
+    "s_5fd98740e6ec1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aed62faa-1a62-4a87-9c86-e7918fd91fb2",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": null
+    },
+    "s_832a9ce473b080": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db0bebeb-b9e0-45c6-a024-be2c52a71571",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": null
+    },
+    "s_fb2ac605516911": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0ceda41b-aa13-42f5-a0c4-925d2bc587e8",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
