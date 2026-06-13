@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2026-06-13
+
+### Changed
+
+- scanner делегує сканування Rust-бінарнику mt-scanner; prebuilt-бінарники через optionalDependencies (@7n/mt-darwin-arm64, @7n/mt-linux-x64)
+
 ## [0.2.0] - 2026-06-11
 
 ### Added
