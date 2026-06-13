@@ -14,9 +14,13 @@ concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions: {} # deny-all за замовчуванням; кожен job оголошує потрібне
+
 jobs:
   # ── Збірка prebuilt-бінарників mt-scanner по платформах ──────────────────────
   build-binaries:
+    permissions:
+      contents: read # лише checkout; артефакти йдуть через runtime-токен
     strategy:
       fail-fast: true
       matrix:
@@ -32,6 +36,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false # build-only, токен не потрібен
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -108,14 +114,19 @@ jobs:
           done
           V="$VERSION" node -e "const f='npm/package.json';const p=require('./'+f);for(const k of Object.keys(p.optionalDependencies||{}))p.optionalDependencies[k]=process.env.V;require('fs').writeFileSync(f, JSON.stringify(p,null,2)+'\n')"
 
-      - name: Publish platform subpackages (must precede main)
-        run: |
-          for pkg in mt-darwin-arm64 mt-linux-x64; do
-            npm publish "packages/$pkg" --access public --provenance
-          done
+      # Платформні підпакети — тим самим перевіреним каналом, що й головний пакет.
+      # Публікуються ПЕРЕД @7n/mt (його optionalDependencies вже вказують на ці версії).
+      - name: Publish @7n/mt-darwin-arm64
+        uses: JS-DevTools/npm-publish@v4.1.5
+        with:
+          package: packages/mt-darwin-arm64/package.json
+
+      - name: Publish @7n/mt-linux-x64
+        uses: JS-DevTools/npm-publish@v4.1.5
+        with:
+          package: packages/mt-linux-x64/package.json
 
       - name: Publish main package
         uses: JS-DevTools/npm-publish@v4.1.5
         with:
           package: npm/package.json
-          provenance: true
