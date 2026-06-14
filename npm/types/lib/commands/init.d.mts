@@ -1,32 +1,32 @@
 /**
- * Будує front-matter для task.md шаблону.
- * @param {{ now: string, name: string }} params параметри
- * @returns {Record<string, unknown>} front-matter об'єкт
+ * Розбирає argv `mt init`: перший non-flag токен — ім'я, решта — прапорці
+ * (прокидаються в бінарник вербатим; авторитетний парсинг — у Rust).
+ * @param {string[]} args аргументи після `init`
+ * @returns {{ name: string | null, flags: string[], error?: string }}
  */
-export function buildTaskFrontMatter(params: {
-    now: string;
-    name: string;
-}): Record<string, unknown>;
+export function parseInitArgs(args: string[]): {
+    name: string | null;
+    flags: string[];
+    error?: string;
+};
 /**
- * `mt init <name>` command handler.
- * @param {string[]} args аргументи: [name]
+ * `mt init <name> [flags]` command handler.
+ * @param {string[]} args аргументи: [name, ...flags]
  * @param {{
  *   cwd?: string,
  *   log?: (m: string) => void,
- *   writeFile?: (p: string, c: string, enc: string) => void,
- *   exists?: (p: string) => boolean,
- *   mkdir?: (p: string, opts?: object) => void,
- *   now?: () => string,
- *   readFile?: (p: string, enc: string) => string
+ *   spawnSync?: typeof import("node:child_process").spawnSync,
+ *   binPath?: string,
+ *   readFile?: (p: string, enc: string) => string,
+ *   exists?: (p: string) => boolean
  * }} [deps] ін'єкції
- * @returns {Promise<number>} exit code
+ * @returns {number} exit code (0 створено/існує, 1 usage/помилка)
  */
 export default function init(args: string[], deps?: {
     cwd?: string;
     log?: (m: string) => void;
-    writeFile?: (p: string, c: string, enc: string) => void;
-    exists?: (p: string) => boolean;
-    mkdir?: (p: string, opts?: object) => void;
-    now?: () => string;
+    spawnSync?: typeof import("node:child_process").spawnSync;
+    binPath?: string;
     readFile?: (p: string, enc: string) => string;
-}): Promise<number>;
+    exists?: (p: string) => boolean;
+}): number;

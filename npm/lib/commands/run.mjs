@@ -47,6 +47,52 @@ function writeRunFile(taskDir, nnn, result, meta, writeFile) {
 }
 
 /**
+ * Читає model_tier із прапора `a.md` (секція "## Model tier") — джерело істини
+ * виконавця після перенесення авторингу в Rust (`mt-scanner create`).
+ * @param {string} taskDir директорія задачі
+ * @param {(p: string, enc: string) => string} readFile читання файлу
+ * @param {(p: string) => boolean} exists перевірка існування
+ * @returns {string | null} tier (напр. "MAX") або null якщо немає a.md/секції
+ */
+function readModelTierFromFlag(taskDir, readFile, exists) {
+  const flagPath = join(taskDir, 'a.md')
+  if (!exists(flagPath)) return null
+  let content
+  try {
+    content = readFile(flagPath, 'utf8')
+  } catch {
+    return null
+  }
+  const lines = content.split('\n')
+  const idx = lines.findIndex(l => l.trim().toLowerCase() === '## model tier')
+  if (idx === -1) return null
+  for (let i = idx + 1; i < lines.length; i++) {
+    const t = lines[i].trim()
+    if (t.startsWith('##')) break
+    if (t) return t
+  }
+  return null
+}
+
+/**
+ * Резолвить виконавця задачі: тип і модель. Істина model_tier — прапор `a.md`
+ * (секція "## Model tier", авторинг mt-scanner). Fallback на `executor` у frontmatter
+ * (старі вузли) → `default_model_tier` із `.mt.json`.
+ * @param {string} taskDir директорія задачі
+ * @param {Record<string, unknown>} fm frontmatter task.md
+ * @param {object} config конфігурація
+ * @param {{ readFile: (p: string, enc: string) => string, exists: (p: string) => boolean }} io ФС-ін'єкції
+ * @returns {{ executorType: string, modelTier: string, model: string }} виконавець
+ */
+function resolveExecutor(taskDir, fm, config, io) {
+  const executor = fm.executor && typeof fm.executor === 'object' ? fm.executor : {}
+  const executorType = executor.type ?? 'agent'
+  const tierFromFlag = readModelTierFromFlag(taskDir, io.readFile, io.exists)
+  const modelTier = tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG'
+  return { executorType, modelTier, model: resolveModelByTier(config, modelTier) }
+}
+
+/**
  * Запускає одну задачу: creates worktree, spawns agent, writes run_NNN.md.
  * @param {string} taskPath відносний шлях задачі
  * @param {string} taskDir абсолютний шлях до директорії задачі
@@ -80,10 +126,7 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const budgetSec = Number(fm.budget_sec) || config.default_budget_sec
   const budgetHardSec = Number(fm.budget_hard_sec) || budgetSec * config.budget_hard_sec_multiplier
 
-  const executor = fm.executor && typeof fm.executor === 'object' ? fm.executor : {}
-  const executorType = executor.type ?? 'agent'
-  const modelTier = executor.model_tier ?? 'AVG'
-  const model = resolveModelByTier(config, modelTier)
+  const { executorType, model } = resolveExecutor(taskDir, fm, config, { readFile, exists })
 
   const actor = opts.actor ?? executorType
 

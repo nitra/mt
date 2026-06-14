@@ -44,6 +44,67 @@ pub struct WorkspaceInfo {
     pub path: String,
 }
 
+/// Виконавець вузла. Істина — прапор-файл `a.md`/`h.md`, не поле frontmatter.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    Agent,
+    Human,
+}
+
+/// Опції створення вузла. `None`-поля резолвляться з `.mt.json` (default_*).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CreateOpts {
+    #[serde(default)]
+    pub mode: Option<Mode>,
+    #[serde(default)]
+    pub model_tier: Option<String>,
+    #[serde(default)]
+    pub budget_sec: Option<u64>,
+    #[serde(default)]
+    pub hint: Option<String>,
+    #[serde(default)]
+    pub deps: Vec<String>,
+    #[serde(default)]
+    pub skills: Option<Vec<String>>,
+}
+
+/// Результат `create_task`. CLI серіалізує через [`CreateOutcome::to_cli_json`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CreateOutcome {
+    Created {
+        name: String,
+        task_path: String,
+        flag: String,
+        deps: Vec<String>,
+    },
+    Exists {
+        name: String,
+        task_path: String,
+    },
+}
+
+impl CreateOutcome {
+    /// Плаский JSON-контракт CLI (§3.2 spec): поле `created: bool`.
+    pub fn to_cli_json(&self) -> serde_json::Value {
+        match self {
+            CreateOutcome::Created { name, task_path, flag, deps } => serde_json::json!({
+                "created": true,
+                "name": name,
+                "task_path": task_path,
+                "flag": flag,
+                "deps": deps,
+            }),
+            CreateOutcome::Exists { name, task_path } => serde_json::json!({
+                "created": false,
+                "reason": "exists",
+                "name": name,
+                "task_path": task_path,
+            }),
+        }
+    }
+}
+
 // ── Frontmatter ───────────────────────────────────────────────────────────────
 
 struct Frontmatter {
@@ -610,6 +671,180 @@ pub fn find_tasks_dir() -> Result<String, String> {
     Err("Could not auto-detect tasks directory.".to_string())
 }
 
+// ── Task creation (write-side) ─────────────────────────────────────────────────
+
+/// Валідує id вузла (§8 spec). Дозволені сегменти `[a-z0-9-]+`, роздільник `/`.
+/// Відхиляє порожні/`.`/`..` сегменти, провідний/кінцевий `/`, traversal.
+/// На відміну від [`sanitize`], НЕ виправляє — повертає `Err`.
+pub fn validate_name(name: &str) -> Result<(), String> {
+    if name.is_empty() {
+        return Err("name must not be empty".to_string());
+    }
+    if name.starts_with('/') || name.ends_with('/') {
+        return Err(format!("name must not start or end with '/': {name:?}"));
+    }
+    for seg in name.split('/') {
+        if seg.is_empty() {
+            return Err(format!("name has an empty segment: {name:?}"));
+        }
+        if seg == "." || seg == ".." {
+            return Err(format!("name segment must not be '.' or '..': {name:?}"));
+        }
+        if !seg.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-') {
+            return Err(format!(
+                "name segment {seg:?} must match [a-z0-9-] (no uppercase/underscore/space): {name:?}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+struct CreateDefaults {
+    mode: Mode,
+    model_tier: String,
+    budget_sec: u64,
+}
+
+fn read_create_defaults(project_root: &Path) -> CreateDefaults {
+    let v = fs::read_to_string(project_root.join(".mt.json"))
+        .ok()
+        .and_then(|c| serde_json::from_str::<serde_json::Value>(&c).ok());
+    let mode = v
+        .as_ref()
+        .and_then(|v| v.get("default_mode").and_then(|x| x.as_str()))
+        .map(|s| if s == "agent" { Mode::Agent } else { Mode::Human })
+        .unwrap_or(Mode::Human);
+    let model_tier = v
+        .as_ref()
+        .and_then(|v| v.get("default_model_tier").and_then(|x| x.as_str()))
+        .unwrap_or("AVG")
+        .to_string();
+    let budget_sec = v
+        .as_ref()
+        .and_then(|v| v.get("default_budget_sec").and_then(|x| x.as_u64()))
+        .unwrap_or(1800);
+    CreateDefaults { mode, model_tier, budget_sec }
+}
+
+/// Найвищий неіснуючий предок `dir` (для відкату — що саме ми створимо).
+fn first_missing_ancestor(dir: &Path) -> Option<PathBuf> {
+    if dir.exists() {
+        return None;
+    }
+    let mut candidate = dir.to_path_buf();
+    while let Some(parent) = candidate.parent() {
+        if parent.exists() {
+            return Some(candidate);
+        }
+        candidate = parent.to_path_buf();
+    }
+    Some(candidate)
+}
+
+/// Атомарний запис: tmp-файл у тій самій директорії → rename (§13/§11.1).
+fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
+    let dir = path.parent().ok_or("path has no parent directory")?;
+    let fname = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
+    let tmp = dir.join(format!(".{fname}.tmp"));
+    fs::write(&tmp, content).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, path).map_err(|e| e.to_string())
+}
+
+const TASK_BODY: &str = "\n## Mission\n\n<!-- Опишіть завдання тут -->\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Context\n\n<!-- Додатковий контекст для виконавця -->\n";
+
+/// Створює вузол задачі з шаблонного контракту (§4 spec): `<name>/task.md`,
+/// прапор виконавця (`a.md`/`h.md`), опційні `deps/<id>.md`.
+///
+/// Ідемпотентно: якщо `task.md` уже існує — повертає `Exists`, нічого не пише.
+/// Атомарно: при частковій відмові прибирає щойно створену гілку директорій.
+pub fn create_task(
+    tasks_dir: String,
+    name: String,
+    opts: CreateOpts,
+) -> Result<CreateOutcome, String> {
+    validate_name(&name)?;
+
+    let tasks_root = PathBuf::from(&tasks_dir);
+    let project_root = tasks_root.parent().unwrap_or(&tasks_root).to_path_buf();
+    let defaults = read_create_defaults(&project_root);
+
+    let task_dir = tasks_root.join(&name);
+    let task_path_rel = format!("{name}/task.md");
+    let task_md = task_dir.join("task.md");
+
+    // Ідемпотентність (§2.5): існуючий вузол не чіпаємо.
+    if task_md.exists() {
+        return Ok(CreateOutcome::Exists { name, task_path: task_path_rel });
+    }
+
+    let mode = opts.mode.unwrap_or(defaults.mode);
+    let model_tier = opts.model_tier.unwrap_or(defaults.model_tier);
+    let budget_sec = opts.budget_sec.unwrap_or(defaults.budget_sec);
+    let hint = opts.hint.unwrap_or_else(|| "atomic".to_string());
+    let skills = opts
+        .skills
+        .unwrap_or_else(|| vec!["bash".to_string(), "write-files".to_string()]);
+
+    // Гілка директорій, яку ми створимо — для відкату при частковій відмові.
+    let rollback_root = first_missing_ancestor(&task_dir);
+
+    let build = || -> Result<CreateOutcome, String> {
+        fs::create_dir_all(&task_dir).map_err(|e| e.to_string())?;
+
+        // schema_version ПЕРШИМ полем (інваріант docs/mt.md); лише нові файли (§2.8).
+        let created_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let frontmatter = format!(
+            "---\nschema_version: 1\ncreated_at: {created_at}\nbudget_sec: {budget_sec}\nhint: {hint}\n---\n"
+        );
+        write_atomic(&task_md, &format!("{frontmatter}{TASK_BODY}"))?;
+
+        // Прапор виконавця — рівно один (§4.3).
+        let flag = match mode {
+            Mode::Agent => {
+                let skill_lines = skills
+                    .iter()
+                    .map(|s| format!("- {s}"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let content =
+                    format!("## Model tier\n\n{model_tier}\n\n## Skills\n\n{skill_lines}\n");
+                write_atomic(&task_dir.join("a.md"), &content)?;
+                "a.md"
+            }
+            Mode::Human => {
+                let content =
+                    "## Qualification\n\n<!-- Опишіть необхідну кваліфікацію виконавця -->\n";
+                write_atomic(&task_dir.join("h.md"), content)?;
+                "h.md"
+            }
+        };
+
+        // Залежності — порожні файли-ребра deps/<id>.md (§4.4).
+        if !opts.deps.is_empty() {
+            let deps_dir = task_dir.join("deps");
+            fs::create_dir_all(&deps_dir).map_err(|e| e.to_string())?;
+            for dep in &opts.deps {
+                write_atomic(&deps_dir.join(format!("{dep}.md")), "")?;
+            }
+        }
+
+        Ok(CreateOutcome::Created {
+            name: name.clone(),
+            task_path: task_path_rel.clone(),
+            flag: flag.to_string(),
+            deps: opts.deps.clone(),
+        })
+    };
+
+    let result = build();
+    if result.is_err() {
+        if let Some(root) = rollback_root {
+            let _ = fs::remove_dir_all(&root);
+        }
+    }
+    result
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────────
 // Reproduce the authoritative cases from npm/lib/tests/state.test.mjs (the JS suite
 // these replace), plus worktree→running and sanitize vectors.
@@ -869,5 +1104,128 @@ mod tests {
     fn parse_worktree_list_extracts_names() {
         let out = "worktree /repo\nHEAD abc\n\nworktree /repo/.worktrees/my-task-123\nHEAD def\n";
         assert_eq!(parse_worktree_list(out), vec!["repo".to_string(), "my-task-123".to_string()]);
+    }
+
+    // ── create_task (write-side) ──
+
+    /// <tmp>/mt with optional .mt.json defaults in the project root; returns (root, mt_dir).
+    fn create_repo(mt_json: Option<&str>) -> (tempfile::TempDir, String) {
+        let root = tempdir().unwrap();
+        if let Some(j) = mt_json {
+            fs::write(root.path().join(".mt.json"), j).unwrap();
+        }
+        let mt = root.path().join("mt");
+        fs::create_dir_all(&mt).unwrap();
+        let mt_dir = mt.to_string_lossy().into_owned();
+        (root, mt_dir)
+    }
+
+    #[test]
+    fn create_writes_task_flag_and_frontmatter() {
+        let (root, mt) = create_repo(None);
+        let opts = CreateOpts { mode: Some(Mode::Human), ..Default::default() };
+        let outcome = create_task(mt.clone(), "demo".to_string(), opts).unwrap();
+        match outcome {
+            CreateOutcome::Created { name, task_path, flag, deps } => {
+                assert_eq!(name, "demo");
+                assert_eq!(task_path, "demo/task.md");
+                assert_eq!(flag, "h.md");
+                assert!(deps.is_empty());
+            }
+            _ => panic!("expected Created"),
+        }
+        let task_md = fs::read_to_string(root.path().join("mt/demo/task.md")).unwrap();
+        // schema_version must be the FIRST frontmatter field.
+        assert!(task_md.starts_with("---\nschema_version: 1\n"), "got: {task_md}");
+        assert!(task_md.contains("\nbudget_sec: 1800\n")); // default
+        assert!(task_md.contains("\nhint: atomic\n"));
+        // No mode/executor/deps fields in frontmatter (§2.6/§2.7).
+        assert!(!task_md.contains("mode:"));
+        assert!(!task_md.contains("executor"));
+        assert!(!task_md.contains("\ndeps:"));
+        assert!(task_md.contains("## Mission"));
+        // h.md created, a.md not.
+        assert!(root.path().join("mt/demo/h.md").exists());
+        assert!(!root.path().join("mt/demo/a.md").exists());
+    }
+
+    #[test]
+    fn create_agent_writes_a_md_with_tier() {
+        let (root, mt) = create_repo(None);
+        let opts = CreateOpts {
+            mode: Some(Mode::Agent),
+            model_tier: Some("MAX".to_string()),
+            ..Default::default()
+        };
+        let outcome = create_task(mt, "agentic".to_string(), opts).unwrap();
+        assert!(matches!(&outcome, CreateOutcome::Created { flag, .. } if flag == "a.md"));
+        let a = fs::read_to_string(root.path().join("mt/agentic/a.md")).unwrap();
+        assert!(a.contains("## Model tier\n\nMAX\n"), "got: {a}");
+        assert!(a.contains("## Skills"));
+        assert!(a.contains("- bash"));
+        assert!(!root.path().join("mt/agentic/h.md").exists());
+    }
+
+    #[test]
+    fn create_is_idempotent() {
+        let (root, mt) = create_repo(None);
+        create_task(mt.clone(), "demo".to_string(), CreateOpts::default()).unwrap();
+        let before = fs::read_to_string(root.path().join("mt/demo/task.md")).unwrap();
+        let again = create_task(mt, "demo".to_string(), CreateOpts::default()).unwrap();
+        assert!(matches!(again, CreateOutcome::Exists { .. }));
+        let after = fs::read_to_string(root.path().join("mt/demo/task.md")).unwrap();
+        assert_eq!(before, after); // not rewritten
+    }
+
+    #[test]
+    fn create_nested_name_recursive_mkdir() {
+        let (root, mt) = create_repo(None);
+        create_task(mt, "research/collect-data".to_string(), CreateOpts::default()).unwrap();
+        assert!(root.path().join("mt/research/collect-data/task.md").exists());
+    }
+
+    #[test]
+    fn create_dep_writes_empty_edge_file() {
+        let (root, mt) = create_repo(None);
+        let opts = CreateOpts { deps: vec!["upstream".to_string()], ..Default::default() };
+        let outcome = create_task(mt, "downstream".to_string(), opts).unwrap();
+        assert!(matches!(&outcome, CreateOutcome::Created { deps, .. } if deps == &["upstream"]));
+        let edge = root.path().join("mt/downstream/deps/upstream.md");
+        assert!(edge.exists());
+        assert_eq!(fs::read_to_string(&edge).unwrap(), "");
+    }
+
+    #[test]
+    fn create_resolves_defaults_from_mt_json() {
+        let (root, mt) = create_repo(Some(
+            "{\"default_mode\":\"agent\",\"default_model_tier\":\"MIM\",\"default_budget_sec\":42}",
+        ));
+        let outcome = create_task(mt, "d".to_string(), CreateOpts::default()).unwrap();
+        assert!(matches!(&outcome, CreateOutcome::Created { flag, .. } if flag == "a.md"));
+        let task_md = fs::read_to_string(root.path().join("mt/d/task.md")).unwrap();
+        assert!(task_md.contains("\nbudget_sec: 42\n"));
+        let a = fs::read_to_string(root.path().join("mt/d/a.md")).unwrap();
+        assert!(a.contains("MIM"));
+    }
+
+    // ── shared name-validation vectors (Rust ↔ JS, see name-vectors.json) ──
+    #[test]
+    fn validate_name_shared_vectors() {
+        let raw = include_str!("../../npm/lib/tests/fixtures/name-vectors.json");
+        let v: serde_json::Value = serde_json::from_str(raw).unwrap();
+        for name in v["valid"].as_array().unwrap() {
+            let n = name.as_str().unwrap();
+            assert!(validate_name(n).is_ok(), "expected VALID: {n:?}");
+        }
+        for name in v["invalid"].as_array().unwrap() {
+            let n = name.as_str().unwrap();
+            assert!(validate_name(n).is_err(), "expected INVALID: {n:?}");
+        }
+    }
+
+    #[test]
+    fn create_rejects_traversal_name() {
+        let (_root, mt) = create_repo(None);
+        assert!(create_task(mt, "../escape".to_string(), CreateOpts::default()).is_err());
     }
 }

@@ -17,6 +17,8 @@ export const CONFIG_DEFAULTS = {
   warn_worktrees_above: 4,
   max_worktrees: 8,
   default_budget_sec: 1800,
+  default_mode: 'human',
+  default_model_tier: 'AVG',
   budget_hard_sec_multiplier: 3,
   progress_timeout_sec: 300,
   claude_model: 'claude-sonnet-4-6',

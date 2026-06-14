@@ -1,0 +1,60 @@
+## ADR Перенесення створення задач (write-side) у Rust-крейт `mt-scanner`
+
+**Status:** Accepted
+**Date:** 2026-06-14
+
+## Context and Problem Statement
+
+Принцип проєкту: *усе, що стосується роботи з файловою системою, має бути в Rust* — read-side
+(скан) уже делеговано бінарнику `mt-scanner` (`scanner/src/lib.rs`). Створення задачі лишалося в
+JS (`npm/lib/commands/init.mjs` + `buildTaskFrontMatter`), що дублювало файловий контракт і давало
+дрейф. До того ж стара `mt init` писала `mode: human` у frontmatter, але **не** створювала
+прапор `h.md` → свіжа задача сканувалася як `unassigned` замість `pending`. Спека:
+`docs/spec-task-create-rust-integration.md`.
+
+## Considered Options
+
+* Лишити авторинг у JS — зберігає дрейф контракту й баг із прапором.
+* (виконавець у frontmatter) тримати `executor.model_tier` у `task.md` — конфліктує з рішенням
+  «істина = прапор `a.md`/`h.md`».
+* (виконавець у прапорі) `a.md` як машинний YAML — vs markdown із секціями.
+
+## Decision Outcome
+
+Chosen: **створення задачі — у крейті `mt-scanner`**, симетрично до скану. Одна реалізація, три
+споживачі (npm CLI shim, бінарник `mt-scanner create`, Tauri-команда в репо `task`).
+
+* `pub fn create_task(tasks_dir, name, opts) -> Result<CreateOutcome, String>` + типи
+  `Mode`/`CreateOpts`/`CreateOutcome` (serde) у `scanner/src/lib.rs`; підкоманда `create` у
+  `main.rs` з JSON-виходом (`created: true/false`).
+* `task.md`: `schema_version: 1` першим полем, `created_at` (через `chrono`), `budget_sec`, `hint`.
+  **Без** `mode`/`executor`/`interactive`/`deps` у frontmatter.
+* **Виконавець = прапор-файл**: `--mode agent` → `a.md` (markdown із секціями `## Model tier`,
+  `## Skills`); `--mode human` → `h.md` (`## Qualification`, вільна форма). Ніколи обидва. Це
+  виправляє баг із `unassigned`.
+* **Залежності** — лише порожні `deps/<id>.md` (топологічне ребро); поле `deps:` прибрано.
+* **Валідація імен** (`validate_name`, §8) **відхиляє** (не санітизує): сегменти `[a-z0-9-]+`,
+  без великих літер/`_`/пробілів/`..`/traversal. Спільні тест-вектори Rust↔JS —
+  `npm/lib/tests/fixtures/name-vectors.json` (`validateTaskName` у `state.mjs` — дзеркало).
+* **Дефолти** з `.mt.json`: додано `default_mode: 'human'`, `default_model_tier: 'AVG'` у
+  `CONFIG_DEFAULTS`; budget — наявний `default_budget_sec` (1800).
+* **Атомарність**: запис tmp-файл + `rename`; при частковій відмові — відкат щойно створеної
+  гілки директорій.
+* `init.mjs` → тонкий шим: `spawnSync(bin, ['create', mtDir, name, ...flags])` + parse JSON;
+  `buildTaskFrontMatter`/`mkdir`/`writeFile` видалено.
+* `run.mjs` — `resolveExecutor` читає `model_tier` із `a.md` (секція `## Model tier`), fallback на
+  старий frontmatter→`.mt.json` (інакше `--model-tier` губився б при `run`).
+
+### Consequences
+
+* Авторинг `task.md` має одне джерело істини (Rust); coverage переноситься в `cargo test`
+  (38 тестів зелені).
+* Свіжа задача одразу має коректний стан (`pending`/`waiting`) завдяки прапору.
+* Контракт `a.md` тепер змістовний (раніше читалась лише наявність файла) — `run.mjs` його споживає.
+* Tauri-команда `create_task` у репо `task` — окремий крок (крейт уже лінкується через
+  `[patch]` на локальний `mt/scanner`).
+
+## More Information
+
+`docs/spec-task-create-rust-integration.md` (write-side), `docs/spec-scanner-rust-integration.md`
+(read-side counterpart), `docs/mt.md` (файловий контракт вузла).
