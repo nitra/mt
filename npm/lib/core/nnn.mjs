@@ -77,32 +77,6 @@ export function latestFactNNN(taskDir, readdirSync) {
 }
 
 /**
- * Перевіряє чи є pending-audit без відповідного audit-result.
- * @param {string} taskDir абсолютний шлях до директорії задачі
- * @param {(dir: string) => string[]} readdirSync ін'єктована функція readdir
- * @returns {{ has: boolean, nnn: string | null }} результат
- */
-export function hasPendingAudit(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  const fileSet = new Set(files)
-
-  const pendingNNNs = []
-  for (const f of files) {
-    const m = f.match(PENDING_AUDIT_FILE_RE)
-    if (m) pendingNNNs.push(m[1])
-  }
-
-  for (const nnn of pendingNNNs) {
-    const resultFile = `audit-result_${nnn}.md`
-    if (!fileSet.has(resultFile)) {
-      return { has: true, nnn: padNNN(parseInt(nnn, 10)) }
-    }
-  }
-
-  return { has: false, nnn: null }
-}
-
-/**
  * Знаходить NNN для останнього pending-audit_NNN.md (для audit-result).
  * @param {string} taskDir абсолютний шлях до директорії задачі
  * @param {(dir: string) => string[]} readdirSync ін'єктована функція readdir

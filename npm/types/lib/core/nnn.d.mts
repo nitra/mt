@@ -26,16 +26,6 @@ export function nextPlanNNN(taskDir: string, readdirSync: (dir: string) => strin
  */
 export function latestFactNNN(taskDir: string, readdirSync: (dir: string) => string[]): string | null;
 /**
- * Перевіряє чи є pending-audit без відповідного audit-result.
- * @param {string} taskDir абсолютний шлях до директорії задачі
- * @param {(dir: string) => string[]} readdirSync ін'єктована функція readdir
- * @returns {{ has: boolean, nnn: string | null }} результат
- */
-export function hasPendingAudit(taskDir: string, readdirSync: (dir: string) => string[]): {
-    has: boolean;
-    nnn: string | null;
-};
-/**
  * Знаходить NNN для останнього pending-audit_NNN.md (для audit-result).
  * @param {string} taskDir абсолютний шлях до директорії задачі
  * @param {(dir: string) => string[]} readdirSync ін'єктована функція readdir
