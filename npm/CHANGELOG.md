@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.0] - 2026-06-14
+
+### Changed
+
+- init: створення задачі делеговано Rust-бінарнику mt-scanner (mt-scanner create); прибрано JS-авторинг task.md (buildTaskFrontMatter). Виконавець визначає прапор a.md/h.md; валідація імен у Rust+JS зі спільними тест-векторами.
+
 ## [0.3.1] - 2026-06-13
 
 ### Changed
