@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1] - 2026-06-14
+
+### Changed
+
+- Прибрано дублювання audit/done/failed (спільний core/task-command.mjs: writeRunFile+resolveTaskPath); видалено мертвий export hasPendingAudit; jscpd ігнорує tooling-дзеркала й markdown.
+
 ## [0.4.0] - 2026-06-14
 
 ### Changed
