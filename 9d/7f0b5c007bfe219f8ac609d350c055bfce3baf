@@ -1,0 +1,31 @@
+npm/docs/review-response.md
+  s_414b5121029fa7::t_79540fdacfc7c6 1-149
+npm/.changes/1781341524616-900fda.md
+  s_414b5121029fa7::t_79540fdacfc7c6 1-5
+npm/docs/mt.md
+  s_cae2007b1b47f6::t_0173414dcec9d6 387,390,392-395,398-403,405,409-411
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "9d7f0b5c007bfe219f8ac609d350c055bfce3baf",
+  "prompts": {},
+  "sessions": {
+    "s_414b5121029fa7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36acbd09-2546-45f0-b2ac-10f638ffc23d",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_cae2007b1b47f6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5863bde6-8357-4e12-b66e-851d4fa92bda",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
