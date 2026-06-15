@@ -24,3 +24,19 @@ Chosen option: "явне документування двох ролей", beca
 ## More Information
 
 Додано: `npm/docs/mt.md` — новий розділ "Ролі: Orchestrator і Runner" (~рядок 812, перед CLI контрактом). Секція описує: `mt watch` як scheduling-процес, `mt run` як execution-процес, поточну реалізацію (один binary), distributed deployment (runner на окремій машині через fencing), горизонтальне масштабування (кілька runner-ів, один watch, CAS claim гарантує single runner per node).
+
+## Update 2026-06-13
+
+### Оркестратор як єдиний caller `mt done` для `spawned`-вузла
+
+Після `mt spawn` батьківський вузол переходить у стан `spawned` і claim на нього не утримується. Оркестратор (centralized daemon/loop) — єдиний caller для `mt done` на `spawned`-вузлі: моніторить дочірні вузли і клеймить батька після завершення всіх дітей.
+
+Wrapper pattern: orchestrator → `mt claim <parent-path>` → aggregate → `mt done <parent-path>`.
+
+Claim preconditions для `spawned`: `accepted` лише коли всі діти `resolved` і caller = orchestrator; `rejected-children-not-resolved` в усіх інших випадках.
+
+### `failed-dependency` як окремий стан
+
+Введено `failed-dependency` як стан, відмінний від `failed`: вузол переходить у `failed-dependency` коли блокуюча залежність переходить у `failed` (не через власне виконання). Перехід `blocked` → `failed-dependency` тригерить оркестратор.
+
+Дозволяє розрізняти першопричини відмов: `failed` — власне виконання, `failed-dependency` — upstream. Усі перевірки `status == failed` потребують врахування `failed-dependency`. Додано до `npm/docs/mt.md`: `failed-dependency` у enum станів; опис стану; рядок у orchestration state-machine table.
