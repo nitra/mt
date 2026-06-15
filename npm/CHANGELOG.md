@@ -17,6 +17,11 @@
 ### Changed
 
 - Уточнення протоколу mt.md: single publish owner, deferred cascade, GC refs, spawn failure handling, recovery tree, claim_grace_sec limits, integration bot atomic push
+- npm/docs/mt.md: dep-id завжди абсолютний від tasks-root; deps/ дзеркалює структуру mt/; виправлено неоднозначну "sibling shorthand" адресацію
+- npm/docs/mt.md: mt done/mt audit — integrity check task.md/a.md/h.md проти origin/main і ephemeral file guard для run-draft.md (git diff --cached)
+- npm/docs/mt.md: schema_version backward compatibility — orchestrator читає всі відомі версії, відмовляє лише майбутні
+- npm/docs/mt.md: mt invalidate зупиняє running процес внутрішньо (SIGTERM + CAS-delete claim); patch protocol виправлено — mt kill замінено на mt invalidate
+- npm/docs/mt.md: новий розділ "Ролі: Orchestrator і Runner" з описом distributed deployment
 
 ## [0.3.0] - 2026-06-13
 
