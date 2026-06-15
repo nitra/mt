@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.2] - 2026-06-15
+
+### Changed
+
+- відповідь на рецензію mt.md (9 вирішено, 4 misread): single publish owner, deferred cascade, fenced bot push, dep addressing, cleanup command
+
 ## [0.4.1] - 2026-06-14
 
 ### Changed
