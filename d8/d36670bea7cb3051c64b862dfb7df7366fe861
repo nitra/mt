@@ -1,0 +1,19 @@
+npm/docs/mt-impl.md
+  s_69b9236b0b0c6e::t_1caef0421cdf30 1-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "d8d36670bea7cb3051c64b862dfb7df7366fe861",
+  "prompts": {},
+  "sessions": {
+    "s_69b9236b0b0c6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0bc9b81d-37f8-4422-9adb-504713e21248",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
