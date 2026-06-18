@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.1] - 2026-06-18
+
+### Fixed
+
+- worktree: lint-чистота нового `mt worktree` (oxlint+eslint) — повний JSDoc, case-дужки, `catch error`, `Object.hasOwn`, static regex, noop-мок. Файл уперше проходить CI-лінт (раніше був untracked). Поведінка незмінна, 17/17 тести.
+
 ## [0.5.0] - 2026-06-18
 
 ### Changed
