@@ -12,7 +12,8 @@ export const COMMAND_NAMES = [
   'failed',
   'spawn',
   'invalidate',
-  'kill'
+  'kill',
+  'worktree'
 ]
 
 // Lazy loaders for dynamic imports
@@ -30,7 +31,8 @@ const LAZY_HANDLERS = {
   failed: () => import('./commands/failed.mjs').then(m => m.default),
   spawn: () => import('./commands/spawn.mjs').then(m => m.default),
   invalidate: () => import('./commands/invalidate.mjs').then(m => m.default),
-  kill: () => import('./commands/kill.mjs').then(m => m.default)
+  kill: () => import('./commands/kill.mjs').then(m => m.default),
+  worktree: () => import('./commands/worktree.mjs').then(m => m.default)
 }
 
 // Wrapper to normalize handlers
@@ -66,6 +68,7 @@ Commands:
   spawn       Створити нову задачу
   invalidate  Інвалідувати задачу
   kill        Зупинити задачу
+  worktree    Керування developer git-worktrees (create|remove|list|prune|inventory)
 
 Options:
   --help      Показати цю довідку
