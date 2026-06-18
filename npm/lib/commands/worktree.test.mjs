@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'vitest'
 import worktree from './worktree.mjs'
 
+const CREATED_RE = /Created: \d{4}-\d{2}-\d{2}/
+
 function makeCtx(overrides = {}) {
   const logs = []
   const fs = {}
@@ -9,11 +11,11 @@ function makeCtx(overrides = {}) {
     cwd: '/repo',
     log: s => logs.push(s),
     config: { worktrees_dir: './.worktrees' },
-    mkdir: () => {},
-    exists: p => Object.prototype.hasOwnProperty.call(fs, p),
+    mkdir: () => null,
+    exists: p => Object.hasOwn(fs, p),
     writeFile: (p, c) => { fs[p] = c },
     readFile: p => {
-      if (Object.prototype.hasOwnProperty.call(fs, p)) return fs[p]
+      if (Object.hasOwn(fs, p)) return fs[p]
       const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e
     },
     // mock ігнорує каталог і повертає basenames усіх .md-ключів (інвентарі живуть у .meta/)
@@ -83,7 +85,7 @@ describe('create', () => {
     const content = fs['/repo/.worktrees/.meta/feat-inv.md']
     expect(content).toContain('# feat/inv')
     expect(content).toContain('My feature')
-    expect(content).toMatch(/Created: \d{4}-\d{2}-\d{2}/)
+    expect(content).toMatch(CREATED_RE)
   })
 })
 

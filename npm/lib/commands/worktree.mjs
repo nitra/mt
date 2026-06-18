@@ -5,6 +5,17 @@
  * інвентар — окремо в `<worktrees_dir>/.meta/<sanitized>.md`, тож `<worktrees_dir>/` містить
  * лише worktree-каталоги (+ `.meta/`). Worktree **ефемерний**: `remove` прибирає і checkout,
  * і git-гілку. sanitizeBranch — синхронізовано з Rust `sanitize_branch` у scanner/src/lib.rs.
+ * @typedef {object} WorktreeCtx
+ * @property {string} root корінь репо
+ * @property {string} worktreesDir абсолютний шлях до worktrees_dir
+ * @property {(s: string) => void} log логер
+ * @property {(cmd: string, opts?: object) => string} execSyncFn git-виклик
+ * @property {(p: string) => boolean} exists перевірка існування шляху
+ * @property {(p: string, c: string) => void} writeFile запис файлу
+ * @property {(p: string, enc?: string) => string} readFile читання файлу
+ * @property {(d: string) => string[]} readdir лістинг каталогу
+ * @property {(p: string) => void} rmFile видалення
+ * @property {(p: string, o?: object) => void} mkdirFn mkdir
  */
 import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -20,7 +31,11 @@ const DIRTY_LIST_LIMIT = 10
 /** Стеля спроб підбору вільної назви гілки (захист від нескінченного циклу). */
 const FIRST_FREE_LIMIT = 1000
 
-// ⚠️ Sync with Rust `sanitize_branch` in scanner/src/lib.rs
+/**
+ * Імʼя git-гілки → безпечне пласке імʼя каталогу. ⚠️ Sync з Rust `sanitize_branch`.
+ * @param {string} branch імʼя гілки
+ * @returns {string} sanitized імʼя (небезпечні символи → `-`, краєві `-` обрізані)
+ */
 function sanitizeBranch(branch) {
   let result = ''
   let prevDash = false
@@ -37,25 +52,48 @@ function sanitizeBranch(branch) {
       prevDash = false
     }
   }
-  let start = 0, end = result.length
+  let start = 0
+  let end = result.length
   while (start < end && result[start] === '-') start++
   while (end > start && result[end - 1] === '-') end--
   return result.slice(start, end)
 }
 
+/**
+ * Шлях до підкаталогу інвентарів.
+ * @param {string} worktreesDir абсолютний worktrees_dir
+ * @returns {string} `<worktreesDir>/.meta`
+ */
 function metaDirPath(worktreesDir) {
   return join(worktreesDir, META_DIR)
 }
 
+/**
+ * Шлях до інвентарного `.md` для sanitized-назви.
+ * @param {string} worktreesDir абсолютний worktrees_dir
+ * @param {string} sanitized sanitized імʼя гілки
+ * @returns {string} `<worktreesDir>/.meta/<sanitized>.md`
+ */
 function inventoryPath(worktreesDir, sanitized) {
   return join(metaDirPath(worktreesDir), `${sanitized}.md`)
 }
 
+/**
+ * Текст інвентарного файлу.
+ * @param {string} branch імʼя гілки
+ * @param {string} description опис задачі
+ * @returns {string} markdown-вміст
+ */
 function inventoryContent(branch, description) {
   const date = new Date().toISOString().slice(0, 10)
   return `# ${branch}\n\n${description}\n\nCreated: ${date}\n`
 }
 
+/**
+ * Абсолютні шляхи з `git worktree list --porcelain`.
+ * @param {string} out вивід git
+ * @returns {string[]} шляхи checkout
+ */
 function parseWorktreeList(out) {
   const paths = []
   for (const line of out.split('\n')) {
@@ -67,7 +105,7 @@ function parseWorktreeList(out) {
 /**
  * Перша вільна назва гілки: `base`, `base2`, `base3`… (суфікс — число без розділювача).
  * Дає `create` обрати назву, що спрацює, замість падіння на наявному checkout.
- * @param {string} branch бажане ім'я гілки
+ * @param {string} branch бажане імʼя гілки
  * @param {(candidate: string) => boolean} isTaken чи зайнята (checkout-каталог уже існує)
  * @returns {string} перша вільна назва (= `branch`, якщо вільна)
  */
@@ -98,7 +136,12 @@ function buildDirtyNotice(porcelain) {
   return `${head}\n${list}`
 }
 
-/** Імена активних worktree-checkout (останній компонент шляху) з git. */
+/**
+ * Імена активних worktree-checkout (останній компонент шляху) з git.
+ * @param {string} root корінь репо
+ * @param {(cmd: string, opts?: object) => string} execSyncFn git-виклик
+ * @returns {Set<string>} імена активних checkout
+ */
 function activeCheckoutNames(root, execSyncFn) {
   try {
     const out = execSyncFn('git worktree list --porcelain', { cwd: root })
@@ -113,7 +156,12 @@ function activeCheckoutNames(root, execSyncFn) {
   }
 }
 
-/** Інвентарі `.meta/*.md` (basenames без `.md`). */
+/**
+ * Імена інвентарів `.meta/*.md` (basenames без `.md`).
+ * @param {string} worktreesDir абсолютний worktrees_dir
+ * @param {(d: string) => string[]} readdir лістинг каталогу
+ * @returns {string[]} sanitized-імена
+ */
 function inventoryNames(worktreesDir, readdir) {
   try {
     return readdir(metaDirPath(worktreesDir)).filter(f => f.endsWith('.md')).map(f => f.slice(0, -3))
@@ -122,6 +170,27 @@ function inventoryNames(worktreesDir, readdir) {
   }
 }
 
+/**
+ * Зчитує опис (перший не-`#`/не-`Created:` рядок) з інвентаря.
+ * @param {WorktreeCtx} ctx контекст
+ * @param {string} sanitized sanitized імʼя
+ * @returns {string} опис або ''
+ */
+function readDescription(ctx, sanitized) {
+  try {
+    const lines = ctx.readFile(inventoryPath(ctx.worktreesDir, sanitized), 'utf8').split('\n')
+    return lines.find(l => l && !l.startsWith('#') && !l.startsWith('Created:'))?.trim() ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * `create <branch> "<опис>"` — створити ефемерний worktree від HEAD + інвентар.
+ * @param {string[]} args [branch, ...descParts]
+ * @param {WorktreeCtx} ctx контекст
+ * @returns {number} exit code
+ */
 function cmdCreate(args, ctx) {
   const { root, worktreesDir, log, execSyncFn, exists, writeFile, mkdirFn } = ctx
   const [branch, ...rest] = args
@@ -156,8 +225,8 @@ function cmdCreate(args, ctx) {
   mkdirFn(worktreesDir, { recursive: true })
   try {
     execSyncFn(`git worktree add -b "${chosen}" "${worktreePath}" HEAD`, { cwd: root })
-  } catch (e) {
-    log(`Error: git worktree add failed: ${e.message ?? e}`)
+  } catch (error) {
+    log(`Error: git worktree add failed: ${error.message ?? error}`)
     return 1
   }
 
@@ -170,6 +239,12 @@ function cmdCreate(args, ctx) {
   return 0
 }
 
+/**
+ * `remove <branch>` — прибрати checkout + інвентар + git-гілку (ефемерний).
+ * @param {string[]} args [branch]
+ * @param {WorktreeCtx} ctx контекст
+ * @returns {number} exit code
+ */
 function cmdRemove(args, ctx) {
   const { root, worktreesDir, log, execSyncFn, exists, rmFile } = ctx
   const [branch] = args
@@ -190,8 +265,8 @@ function cmdRemove(args, ctx) {
     try {
       rmFile(worktreePath)
       execSyncFn('git worktree prune', { cwd: root })
-    } catch (e) {
-      log(`Error: не вдалось видалити worktree: ${e.message ?? e}`)
+    } catch (error) {
+      log(`Error: не вдалось видалити worktree: ${error.message ?? error}`)
       return 1
     }
   }
@@ -209,8 +284,14 @@ function cmdRemove(args, ctx) {
   return 0
 }
 
+/**
+ * `list` — активні (✓) та осиротілі (⚠️) developer-worktrees з описами.
+ * @param {string[]} _args ігнорується
+ * @param {WorktreeCtx} ctx контекст
+ * @returns {number} exit code
+ */
 function cmdList(_args, ctx) {
-  const { root, worktreesDir, log, execSyncFn, readFile, readdir } = ctx
+  const { root, worktreesDir, log, execSyncFn, readdir } = ctx
   const active = activeCheckoutNames(root, execSyncFn)
   const names = inventoryNames(worktreesDir, readdir)
   if (names.length === 0) {
@@ -218,13 +299,7 @@ function cmdList(_args, ctx) {
     return 0
   }
   for (const sanitized of names) {
-    let desc = ''
-    try {
-      const lines = readFile(inventoryPath(worktreesDir, sanitized), 'utf8').split('\n')
-      desc = lines.find(l => l && !l.startsWith('#') && !l.startsWith('Created:'))?.trim() ?? ''
-    } catch {
-      // інвентар зник між listdir і read
-    }
+    const desc = readDescription(ctx, sanitized)
     const status = active.has(sanitized) ? '✓' : '⚠️ осиротілий'
     const descPart = desc ? `  — ${desc}` : ''
     log(`  ${status}  ${sanitized}${descPart}`)
@@ -232,6 +307,12 @@ function cmdList(_args, ctx) {
   return 0
 }
 
+/**
+ * `prune` — `git worktree prune` + видалити осиротілі інвентарі.
+ * @param {string[]} _args ігнорується
+ * @param {WorktreeCtx} ctx контекст
+ * @returns {number} exit code
+ */
 function cmdPrune(_args, ctx) {
   const { root, worktreesDir, log, execSyncFn, readdir, rmFile } = ctx
   try {
@@ -249,23 +330,30 @@ function cmdPrune(_args, ctx) {
   return 0
 }
 
+/**
+ * `inventory` — JSON-масив `{name, active, description}` для task-graph.
+ * @param {string[]} _args ігнорується
+ * @param {WorktreeCtx} ctx контекст
+ * @returns {number} exit code
+ */
 function cmdInventory(_args, ctx) {
-  const { root, worktreesDir, log, execSyncFn, readFile, readdir } = ctx
+  const { root, worktreesDir, log, execSyncFn, readdir } = ctx
   const active = activeCheckoutNames(root, execSyncFn)
-  const items = inventoryNames(worktreesDir, readdir).map(sanitized => {
-    let description = ''
-    try {
-      const lines = readFile(inventoryPath(worktreesDir, sanitized), 'utf8').split('\n')
-      description = lines.find(l => l && !l.startsWith('#') && !l.startsWith('Created:'))?.trim() ?? ''
-    } catch {
-      // інвентар зник
-    }
-    return { name: sanitized, active: active.has(sanitized), description }
-  })
+  const items = inventoryNames(worktreesDir, readdir).map(sanitized => ({
+    name: sanitized,
+    active: active.has(sanitized),
+    description: readDescription(ctx, sanitized)
+  }))
   log(JSON.stringify(items, null, 2))
   return 0
 }
 
+/**
+ * Точка входу команди `mt worktree`.
+ * @param {string[]} args аргументи після `worktree`
+ * @param {object} [deps] ін'єкції (cwd/log/config/fs/execSync) для тестів
+ * @returns {number} exit code
+ */
 export default function worktree(args, deps = {}) {
   const root = deps.cwd ?? processCwd()
   const log = deps.log ?? (s => process.stdout.write(s + '\n'))
@@ -284,12 +372,22 @@ export default function worktree(args, deps = {}) {
   const ctx = { root, worktreesDir, log, execSyncFn, exists, writeFile, readFile, readdir, rmFile, mkdirFn }
 
   switch (sub) {
-    case 'create':    return cmdCreate(rest, ctx)
-    case 'remove':    return cmdRemove(rest, ctx)
-    case 'list':      return cmdList(rest, ctx)
-    case 'prune':     return cmdPrune(rest, ctx)
-    case 'inventory': return cmdInventory(rest, ctx)
-    default:
+    case 'create': {
+      return cmdCreate(rest, ctx)
+    }
+    case 'remove': {
+      return cmdRemove(rest, ctx)
+    }
+    case 'list': {
+      return cmdList(rest, ctx)
+    }
+    case 'prune': {
+      return cmdPrune(rest, ctx)
+    }
+    case 'inventory': {
+      return cmdInventory(rest, ctx)
+    }
+    default: {
       log('Usage: mt worktree <create|remove|list|prune|inventory>')
       log('  create <branch> "<опис>"  — створити ефемерний worktree у .worktrees/<branch>/')
       log('  remove <branch>           — видалити worktree + гілку')
@@ -297,5 +395,6 @@ export default function worktree(args, deps = {}) {
       log('  prune                     — прибрати осиротілі інвентарі')
       log('  inventory                 — JSON-стан для task-graph')
       return 1
+    }
   }
 }
