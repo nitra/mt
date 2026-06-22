@@ -6,7 +6,9 @@ fn usage() -> ! {
     eprintln!("  mt-scanner scan <tasks_dir> [--worktrees a,b,c]  — scan tasks, output JSON array");
     eprintln!("      --worktrees: comma-list of active worktree names (overrides git discovery)");
     eprintln!("  mt-scanner workspaces [<dir>]                    — discover workspaces, output JSON array");
-    eprintln!("  mt-scanner create <tasks_dir> <name> [flags]     — create a task node, output JSON");
+    eprintln!(
+        "  mt-scanner create <tasks_dir> <name> [flags]     — create a task node, output JSON"
+    );
     eprintln!("      [--mode agent|human] [--model-tier MIM|AVG|MAX] [--budget-sec N] [--hint <t>] [--dep <id>]...");
     process::exit(1);
 }
@@ -28,10 +30,24 @@ fn parse_create_opts(args: &[String]) -> mt_scanner::CreateOpts {
                 };
                 i += 1;
             }
-            "--model-tier" => { opts.model_tier = args.get(i + 1).cloned(); i += 1; }
-            "--budget-sec" => { opts.budget_sec = args.get(i + 1).and_then(|s| s.parse().ok()); i += 1; }
-            "--hint" => { opts.hint = args.get(i + 1).cloned(); i += 1; }
-            "--dep" => { if let Some(v) = args.get(i + 1) { opts.deps.push(v.clone()); } i += 1; }
+            "--model-tier" => {
+                opts.model_tier = args.get(i + 1).cloned();
+                i += 1;
+            }
+            "--budget-sec" => {
+                opts.budget_sec = args.get(i + 1).and_then(|s| s.parse().ok());
+                i += 1;
+            }
+            "--hint" => {
+                opts.hint = args.get(i + 1).cloned();
+                i += 1;
+            }
+            "--dep" => {
+                if let Some(v) = args.get(i + 1) {
+                    opts.deps.push(v.clone());
+                }
+                i += 1;
+            }
             _ => {}
         }
         i += 1;
@@ -55,38 +71,60 @@ fn parse_worktrees_arg(args: &[String]) -> Option<Vec<String>> {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 2 { usage(); }
+    if args.len() < 2 {
+        usage();
+    }
 
     match args[1].as_str() {
         "scan" => {
-            if args.len() < 3 { usage(); }
+            if args.len() < 3 {
+                usage();
+            }
             let tasks_dir = args[2].clone();
             // --worktrees overrides discovery; otherwise discover via git from tasks_dir.
             let worktrees = parse_worktrees_arg(&args)
                 .unwrap_or_else(|| mt_scanner::discover_worktrees(&PathBuf::from(&tasks_dir)));
             match mt_scanner::scan_tasks(tasks_dir, worktrees) {
                 Ok(nodes) => println!("{}", serde_json::to_string_pretty(&nodes).unwrap()),
-                Err(e) => { eprintln!("Error: {e}"); process::exit(2); }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    process::exit(2);
+                }
             }
         }
         "create" => {
-            if args.len() < 4 { usage(); }
+            if args.len() < 4 {
+                usage();
+            }
             let tasks_dir = args[2].clone();
             let name = args[3].clone();
             let opts = parse_create_opts(&args[4..]);
             match mt_scanner::create_task(tasks_dir, name, opts) {
-                Ok(outcome) => println!("{}", serde_json::to_string_pretty(&outcome.to_cli_json()).unwrap()),
-                Err(e) => { eprintln!("Error: {e}"); process::exit(2); }
+                Ok(outcome) => println!(
+                    "{}",
+                    serde_json::to_string_pretty(&outcome.to_cli_json()).unwrap()
+                ),
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    process::exit(2);
+                }
             }
         }
         "workspaces" => {
+            // Accept multiple roots: `workspaces <dir...>` scans each and merges.
+            // No dir → discover from cwd (back-compat).
             let workspaces = if args.len() >= 3 {
-                let dir = PathBuf::from(&args[2]);
-                mt_scanner::find_all_tasks_dirs_from(&dir)
+                args[2..]
+                    .iter()
+                    .flat_map(|d| mt_scanner::find_all_tasks_dirs_from(&PathBuf::from(d)))
+                    .collect()
             } else {
                 match mt_scanner::find_all_tasks_dirs() {
                     Ok(ws) => ws,
-                    Err(e) => { eprintln!("Error: {e}"); process::exit(2); }
+                    Err(e) => {
+                        eprintln!("Error: {e}");
+                        process::exit(2);
+                    }
                 }
             };
             println!("{}", serde_json::to_string_pretty(&workspaces).unwrap());

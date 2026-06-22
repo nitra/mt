@@ -21,7 +21,8 @@ describe('runMtCli', () => {
       'failed',
       'spawn',
       'invalidate',
-      'kill'
+      'kill',
+      'worktree'
     ])
   })
 

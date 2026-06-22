@@ -10,16 +10,16 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum TaskState {
     Unassigned,
-    Pending,       // h.md exists
-    Waiting,       // a.md exists, deps resolved
-    Blocked,       // a.md exists, deps not resolved
-    PlanReview,    // composite plan awaiting human approval
-    Spawned,       // children materialized, not all resolved
-    Running,       // running_<pid>_until_<ts> sentinel present
-    PendingAudit,  // open audit cycle
-    Resolved,      // accepted fact exists
-    Failed,        // failed_streak >= agent_retry_max
-    Unresolvable,  // unresolvable.md exists (terminal)
+    Pending,      // h.md exists
+    Waiting,      // a.md exists, deps resolved
+    Blocked,      // a.md exists, deps not resolved
+    PlanReview,   // composite plan awaiting human approval
+    Spawned,      // children materialized, not all resolved
+    Running,      // running_<pid>_until_<ts> sentinel present
+    PendingAudit, // open audit cycle
+    Resolved,     // accepted fact exists
+    Failed,       // failed_streak >= agent_retry_max
+    Unresolvable, // unresolvable.md exists (terminal)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,7 +88,12 @@ impl CreateOutcome {
     /// Плаский JSON-контракт CLI (§3.2 spec): поле `created: bool`.
     pub fn to_cli_json(&self) -> serde_json::Value {
         match self {
-            CreateOutcome::Created { name, task_path, flag, deps } => serde_json::json!({
+            CreateOutcome::Created {
+                name,
+                task_path,
+                flag,
+                deps,
+            } => serde_json::json!({
                 "created": true,
                 "name": name,
                 "task_path": task_path,
@@ -107,24 +112,13 @@ impl CreateOutcome {
 
 // ── Frontmatter ───────────────────────────────────────────────────────────────
 
+#[derive(Default)]
 struct Frontmatter {
     created_at: Option<String>,
     budget_sec: Option<u64>,
     budget_hard_sec: Option<u64>,
     deadline: Option<String>,
     hint: Option<String>,
-}
-
-impl Default for Frontmatter {
-    fn default() -> Self {
-        Self {
-            created_at: None,
-            budget_sec: None,
-            budget_hard_sec: None,
-            deadline: None,
-            hint: None,
-        }
-    }
 }
 
 fn parse_frontmatter(content: &str) -> Frontmatter {
@@ -140,16 +134,18 @@ fn parse_frontmatter(content: &str) -> Frontmatter {
         .unwrap_or(lines.len());
     for line in &lines[1..end] {
         let t = line.trim();
-        if t == "---" { break; }
+        if t == "---" {
+            break;
+        }
         if let Some(pos) = t.find(':') {
             let key = t[..pos].trim();
             let val = t[pos + 1..].trim();
             match key {
-                "created_at"      => fm.created_at      = Some(val.to_string()),
-                "budget_sec"      => fm.budget_sec      = val.parse().ok(),
+                "created_at" => fm.created_at = Some(val.to_string()),
+                "budget_sec" => fm.budget_sec = val.parse().ok(),
                 "budget_hard_sec" => fm.budget_hard_sec = val.parse().ok(),
-                "deadline"        => fm.deadline        = Some(val.to_string()),
-                "hint"            => fm.hint            = Some(val.to_string()),
+                "deadline" => fm.deadline = Some(val.to_string()),
+                "hint" => fm.hint = Some(val.to_string()),
                 _ => {}
             }
         }
@@ -187,10 +183,18 @@ fn failed_streak(dir: &Path) -> u64 {
 
 // Reads result: field from audit-result frontmatter (only exception to name-based state rule).
 fn audit_result_success(path: &Path) -> bool {
-    let Ok(content) = fs::read_to_string(path) else { return false };
+    let Ok(content) = fs::read_to_string(path) else {
+        return false;
+    };
     let lines: Vec<&str> = content.lines().collect();
-    if lines.first().map(|l| l.trim()) != Some("---") { return false; }
-    let end = lines[1..].iter().position(|l| l.trim() == "---").map(|i| i + 1).unwrap_or(lines.len());
+    if lines.first().map(|l| l.trim()) != Some("---") {
+        return false;
+    }
+    let end = lines[1..]
+        .iter()
+        .position(|l| l.trim() == "---")
+        .map(|i| i + 1)
+        .unwrap_or(lines.len());
     for line in &lines[1..end] {
         if let Some(val) = line.trim().strip_prefix("result:") {
             return val.trim() == "success";
@@ -210,7 +214,9 @@ enum FactState {
 // A non-latest open audit cycle does not block resolution.
 fn accepted_fact_state(dir: &Path) -> FactState {
     let nnn = max_nnn(dir, "fact_", ".md");
-    if nnn == 0 { return FactState::None; }
+    if nnn == 0 {
+        return FactState::None;
+    }
     let nnn_s = format!("{nnn:03}");
     if !dir.join(format!("pending-audit_{nnn_s}.md")).exists() {
         return FactState::Resolved;
@@ -220,7 +226,11 @@ fn accepted_fact_state(dir: &Path) -> FactState {
         return FactState::PendingAudit;
     }
     // Audit completed: success → resolved; failed → fall through (None).
-    if audit_result_success(&result_path) { FactState::Resolved } else { FactState::None }
+    if audit_result_success(&result_path) {
+        FactState::Resolved
+    } else {
+        FactState::None
+    }
 }
 
 // Local runtime marker running_<pid>_until_<ts> (mirrors JS RUNNING_MARKER_RE /^running_\d+_until_/).
@@ -234,8 +244,12 @@ fn has_running_marker(dir: &Path) -> bool {
 }
 
 fn is_running_marker(name: &str) -> bool {
-    let Some(rest) = name.strip_prefix("running_") else { return false };
-    let Some(idx) = rest.find("_until_") else { return false };
+    let Some(rest) = name.strip_prefix("running_") else {
+        return false;
+    };
+    let Some(idx) = rest.find("_until_") else {
+        return false;
+    };
     idx > 0 && rest[..idx].bytes().all(|b| b.is_ascii_digit())
 }
 
@@ -243,8 +257,49 @@ fn is_running_marker(name: &str) -> bool {
 // NOTE: must stay in sync with sanitizeTaskName in npm/lib/core/state.mjs (shared test vectors).
 pub fn sanitize(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '-' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect()
+}
+
+/// Нормалізує ім'я гілки до безпечного імені директорії у .worktrees/.
+/// Правило: не-alphanum/не-_/не-- → '-', consecutive '-' → '-', trim leading/trailing '-'.
+/// ⚠️ Логіку синхронізовано з JS `sanitizeBranch` у `@7n/mt` (npm/lib/commands/worktree.mjs).
+pub fn sanitize_branch(branch: &str) -> String {
+    let s: String = branch
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    let s = re_collapse_dashes(&s);
+    s.trim_matches('-').to_string()
+}
+
+fn re_collapse_dashes(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut last_dash = false;
+    for c in s.chars() {
+        if c == '-' {
+            if !last_dash {
+                result.push('-');
+            }
+            last_dash = true;
+        } else {
+            result.push(c);
+            last_dash = false;
+        }
+    }
+    result
 }
 
 // running if an active worktree name starts with the sanitized node path.
@@ -256,8 +311,14 @@ fn worktree_matches(path: &str, worktrees: &[String]) -> bool {
 fn plan_decision(dir: &Path, nnn: u64) -> Option<String> {
     let content = fs::read_to_string(dir.join(format!("plan_{nnn:03}.md"))).ok()?;
     let lines: Vec<&str> = content.lines().collect();
-    if lines.first()?.trim() != "---" { return None; }
-    let end = lines[1..].iter().position(|l| l.trim() == "---").map(|i| i + 1).unwrap_or(lines.len());
+    if lines.first()?.trim() != "---" {
+        return None;
+    }
+    let end = lines[1..]
+        .iter()
+        .position(|l| l.trim() == "---")
+        .map(|i| i + 1)
+        .unwrap_or(lines.len());
     for line in &lines[1..end] {
         if let Some(val) = line.trim().strip_prefix("decision:") {
             return Some(val.trim().to_string());
@@ -269,13 +330,21 @@ fn plan_decision(dir: &Path, nnn: u64) -> Option<String> {
 // plan-review / spawned for composite plans (mirrors JS getCompositePlanState).
 fn composite_plan_state(dir: &Path, children: &[TaskNode]) -> Option<TaskState> {
     let nnn = max_nnn(dir, "plan_", ".md");
-    if nnn == 0 { return None; }
-    if plan_decision(dir, nnn).as_deref() != Some("composite") { return None; }
+    if nnn == 0 {
+        return None;
+    }
+    if plan_decision(dir, nnn).as_deref() != Some("composite") {
+        return None;
+    }
     let nnn_s = format!("{nnn:03}");
     let approved = dir.join(format!("plan-approved_{nnn_s}.md")).exists();
     let rejected = dir.join(format!("plan-rejected_{nnn_s}.md")).exists();
-    if !approved && !rejected { return Some(TaskState::PlanReview); }
-    if approved && !children.is_empty() { return Some(TaskState::Spawned); }
+    if !approved && !rejected {
+        return Some(TaskState::PlanReview);
+    }
+    if approved && !children.is_empty() {
+        return Some(TaskState::Spawned);
+    }
     None
 }
 
@@ -335,7 +404,9 @@ fn apply_blocked(nodes: &mut [TaskNode], state_map: &HashMap<String, TaskState>)
     for node in nodes.iter_mut() {
         if node.state == TaskState::Waiting && !node.deps.is_empty() {
             let blocked = node.deps.iter().any(|dep_id| {
-                state_map.get(dep_id).map_or(true, |s| *s != TaskState::Resolved)
+                state_map
+                    .get(dep_id)
+                    .is_none_or(|s| *s != TaskState::Resolved)
             });
             if blocked {
                 node.state = TaskState::Blocked;
@@ -350,7 +421,9 @@ fn apply_blocked(nodes: &mut [TaskNode], state_map: &HashMap<String, TaskState>)
 // ── Deps ──────────────────────────────────────────────────────────────────────
 
 fn collect_deps(deps_root: &Path, current: &Path, result: &mut Vec<String>) {
-    let Ok(entries) = fs::read_dir(current) else { return };
+    let Ok(entries) = fs::read_dir(current) else {
+        return;
+    };
     let mut entries: Vec<_> = entries.flatten().collect();
     entries.sort_by_key(|e| e.file_name());
     for entry in entries {
@@ -369,7 +442,9 @@ fn collect_deps(deps_root: &Path, current: &Path, result: &mut Vec<String>) {
 
 fn read_deps_dir(node_dir: &Path) -> Vec<String> {
     let deps_dir = node_dir.join("deps");
-    if !deps_dir.is_dir() { return vec![]; }
+    if !deps_dir.is_dir() {
+        return vec![];
+    }
     let mut result = vec![];
     collect_deps(&deps_dir, &deps_dir, &mut result);
     result
@@ -377,15 +452,26 @@ fn read_deps_dir(node_dir: &Path) -> Vec<String> {
 
 // ── Node scanner ──────────────────────────────────────────────────────────────
 
-fn scan_dir(dir: &Path, tasks_root: &Path, agent_retry_max: u64, worktrees: &[String]) -> Option<TaskNode> {
-    if !dir.join("task.md").exists() { return None; }
+fn scan_dir(
+    dir: &Path,
+    tasks_root: &Path,
+    agent_retry_max: u64,
+    worktrees: &[String],
+) -> Option<TaskNode> {
+    if !dir.join("task.md").exists() {
+        return None;
+    }
 
     let content = fs::read_to_string(dir.join("task.md")).unwrap_or_default();
     let fm = parse_frontmatter(&content);
 
-    let mode = if dir.join("a.md").exists() { "agent" }
-               else if dir.join("h.md").exists() { "human" }
-               else { "unassigned" };
+    let mode = if dir.join("a.md").exists() {
+        "agent"
+    } else if dir.join("h.md").exists() {
+        "human"
+    } else {
+        "unassigned"
+    };
 
     let deps = read_deps_dir(dir);
 
@@ -405,7 +491,11 @@ fn scan_dir(dir: &Path, tasks_root: &Path, agent_retry_max: u64, worktrees: &[St
     }
 
     let is_composite = !children.is_empty();
-    let id = dir.file_name().and_then(|n| n.to_str()).unwrap_or("unknown").to_string();
+    let id = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
     let path = dir
         .strip_prefix(tasks_root)
         .map(|p| p.to_string_lossy().replace('\\', "/"))
@@ -433,14 +523,20 @@ fn scan_dir(dir: &Path, tasks_root: &Path, agent_retry_max: u64, worktrees: &[St
 fn find_git_root(start: &Path) -> Option<PathBuf> {
     let mut current = start;
     loop {
-        if current.join(".git").exists() { return Some(current.to_path_buf()); }
+        if current.join(".git").exists() {
+            return Some(current.to_path_buf());
+        }
         current = current.parent()?;
     }
 }
 
 fn workspace_label(git_root: &Path, workspace_dir: &Path) -> String {
     if workspace_dir == git_root {
-        git_root.file_name().and_then(|n| n.to_str()).unwrap_or("root").to_string()
+        git_root
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("root")
+            .to_string()
     } else {
         workspace_dir
             .strip_prefix(git_root)
@@ -480,8 +576,7 @@ fn dir_is_gitignored(name: &str, patterns: &[String]) -> bool {
 fn has_task_nodes(dir: &Path) -> bool {
     fs::read_dir(dir).ok().is_some_and(|entries| {
         entries.flatten().any(|e| {
-            e.file_type().map(|t| t.is_dir()).unwrap_or(false)
-                && e.path().join("task.md").exists()
+            e.file_type().map(|t| t.is_dir()).unwrap_or(false) && e.path().join("task.md").exists()
         })
     })
 }
@@ -493,7 +588,9 @@ fn scan_for_workspaces(
     depth: u8,
     inherited_ignores: &[String],
 ) {
-    if depth > 6 { return; }
+    if depth > 6 {
+        return;
+    }
 
     let ignores = load_gitignore(current, inherited_ignores);
 
@@ -502,7 +599,11 @@ fn scan_for_workspaces(
         let mt_dir = fs::read_to_string(&mt_config)
             .ok()
             .and_then(|c| serde_json::from_str::<serde_json::Value>(&c).ok())
-            .and_then(|v| v.get("mt_dir").and_then(|v| v.as_str()).map(|s| current.join(s)))
+            .and_then(|v| {
+                v.get("mt_dir")
+                    .and_then(|v| v.as_str())
+                    .map(|s| current.join(s))
+            })
             .unwrap_or_else(|| current.join("mt"));
         if mt_dir.is_dir() && has_task_nodes(&mt_dir) {
             result.push(WorkspaceInfo {
@@ -524,7 +625,9 @@ fn scan_for_workspaces(
         }
     }
 
-    let Ok(entries) = fs::read_dir(current) else { return };
+    let Ok(entries) = fs::read_dir(current) else {
+        return;
+    };
     let mut subdirs: Vec<_> = entries
         .flatten()
         .filter(|e| {
@@ -592,7 +695,9 @@ pub fn discover_worktrees(start: &Path) -> Vec<String> {
         .current_dir(start)
         .output();
     match output {
-        Ok(out) if out.status.success() => parse_worktree_list(&String::from_utf8_lossy(&out.stdout)),
+        Ok(out) if out.status.success() => {
+            parse_worktree_list(&String::from_utf8_lossy(&out.stdout))
+        }
         _ => vec![],
     }
 }
@@ -604,7 +709,11 @@ pub fn parse_worktree_list(output: &str) -> Vec<String> {
         .filter_map(|line| {
             let path = line.strip_prefix("worktree ")?.trim();
             let name = path.rsplit(['/', '\\']).next().unwrap_or("");
-            if name.is_empty() { None } else { Some(name.to_string()) }
+            if name.is_empty() {
+                None
+            } else {
+                Some(name.to_string())
+            }
         })
         .collect()
 }
@@ -662,7 +771,9 @@ pub fn find_tasks_dir() -> Result<String, String> {
             }
         }
         depth += 1;
-        if depth >= 8 { break; }
+        if depth >= 8 {
+            break;
+        }
         match dir.parent() {
             Some(p) => dir = p,
             None => break,
@@ -690,7 +801,10 @@ pub fn validate_name(name: &str) -> Result<(), String> {
         if seg == "." || seg == ".." {
             return Err(format!("name segment must not be '.' or '..': {name:?}"));
         }
-        if !seg.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-') {
+        if !seg
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+        {
             return Err(format!(
                 "name segment {seg:?} must match [a-z0-9-] (no uppercase/underscore/space): {name:?}"
             ));
@@ -712,7 +826,13 @@ fn read_create_defaults(project_root: &Path) -> CreateDefaults {
     let mode = v
         .as_ref()
         .and_then(|v| v.get("default_mode").and_then(|x| x.as_str()))
-        .map(|s| if s == "agent" { Mode::Agent } else { Mode::Human })
+        .map(|s| {
+            if s == "agent" {
+                Mode::Agent
+            } else {
+                Mode::Human
+            }
+        })
         .unwrap_or(Mode::Human);
     let model_tier = v
         .as_ref()
@@ -723,7 +843,11 @@ fn read_create_defaults(project_root: &Path) -> CreateDefaults {
         .as_ref()
         .and_then(|v| v.get("default_budget_sec").and_then(|x| x.as_u64()))
         .unwrap_or(1800);
-    CreateDefaults { mode, model_tier, budget_sec }
+    CreateDefaults {
+        mode,
+        model_tier,
+        budget_sec,
+    }
 }
 
 /// Найвищий неіснуючий предок `dir` (для відкату — що саме ми створимо).
@@ -774,7 +898,10 @@ pub fn create_task(
 
     // Ідемпотентність (§2.5): існуючий вузол не чіпаємо.
     if task_md.exists() {
-        return Ok(CreateOutcome::Exists { name, task_path: task_path_rel });
+        return Ok(CreateOutcome::Exists {
+            name,
+            task_path: task_path_rel,
+        });
     }
 
     let mode = opts.mode.unwrap_or(defaults.mode);
@@ -851,16 +978,37 @@ pub fn create_task(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn test_sanitize_branch() {
+        assert_eq!(sanitize_branch("feat/my-feature"), "feat-my-feature");
+        assert_eq!(sanitize_branch("main"), "main");
+        assert_eq!(sanitize_branch("feature/fix:bug"), "feature-fix-bug");
+        assert_eq!(sanitize_branch("-leading"), "leading");
+        assert_eq!(sanitize_branch("trailing-"), "trailing");
+        assert_eq!(sanitize_branch("double//slash"), "double-slash");
+        assert_eq!(sanitize_branch("a b c"), "a-b-c");
+    }
+
     use super::*;
     use std::fs;
     use tempfile::tempdir;
 
     /// Builds <tmp>/mt/<node>/ with `files` (name, content), scans, returns that node's state.
     /// `.mt.json` (with optional agent_retry_max) lives in the project root (parent of mt/).
-    fn state_of(node: &str, files: &[(&str, &str)], worktrees: &[&str], retry: Option<u64>) -> TaskState {
+    fn state_of(
+        node: &str,
+        files: &[(&str, &str)],
+        worktrees: &[&str],
+        retry: Option<u64>,
+    ) -> TaskState {
         let root = tempdir().unwrap();
         if let Some(m) = retry {
-            fs::write(root.path().join(".mt.json"), format!("{{\"agent_retry_max\": {m}}}")).unwrap();
+            fs::write(
+                root.path().join(".mt.json"),
+                format!("{{\"agent_retry_max\": {m}}}"),
+            )
+            .unwrap();
         }
         let tasks_root = root.path().join("mt");
         let node_dir = tasks_root.join(node);
@@ -870,13 +1018,20 @@ mod tests {
         }
         let wt: Vec<String> = worktrees.iter().map(|s| (*s).to_string()).collect();
         let nodes = scan_tasks(tasks_root.to_string_lossy().into_owned(), wt).unwrap();
-        find_node(&nodes, node).expect("node not found").state.clone()
+        find_node(&nodes, node)
+            .expect("node not found")
+            .state
+            .clone()
     }
 
     fn find_node<'a>(nodes: &'a [TaskNode], path: &str) -> Option<&'a TaskNode> {
         for n in nodes {
-            if n.path == path { return Some(n); }
-            if let Some(found) = find_node(&n.children, path) { return Some(found); }
+            if n.path == path {
+                return Some(n);
+            }
+            if let Some(found) = find_node(&n.children, path) {
+                return Some(found);
+            }
         }
         None
     }
@@ -887,30 +1042,55 @@ mod tests {
     // ── unassigned / pending / waiting ──
     #[test]
     fn unassigned_when_no_executor() {
-        assert_eq!(state_of("task", &[("task.md", "")], &[], None), TaskState::Unassigned);
+        assert_eq!(
+            state_of("task", &[("task.md", "")], &[], None),
+            TaskState::Unassigned
+        );
     }
     #[test]
     fn pending_with_h_md() {
-        assert_eq!(state_of("task", &[("task.md", ""), ("h.md", "")], &[], None), TaskState::Pending);
         assert_eq!(
-            state_of("task", &[("task.md", ""), ("h.md", ""), ("plan_001.md", "")], &[], None),
+            state_of("task", &[("task.md", ""), ("h.md", "")], &[], None),
+            TaskState::Pending
+        );
+        assert_eq!(
+            state_of(
+                "task",
+                &[("task.md", ""), ("h.md", ""), ("plan_001.md", "")],
+                &[],
+                None
+            ),
             TaskState::Pending
         );
     }
     #[test]
     fn waiting_with_a_md() {
-        assert_eq!(state_of("task", &[("task.md", ""), ("a.md", "")], &[], None), TaskState::Waiting);
+        assert_eq!(
+            state_of("task", &[("task.md", ""), ("a.md", "")], &[], None),
+            TaskState::Waiting
+        );
     }
     #[test]
     fn waiting_when_streak_below_max() {
-        let files = [("task.md", ""), ("a.md", ""), ("run_001.md", ""), ("run_002.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("run_001.md", ""),
+            ("run_002.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Waiting); // streak 2 < 3
     }
 
     // ── failed ──
     #[test]
     fn failed_when_streak_reaches_max() {
-        let files = [("task.md", ""), ("a.md", ""), ("run_001.md", ""), ("run_002.md", ""), ("run_003.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("run_001.md", ""),
+            ("run_002.md", ""),
+            ("run_003.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Failed); // streak 3 >= 3
     }
     #[test]
@@ -921,7 +1101,13 @@ mod tests {
     #[test]
     fn not_failed_when_fact_resets_streak() {
         // fact_001 with no pending-audit → resolved (checked before failed)
-        let files = [("task.md", ""), ("a.md", ""), ("run_001.md", ""), ("fact_001.md", ""), ("run_002.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("run_001.md", ""),
+            ("fact_001.md", ""),
+            ("run_002.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Resolved);
     }
 
@@ -929,7 +1115,12 @@ mod tests {
     #[test]
     fn unresolvable_marker() {
         assert_eq!(
-            state_of("task", &[("task.md", ""), ("a.md", ""), ("unresolvable.md", "")], &[], None),
+            state_of(
+                "task",
+                &[("task.md", ""), ("a.md", ""), ("unresolvable.md", "")],
+                &[],
+                None
+            ),
             TaskState::Unresolvable
         );
     }
@@ -937,18 +1128,28 @@ mod tests {
     // ── running: marker + worktree ──
     #[test]
     fn running_marker() {
-        let files = [("task.md", ""), ("a.md", ""), ("running_4821_until_1234567890", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("running_4821_until_1234567890", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Running);
     }
     #[test]
     fn running_worktree_match() {
         let files = [("task.md", ""), ("a.md", "")];
-        assert_eq!(state_of("my-task", &files, &["my-task-1234567890"], None), TaskState::Running);
+        assert_eq!(
+            state_of("my-task", &files, &["my-task-1234567890"], None),
+            TaskState::Running
+        );
     }
     #[test]
     fn not_running_when_worktree_mismatch() {
         let files = [("task.md", ""), ("a.md", "")];
-        assert_eq!(state_of("my-task", &files, &["other-task-1234567890"], None), TaskState::Waiting);
+        assert_eq!(
+            state_of("my-task", &files, &["other-task-1234567890"], None),
+            TaskState::Waiting
+        );
     }
     #[test]
     fn running_worktree_nested_cross_level() {
@@ -964,7 +1165,10 @@ mod tests {
             vec!["research-analyze-1234567890".to_string()],
         )
         .unwrap();
-        assert_eq!(find_node(&nodes, "research/analyze").unwrap().state, TaskState::Running);
+        assert_eq!(
+            find_node(&nodes, "research/analyze").unwrap().state,
+            TaskState::Running
+        );
     }
 
     // ── plan-review / spawned ──
@@ -980,7 +1184,12 @@ mod tests {
     }
     #[test]
     fn composite_approved_without_children_falls_to_waiting() {
-        let files = [("task.md", ""), ("a.md", ""), ("plan_001.md", COMPOSITE), ("plan-approved_001.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("plan_001.md", COMPOSITE),
+            ("plan-approved_001.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Waiting);
     }
     #[test]
@@ -999,45 +1208,71 @@ mod tests {
         fs::write(parent.join("plan_001.md"), COMPOSITE).unwrap();
         fs::write(parent.join("plan-approved_001.md"), "").unwrap();
         fs::write(child.join("task.md"), "").unwrap();
-        let nodes = scan_tasks(root.path().join("mt").to_string_lossy().into_owned(), vec![]).unwrap();
-        assert_eq!(find_node(&nodes, "parent").unwrap().state, TaskState::Spawned);
+        let nodes = scan_tasks(
+            root.path().join("mt").to_string_lossy().into_owned(),
+            vec![],
+        )
+        .unwrap();
+        assert_eq!(
+            find_node(&nodes, "parent").unwrap().state,
+            TaskState::Spawned
+        );
     }
 
     // ── pending-audit / resolved (latest fact only) ──
     #[test]
     fn pending_audit_open_cycle() {
-        let files = [("task.md", ""), ("a.md", ""), ("fact_001.md", ""), ("pending-audit_001.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("pending-audit_001.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::PendingAudit);
     }
     #[test]
     fn resolved_when_newer_fact_supersedes_audit() {
         // fact_001 has open audit, but fact_002 (latest) has none → resolved
         let files = [
-            ("task.md", ""), ("a.md", ""),
-            ("fact_001.md", ""), ("pending-audit_001.md", ""), ("fact_002.md", ""),
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("pending-audit_001.md", ""),
+            ("fact_002.md", ""),
         ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Resolved);
     }
     #[test]
     fn resolved_plain_fact() {
         assert_eq!(
-            state_of("task", &[("task.md", ""), ("a.md", ""), ("fact_001.md", "")], &[], None),
+            state_of(
+                "task",
+                &[("task.md", ""), ("a.md", ""), ("fact_001.md", "")],
+                &[],
+                None
+            ),
             TaskState::Resolved
         );
     }
     #[test]
     fn resolved_audit_success() {
         let files = [
-            ("task.md", ""), ("a.md", ""), ("fact_001.md", ""),
-            ("pending-audit_001.md", ""), ("audit-result_001.md", "---\nresult: success\n---\n"),
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("pending-audit_001.md", ""),
+            ("audit-result_001.md", "---\nresult: success\n---\n"),
         ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Resolved);
     }
     #[test]
     fn audit_failed_falls_through_to_waiting() {
         let files = [
-            ("task.md", ""), ("a.md", ""), ("fact_001.md", ""),
-            ("pending-audit_001.md", ""), ("audit-result_001.md", "---\nresult: failed\n---\n"),
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("pending-audit_001.md", ""),
+            ("audit-result_001.md", "---\nresult: failed\n---\n"),
         ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Waiting);
     }
@@ -1045,29 +1280,53 @@ mod tests {
     // ── priority chain ──
     #[test]
     fn resolved_over_unresolvable() {
-        let files = [("task.md", ""), ("a.md", ""), ("fact_001.md", ""), ("unresolvable.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("unresolvable.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Resolved);
     }
     #[test]
     fn pending_audit_over_resolved() {
-        let files = [("task.md", ""), ("a.md", ""), ("fact_001.md", ""), ("pending-audit_001.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("fact_001.md", ""),
+            ("pending-audit_001.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::PendingAudit);
     }
     #[test]
     fn unresolvable_over_running_marker() {
-        let files = [("task.md", ""), ("a.md", ""), ("running_1_until_9999999999", ""), ("unresolvable.md", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("running_1_until_9999999999", ""),
+            ("unresolvable.md", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Unresolvable);
     }
     #[test]
     fn running_over_plan_review() {
-        let files = [("task.md", ""), ("a.md", ""), ("plan_001.md", COMPOSITE), ("running_1_until_9999999999", "")];
+        let files = [
+            ("task.md", ""),
+            ("a.md", ""),
+            ("plan_001.md", COMPOSITE),
+            ("running_1_until_9999999999", ""),
+        ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Running);
     }
     #[test]
     fn unresolvable_over_failed() {
         let files = [
-            ("task.md", ""), ("a.md", ""),
-            ("run_001.md", ""), ("run_002.md", ""), ("run_003.md", ""), ("unresolvable.md", ""),
+            ("task.md", ""),
+            ("a.md", ""),
+            ("run_001.md", ""),
+            ("run_002.md", ""),
+            ("run_003.md", ""),
+            ("unresolvable.md", ""),
         ];
         assert_eq!(state_of("task", &files, &[], None), TaskState::Unresolvable);
     }
@@ -1103,7 +1362,10 @@ mod tests {
     #[test]
     fn parse_worktree_list_extracts_names() {
         let out = "worktree /repo\nHEAD abc\n\nworktree /repo/.worktrees/my-task-123\nHEAD def\n";
-        assert_eq!(parse_worktree_list(out), vec!["repo".to_string(), "my-task-123".to_string()]);
+        assert_eq!(
+            parse_worktree_list(out),
+            vec!["repo".to_string(), "my-task-123".to_string()]
+        );
     }
 
     // ── create_task (write-side) ──
@@ -1123,10 +1385,18 @@ mod tests {
     #[test]
     fn create_writes_task_flag_and_frontmatter() {
         let (root, mt) = create_repo(None);
-        let opts = CreateOpts { mode: Some(Mode::Human), ..Default::default() };
+        let opts = CreateOpts {
+            mode: Some(Mode::Human),
+            ..Default::default()
+        };
         let outcome = create_task(mt.clone(), "demo".to_string(), opts).unwrap();
         match outcome {
-            CreateOutcome::Created { name, task_path, flag, deps } => {
+            CreateOutcome::Created {
+                name,
+                task_path,
+                flag,
+                deps,
+            } => {
                 assert_eq!(name, "demo");
                 assert_eq!(task_path, "demo/task.md");
                 assert_eq!(flag, "h.md");
@@ -1136,7 +1406,10 @@ mod tests {
         }
         let task_md = fs::read_to_string(root.path().join("mt/demo/task.md")).unwrap();
         // schema_version must be the FIRST frontmatter field.
-        assert!(task_md.starts_with("---\nschema_version: 1\n"), "got: {task_md}");
+        assert!(
+            task_md.starts_with("---\nschema_version: 1\n"),
+            "got: {task_md}"
+        );
         assert!(task_md.contains("\nbudget_sec: 1800\n")); // default
         assert!(task_md.contains("\nhint: atomic\n"));
         // No mode/executor/deps fields in frontmatter (§2.6/§2.7).
@@ -1180,14 +1453,25 @@ mod tests {
     #[test]
     fn create_nested_name_recursive_mkdir() {
         let (root, mt) = create_repo(None);
-        create_task(mt, "research/collect-data".to_string(), CreateOpts::default()).unwrap();
-        assert!(root.path().join("mt/research/collect-data/task.md").exists());
+        create_task(
+            mt,
+            "research/collect-data".to_string(),
+            CreateOpts::default(),
+        )
+        .unwrap();
+        assert!(root
+            .path()
+            .join("mt/research/collect-data/task.md")
+            .exists());
     }
 
     #[test]
     fn create_dep_writes_empty_edge_file() {
         let (root, mt) = create_repo(None);
-        let opts = CreateOpts { deps: vec!["upstream".to_string()], ..Default::default() };
+        let opts = CreateOpts {
+            deps: vec!["upstream".to_string()],
+            ..Default::default()
+        };
         let outcome = create_task(mt, "downstream".to_string(), opts).unwrap();
         assert!(matches!(&outcome, CreateOutcome::Created { deps, .. } if deps == &["upstream"]));
         let edge = root.path().join("mt/downstream/deps/upstream.md");
