@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-07-04
+
+### Changed
+
+- Ядро (nnn, frontmatter, state, config, worktree, scanner) перенесено в Rust-крейт mt-core; lib/core — тонкі обгортки над napi-addon (native.mjs loader), vitest-сюїта як conformance gate
+
 ## [0.5.1] - 2026-06-18
 
 ### Fixed
