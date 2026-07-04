@@ -2,7 +2,8 @@
  * Git worktree management для mt task system.
  *
  * Atomic mkdir lock: EEXIST → skip (вже запущено).
- * Worktree name: sanitize(task-path) + '-' + epoch (секунди).
+ * Worktree name: sanitize(task-path) + '-' + epoch (секунди) — іменування та
+ * матчінг делеговано Rust-ядру (crates/mt-core/src/worktree.rs через napi-аддон).
  *
  * Всі git операції через execSync (node:child_process). FS через ін'єкцію.
  */
@@ -10,7 +11,7 @@ import { execSync } from 'node:child_process'
 import { mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { sanitizeTaskName } from './state.mjs'
+import { loadNative } from './native.mjs'
 
 /**
  * Генерує ім'я worktree для задачі.
@@ -20,8 +21,7 @@ import { sanitizeTaskName } from './state.mjs'
  */
 export function makeWorktreeName(taskPath, epochSec) {
   const epoch = epochSec ?? Math.floor(Date.now() / 1000)
-  const sanitized = sanitizeTaskName(taskPath.replaceAll('/', '-'))
-  return `${sanitized}-${epoch}`
+  return loadNative().makeWorktreeName(taskPath, epoch)
 }
 
 /**
@@ -192,7 +192,6 @@ export function listActiveWorktrees(root, deps = {}) {
  */
 export function findTaskWorktree(taskPath, worktreesDir, deps = {}) {
   const readdirSyncFn = deps.readdirSync ?? readdirSync
-  const prefix = sanitizeTaskName(taskPath.replaceAll('/', '-'))
 
   let entries
   try {
@@ -201,6 +200,6 @@ export function findTaskWorktree(taskPath, worktreesDir, deps = {}) {
     return null
   }
 
-  const match = entries.find(name => name.startsWith(prefix + '-') || name === prefix)
+  const match = loadNative().findWorktreeMatch(entries, taskPath)
   return match ? join(worktreesDir, match) : null
 }

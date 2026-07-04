@@ -4,7 +4,7 @@
  * Конвенція (правильно та ефективно): checkout у `<worktrees_dir>/<sanitize_branch(branch)>/`,
  * інвентар — окремо в `<worktrees_dir>/.meta/<sanitized>.md`, тож `<worktrees_dir>/` містить
  * лише worktree-каталоги (+ `.meta/`). Worktree **ефемерний**: `remove` прибирає і checkout,
- * і git-гілку. sanitizeBranch — синхронізовано з Rust `sanitize_branch` у scanner/src/lib.rs.
+ * і git-гілку. sanitizeBranch — синхронізовано з Rust `sanitize_branch` у crates/mt-core/src/lib.rs.
  * @typedef {object} WorktreeCtx
  * @property {string} root корінь репо
  * @property {string} worktreesDir абсолютний шлях до worktrees_dir
@@ -41,8 +41,7 @@ function sanitizeBranch(branch) {
   let prevDash = false
   for (const ch of branch) {
     const isAllow =
-      (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-      (ch >= '0' && ch <= '9') || ch === '_' || ch === '-'
+      (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_' || ch === '-'
     const out = isAllow ? ch : '-'
     if (out === '-') {
       if (!prevDash) result += '-'
@@ -164,7 +163,9 @@ function activeCheckoutNames(root, execSyncFn) {
  */
 function inventoryNames(worktreesDir, readdir) {
   try {
-    return readdir(metaDirPath(worktreesDir)).filter(f => f.endsWith('.md')).map(f => f.slice(0, -3))
+    return readdir(metaDirPath(worktreesDir))
+      .filter(f => f.endsWith('.md'))
+      .map(f => f.slice(0, -3))
   } catch {
     return []
   }

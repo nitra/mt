@@ -1,0 +1,21 @@
+{
+  "name": "@7n/mt-napi",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Build-обгортка napi-аддона mt (артефакти йдуть у платформні підпакети @7n/mt-*)",
+  "license": "ISC",
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.6.0"
+  },
+  "napi": {
+    "binaryName": "mt",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-unknown-linux-gnu"
+    ]
+  }
+}

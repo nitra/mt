@@ -58,3 +58,21 @@ Chosen: **створення задачі — у крейті `mt-scanner`**, с
 
 `docs/spec-task-create-rust-integration.md` (write-side), `docs/spec-scanner-rust-integration.md`
 (read-side counterpart), `docs/mt.md` (файловий контракт вузла).
+
+## Update 2026-06-14
+
+### validate_name відхиляє некоректні імена замість sanitize
+
+Специфікація §8 вимагає суворої відмови (exit 2) замість мовчазного виправлення символів. Нова функція `validate_name` (Rust) / `validateTaskName` (JS) відхиляє імена з uppercase, пробілами, `_`, `..`, traversal, порожніми сегментами, загальною довжиною > 100 символів. Існуючий `sanitize` у `scanner/src/lib.rs:183` залишається незмінним (використовується у worktree-matching з іншою семантикою).
+
+### Спільні тест-вектори Rust↔JS у `name-vectors.json`
+
+Для гарантування синхронності правил між реалізаціями використовується єдиний файл `npm/lib/tests/fixtures/name-vectors.json`. Rust-тести споживають його через `include_str!`, JS-тести — через `import ... with { type: "json" }` у `init.test.mjs`. Структура: `{ "valid": [...], "invalid": { "uppercase": [...], "spaces": [...], "underscore": [...], "double_dot": [...], "traversal": [...], "empty_segment": [...], "too_long": [...] } }`.
+
+### Атомарний запис задачі через tmp-dir + rename
+
+Запис відбувається у тимчасову директорію `<name>.<uuid>.tmp` всередині `tasks_dir`, після чого `fs::rename` переміщує її у фінальний шлях. При помилці tmp-директорія видаляється через `fs::remove_dir_all`. `fs::rename` атомарна в межах одного filesystem; розміщення tmp-dir у тому ж `tasks_dir` мінімізує ризик cross-filesystem операції. Залежність: `uuid = { version = "1", features = ["v4"] }` у `scanner/Cargo.toml`.
+
+### chrono для ISO-8601 у created_at
+
+Поле `created_at` у frontmatter `task.md` генерується через `chrono::Utc::now().to_rfc3339()`. Залежність: `chrono = { version = "0.4", features = ["serde"] }` у `scanner/Cargo.toml`.

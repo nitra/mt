@@ -41,7 +41,7 @@ function fakeSpawn(response) {
 }
 
 describe('parseInitArgs', () => {
-  test('перший non-flag — ім\'я, решта — прапорці вербатим', () => {
+  test("перший non-flag — ім'я, решта — прапорці вербатим", () => {
     const r = parseInitArgs(['research/x', '--mode', 'agent', '--dep', 'a', '--dep', 'b'])
     expect(r.name).toBe('research/x')
     expect(r.flags).toEqual(['--mode', 'agent', '--dep', 'a', '--dep', 'b'])
@@ -87,7 +87,7 @@ describe('mt init (шим над mt-scanner create)', () => {
     expect(calls).toHaveLength(0)
   })
 
-  test('невалідне ім\'я → exit 1, бінарник не викликано', () => {
+  test("невалідне ім'я → exit 1, бінарник не викликано", () => {
     const { fn, calls } = fakeSpawn({ status: 0, stdout: '{}' })
     expect(init(['Bad Name'], { spawnSync: fn, binPath: '/fake', log: vi.fn() })).toBe(1)
     expect(calls).toHaveLength(0)

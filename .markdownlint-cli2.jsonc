@@ -1,6 +1,6 @@
 {
   "gitignore": true,
-  "ignores": ["docs/adr/**"],
+  "ignores": ["docs/adr/**", ".agents/**"],
   "config": {
     "default": true,
     "MD013": false,

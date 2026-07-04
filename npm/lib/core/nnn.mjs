@@ -1,15 +1,12 @@
 /**
  * NNN-нумерація для артефактів задач (run_NNN.md, fact_NNN.md, тощо).
  *
- * Всі функції — чисті утиліти, файлову систему отримують через ін'єкцію.
+ * Тонка обгортка над Rust-ядром (crates/mt-core/src/nnn.rs через napi-аддон):
+ * список файлів досі надходить через ін'єкцію readdirSync (тестованість без FS),
+ * а вся NNN-логіка виконується в Rust.
  * NNN = рядок з ведучими нулями до 3 цифр: '001', '002', …
  */
-
-const RUN_FILE_RE = /^run_(\d+)\.md$/
-const PLAN_FILE_RE = /^plan_(\d+)\.md$/
-const FACT_FILE_RE = /^fact_(\d+)\.md$/
-const PENDING_AUDIT_FILE_RE = /^pending-audit_(\d+)\.md$/
-const AUDIT_RESULT_FILE_RE = /^audit-result_(\d+)\.md$/
+import { loadNative } from './native.mjs'
 
 /**
  * Форматує число як NNN рядок (три цифри з ведучими нулями).
@@ -17,25 +14,7 @@ const AUDIT_RESULT_FILE_RE = /^audit-result_(\d+)\.md$/
  * @returns {string} '001', '002', …
  */
 export function padNNN(n) {
-  return String(n).padStart(3, '0')
-}
-
-/**
- * Знаходить максимальний NNN серед файлів що відповідають regex, або 0 якщо не знайдено.
- * @param {string[]} files список файлів директорії
- * @param {RegExp} re regex з групою захоплення числа
- * @returns {number} максимальний NNN або 0
- */
-function maxNNN(files, re) {
-  let max = 0
-  for (const f of files) {
-    const m = f.match(re)
-    if (m) {
-      const n = parseInt(m[1], 10)
-      if (n > max) max = n
-    }
-  }
-  return max
+  return loadNative().padNnn(n)
 }
 
 /**
@@ -45,12 +24,7 @@ function maxNNN(files, re) {
  * @returns {string} наступний NNN рядок
  */
 export function nextRunNNN(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  let count = 0
-  for (const f of files) {
-    if (RUN_FILE_RE.test(f)) count++
-  }
-  return padNNN(count + 1)
+  return loadNative().nextRunNnn(readdirSync(taskDir))
 }
 
 /**
@@ -60,8 +34,7 @@ export function nextRunNNN(taskDir, readdirSync) {
  * @returns {string} наступний NNN рядок
  */
 export function nextPlanNNN(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  return padNNN(maxNNN(files, PLAN_FILE_RE) + 1)
+  return loadNative().nextPlanNnn(readdirSync(taskDir))
 }
 
 /**
@@ -71,9 +44,7 @@ export function nextPlanNNN(taskDir, readdirSync) {
  * @returns {string | null} NNN рядок або null
  */
 export function latestFactNNN(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  const m = maxNNN(files, FACT_FILE_RE)
-  return m > 0 ? padNNN(m) : null
+  return loadNative().latestFactNnn(readdirSync(taskDir))
 }
 
 /**
@@ -83,9 +54,7 @@ export function latestFactNNN(taskDir, readdirSync) {
  * @returns {string | null} NNN рядок або null
  */
 export function latestPendingAuditNNN(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  const m = maxNNN(files, PENDING_AUDIT_FILE_RE)
-  return m > 0 ? padNNN(m) : null
+  return loadNative().latestPendingAuditNnn(readdirSync(taskDir))
 }
 
 /**
@@ -95,7 +64,5 @@ export function latestPendingAuditNNN(taskDir, readdirSync) {
  * @returns {string | null} NNN рядок або null
  */
 export function latestAuditResultNNN(taskDir, readdirSync) {
-  const files = readdirSync(taskDir)
-  const m = maxNNN(files, AUDIT_RESULT_FILE_RE)
-  return m > 0 ? padNNN(m) : null
+  return loadNative().latestAuditResultNnn(readdirSync(taskDir))
 }

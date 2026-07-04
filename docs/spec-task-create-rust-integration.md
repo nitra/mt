@@ -3,7 +3,7 @@
 Статус: **погоджено — готово до реалізації** (рішення §2; §12 закрито)
 Дата: 2026-06-13
 
-> **Принцип (директива користувача):** *усе, що стосується роботи з файловою системою, має бути в Rust.* Симетрично до скану (читання), **створення** задачі — теж ФС-операція (mkdir + запис `task.md` + прапор `a.md`/`h.md` + `deps/`), тож її реалізація переноситься в крейт `mt-scanner`. JS-команда `mt init` стає тонким шимом, що викликає бінарник і парсить JSON; `task` Tauri-застосунок викликає **ту саму** крейт-функцію напряму.
+> **Принцип (директива користувача):** _усе, що стосується роботи з файловою системою, має бути в Rust._ Симетрично до скану (читання), **створення** задачі — теж ФС-операція (mkdir + запис `task.md` + прапор `a.md`/`h.md` + `deps/`), тож її реалізація переноситься в крейт `mt-scanner`. JS-команда `mt init` стає тонким шимом, що викликає бінарник і парсить JSON; `task` Tauri-застосунок викликає **ту саму** крейт-функцію напряму.
 
 Пов'язані документи: `docs/spec-scanner-rust-integration.md` (read-side; цей документ — write-side counterpart), `docs/mt.md` (файловий контракт вузла).
 
@@ -90,10 +90,10 @@ Defaults беруться з `.mt.json` (`default_mode`, `default_model_tier`, `
 
 ```yaml
 ---
-schema_version: 1            # ПЕРШЕ поле (інваріант docs/mt.md); лише нові файли (§2.8)
+schema_version: 1 # ПЕРШЕ поле (інваріант docs/mt.md); лише нові файли (§2.8)
 created_at: <ISO-8601>
-budget_sec: 600              # або --budget-sec / .mt.json default_budget_sec
-hint: atomic                 # або --hint
+budget_sec: 600 # або --budget-sec / .mt.json default_budget_sec
+hint: atomic # або --hint
 ---
 ```
 
@@ -120,7 +120,7 @@ hint: atomic                 # або --hint
 За `docs/mt.md` **хто** виконує визначає прапор-файл, а не поле frontmatter. Сканер деривує стан саме з них (`Pending` ⇐ `h.md`, `Waiting` ⇐ `a.md`). Тому `create`:
 
 - `--mode human` → створює `h.md` (порожній або з `qualification`);
-- `--mode agent`  → створює `a.md` (з `model_tier`, `skills`);
+- `--mode agent` → створює `a.md` (з `model_tier`, `skills`);
 - **ніколи обидва**.
 
 ⚠️ Це виправляє чинну ваду: `mt init` пише `mode: human` у frontmatter, але **не** створює `h.md` → свіжа задача сканується як `Unassigned` замість `Pending`. Після цієї спеки create пише прапор → стан коректний одразу. Поля `mode`/`executor`/`interactive` із frontmatter прибрано — прапор єдине джерело (§2.6).
@@ -160,13 +160,16 @@ hint: atomic                 # або --hint
 ## 7. Інтеграція в `task` (Tauri)
 
 - `app/src-tauri/src/lib.rs`: додати
+
   ```rust
   #[tauri::command]
   fn create_task(tasks_dir: String, name: String, opts: CreateOpts) -> Result<CreateOutcome, String> {
       mt_scanner::create_task(tasks_dir, name, opts)
   }
   ```
+
   і зареєструвати в `generate_handler![... create_task]`.
+
 - Застосунок **уже** залежить від крейта (`mt-scanner = { git = ... }`, patch на локальний шлях) → жодного нового рантайму, бінарник не потрібен.
 - Фронт (окрема `task`-side спека за n-flow, `docs/specs/`): кнопка «+», форма (name + mode + опційні поля) → `invoke('create_task', ...)` → `scanAll()` для рефрешу. UI-частина поза цим документом — тут фіксуємо лише Rust-контракт, що його UI споживає.
 
@@ -186,12 +189,12 @@ hint: atomic                 # або --hint
 
 ## 10. Тести
 
-| Рівень | Дія |
-|---|---|
+| Рівень                           | Дія                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Rust unit (`scanner/src/lib.rs`) | `create_task`: успіх (файли+прапор створено, frontmatter коректний, `schema_version:1` перший), ідемпотентність (exists → не перезаписує), вкладені імена (`a/b/c` → рекурсивний mkdir), `--dep` пише `deps/<id>.md`, валідація (відхилення невалідних/traversal імен) |
-| Rust ↔ JS вектори | спільні тест-вектори валідації імен (ті самі входи/виходи в Rust і в JS-тесті шима) — як `sanitize` у read-спеці |
-| JS (`init.test.mjs`) | переписати з віртуальної ФС на `MT_SCANNER_BIN` + tmp-дерево (як `run.test.mjs` у read-спеці); перевірити парсинг JSON і exit-коди |
-| Tauri (опц.) | smoke: `create_task` у tmp `tasks_dir` → файл існує |
+| Rust ↔ JS вектори                | спільні тест-вектори валідації імен (ті самі входи/виходи в Rust і в JS-тесті шима) — як `sanitize` у read-спеці                                                                                                                                                       |
+| JS (`init.test.mjs`)             | переписати з віртуальної ФС на `MT_SCANNER_BIN` + tmp-дерево (як `run.test.mjs` у read-спеці); перевірити парсинг JSON і exit-коди                                                                                                                                     |
+| Tauri (опц.)                     | smoke: `create_task` у tmp `tasks_dir` → файл існує                                                                                                                                                                                                                    |
 
 Coverage/mutation-гарантії авторингу переносяться в `cargo test` (JS більше не страхує).
 

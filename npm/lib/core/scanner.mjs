@@ -1,14 +1,17 @@
 /**
- * DAG-сканер задач — тонкий шим над Rust-бінарником `mt-scanner`.
+ * DAG-сканер задач — тонкий шим над Rust-ядром mt-core.
  *
  * Уся робота з файловою системою (обхід задач, деривація станів, worktree→running)
- * виконується в Rust. Цей модуль лише запускає бінарник, парсить JSON-дерево і
- * приводить його до плоского контракту, який очікують команди, плюс чисто-графові
- * операції (топосорт). Нічого не читає з диска напряму.
+ * виконується в Rust. За замовчуванням — прямий виклик napi-аддона (native.mjs);
+ * транзиційний шлях через бінарник `mt-scanner` лишається для ін'єкцій тестів
+ * (binPath/spawnSync) та явного override MT_SCANNER_BIN. Цей модуль лише приводить
+ * JSON-дерево до плоского контракту команд, плюс чисто-графові операції (топосорт).
  */
 import { execSync, spawnSync } from 'node:child_process'
 import { join } from 'node:path'
+import { env as procEnv } from 'node:process'
 
+import { loadNative } from './native.mjs'
 import { scannerBin } from './scanner-bin.mjs'
 
 /**
@@ -69,6 +72,14 @@ function flatten(tree, mtDir, out = []) {
  * @returns {TaskInfo[]} плоский список задач
  */
 function runScanner(mtDir, activeWorktrees, deps = {}) {
+  // Транзиційний subprocess-шлях: лише для ін'єкцій тестів або явного override.
+  const useSubprocess = deps.binPath || deps.spawnSync || procEnv.MT_SCANNER_BIN
+  if (!useSubprocess) {
+    // Порожній список === відсутній --worktrees у CLI: аддон сам виявляє через git.
+    const wtList = activeWorktrees ? [...activeWorktrees] : []
+    return flatten(loadNative().scanTasks(mtDir, wtList.length > 0 ? wtList : null), mtDir)
+  }
+
   const bin = deps.binPath ?? scannerBin()
   const run = deps.spawnSync ?? spawnSync
 

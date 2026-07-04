@@ -4,6 +4,12 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+pub mod artifacts;
+pub mod config;
+pub mod frontmatter;
+pub mod nnn;
+pub mod worktree;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -16,6 +22,7 @@ pub enum TaskState {
     PlanReview,   // composite plan awaiting human approval
     Spawned,      // children materialized, not all resolved
     Running,      // running_<pid>_until_<ts> sentinel present
+    Stalled,      // remote claim lease expired (needs claim refs — not derived by local scan)
     PendingAudit, // open audit cycle
     Resolved,     // accepted fact exists
     Failed,       // failed_streak >= agent_retry_max
@@ -452,11 +459,20 @@ fn read_deps_dir(node_dir: &Path) -> Vec<String> {
 
 // ── Node scanner ──────────────────────────────────────────────────────────────
 
+// Spec «Монорепо»: scan пропускає `.gitignore`d, приховані (`.`) та
+// `node_modules`/`target`/`dist`/`build` директорії.
+fn scan_skip_dir(name: &str, ignore_patterns: &[String]) -> bool {
+    name.starts_with('.')
+        || matches!(name, "node_modules" | "target" | "dist" | "build")
+        || dir_is_gitignored(name, ignore_patterns)
+}
+
 fn scan_dir(
     dir: &Path,
     tasks_root: &Path,
     agent_retry_max: u64,
     worktrees: &[String],
+    inherited_ignores: &[String],
 ) -> Option<TaskNode> {
     if !dir.join("task.md").exists() {
         return None;
@@ -475,16 +491,27 @@ fn scan_dir(
 
     let deps = read_deps_dir(dir);
 
-    // Scan children; skip history/ and other non-node dirs (no task.md = None).
+    // Scan children; skip history/ and other non-node dirs (no task.md = None),
+    // plus hidden/denylisted/.gitignore'd dirs per spec «Монорепо».
+    let ignores = load_gitignore(dir, inherited_ignores);
     let mut children: Vec<TaskNode> = Vec::new();
     if let Ok(entries) = fs::read_dir(dir) {
         let mut subdirs: Vec<_> = entries
             .flatten()
-            .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
+            .filter(|e| {
+                e.file_type().map(|t| t.is_dir()).unwrap_or(false)
+                    && !scan_skip_dir(&e.file_name().to_string_lossy(), &ignores)
+            })
             .collect();
         subdirs.sort_by_key(|e| e.file_name());
         for sub in subdirs {
-            if let Some(child) = scan_dir(&sub.path(), tasks_root, agent_retry_max, worktrees) {
+            if let Some(child) = scan_dir(
+                &sub.path(),
+                tasks_root,
+                agent_retry_max,
+                worktrees,
+                &ignores,
+            ) {
                 children.push(child);
             }
         }
@@ -667,16 +694,23 @@ pub fn scan_tasks(tasks_dir: String, worktrees: Vec<String>) -> Result<Vec<TaskN
     let project_root = dir.parent().unwrap_or(&dir).to_path_buf();
     let agent_retry_max = read_agent_retry_max(&project_root);
 
+    // .gitignore успадковується з project root у tasks-dir і далі вглиб дерева.
+    let root_ignores = load_gitignore(&project_root, &[]);
+    let ignores = load_gitignore(&dir, &root_ignores);
+
     let mut entries: Vec<_> = fs::read_dir(&dir)
         .map_err(|e| e.to_string())?
         .flatten()
-        .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
+        .filter(|e| {
+            e.file_type().map(|t| t.is_dir()).unwrap_or(false)
+                && !scan_skip_dir(&e.file_name().to_string_lossy(), &ignores)
+        })
         .collect();
     entries.sort_by_key(|e| e.file_name());
 
     let mut nodes: Vec<TaskNode> = entries
         .iter()
-        .filter_map(|e| scan_dir(&e.path(), &dir, agent_retry_max, &worktrees))
+        .filter_map(|e| scan_dir(&e.path(), &dir, agent_retry_max, &worktrees, &ignores))
         .collect();
 
     // Post-processing: mark Waiting → Blocked where deps are not yet resolved.
@@ -805,8 +839,9 @@ pub fn validate_name(name: &str) -> Result<(), String> {
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
         {
+            // Текст синхронізовано з JS validateTaskName (npm/lib/core/state.mjs).
             return Err(format!(
-                "name segment {seg:?} must match [a-z0-9-] (no uppercase/underscore/space): {name:?}"
+                "name segment {seg:?} must match [a-z0-9-]: {name:?}"
             ));
         }
     }
@@ -1350,6 +1385,47 @@ mod tests {
         assert_eq!(find_node(&nodes, "a").unwrap().deps, vec!["b".to_string()]);
     }
 
+    // ── scan skips gitignored/hidden/denylisted dirs (spec «Монорепо») ──
+    #[test]
+    fn scan_skips_gitignored_and_denylisted_dirs() {
+        let root = tempdir().unwrap();
+        let mt = root.path().join("mt");
+        // .gitignore у project root: mt/scratch ігнорується
+        fs::write(root.path().join(".gitignore"), "scratch\n").unwrap();
+        for (dir, tracked) in [
+            ("visible", true),
+            ("scratch", false),      // gitignored
+            ("node_modules", false), // denylist
+            (".hidden", false),      // hidden
+        ] {
+            let d = mt.join(dir);
+            fs::create_dir_all(&d).unwrap();
+            fs::write(d.join("task.md"), "").unwrap();
+            let _ = tracked;
+        }
+        let nodes = scan_tasks(mt.to_string_lossy().into_owned(), vec![]).unwrap();
+        let paths: Vec<_> = nodes.iter().map(|n| n.path.as_str()).collect();
+        assert_eq!(paths, vec!["visible"]);
+    }
+
+    #[test]
+    fn scan_skips_gitignored_child_dirs() {
+        let root = tempdir().unwrap();
+        let parent = root.path().join("mt/parent");
+        fs::create_dir_all(parent.join("tmp-cache")).unwrap();
+        fs::write(parent.join("task.md"), "").unwrap();
+        fs::write(parent.join(".gitignore"), "tmp-*\n").unwrap();
+        fs::write(parent.join("tmp-cache/task.md"), "").unwrap();
+        let nodes = scan_tasks(
+            root.path().join("mt").to_string_lossy().into_owned(),
+            vec![],
+        )
+        .unwrap();
+        assert!(find_node(&nodes, "parent").is_some());
+        assert!(find_node(&nodes, "parent/tmp-cache").is_none());
+        assert!(!find_node(&nodes, "parent").unwrap().is_composite);
+    }
+
     // ── sanitize vectors (must match JS sanitizeTaskName) ──
     #[test]
     fn sanitize_vectors() {
@@ -1495,7 +1571,7 @@ mod tests {
     // ── shared name-validation vectors (Rust ↔ JS, see name-vectors.json) ──
     #[test]
     fn validate_name_shared_vectors() {
-        let raw = include_str!("../../npm/lib/tests/fixtures/name-vectors.json");
+        let raw = include_str!("../../../npm/lib/tests/fixtures/name-vectors.json");
         let v: serde_json::Value = serde_json::from_str(raw).unwrap();
         for name in v["valid"].as_array().unwrap() {
             let n = name.as_str().unwrap();

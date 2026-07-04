@@ -77,7 +77,7 @@ export function resolveScannerBin(deps = {}) {
   throw new Error(
     `mt-scanner: немає prebuilt-бінарника для "${key}". ` +
       `Постав MT_SCANNER_BIN=/шлях/до/${bin}, додай підпакет @7n/mt-${key}, ` +
-      `або збери локально: cargo build --release --manifest-path scanner/Cargo.toml`
+      `або збери локально: cargo build --release -p mt-cli`
   )
 }
 
