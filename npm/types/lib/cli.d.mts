@@ -24,4 +24,5 @@ export namespace DEFAULT_HANDLERS {
     function spawn(): Promise<typeof import("./commands/spawn.mjs").default>;
     function invalidate(): Promise<typeof import("./commands/invalidate.mjs").default>;
     function kill(): Promise<typeof import("./commands/kill.mjs").default>;
+    function worktree(): Promise<typeof import("./commands/worktree.mjs").default>;
 }

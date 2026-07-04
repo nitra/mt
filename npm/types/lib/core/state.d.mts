@@ -1,42 +1,24 @@
 /**
- * Перевіряє чи директорія є composite-задачею (містить дочірні директорії з task.md).
- * @param {string} taskDir абсолютний шлях до директорії задачі
- * @param {{ readdirSync?: (d: string) => string[], existsSync?: (p: string) => boolean }} [deps] ін'єкції
- * @returns {boolean} true якщо є хоча б один дочірній вузол
- */
-export function isComposite(taskDir: string, deps?: {
-    readdirSync?: (d: string) => string[];
-    existsSync?: (p: string) => boolean;
-}): boolean;
-/**
- * Деривує composite-стан з масиву станів дочірніх задач.
- * @param {string[]} childStates масив станів дочірніх задач
- * @returns {string} агрегований стан
- */
-export function deriveCompositeState(childStates: string[]): string;
-/**
- * Деривує стан однієї задачі з присутності файлів.
- *
- * Пріоритет: invalidated > pending-audit > resolved > running > failed > waiting > needs-plan
- * @param {string} taskDir абсолютний шлях до директорії задачі
- * @param {Set<string>} activeWorktrees set імен активних worktree (наприклад, 'my-task-1234567890')
- * @param {{
- *   readdirSync?: (d: string) => string[],
- *   readFileSync?: (p: string, enc: string) => string,
- *   existsSync?: (p: string) => boolean
- * }} [deps] ін'єкції
- * @returns {string} стан задачі
- */
-export function deriveNodeState(taskDir: string, activeWorktrees: Set<string>, deps?: {
-    readdirSync?: (d: string) => string[];
-    readFileSync?: (p: string, enc: string) => string;
-    existsSync?: (p: string) => boolean;
-}): string;
-/**
  * Санітизує ім'я задачі для використання в назві worktree.
+ *
+ * Логіка — Rust `sanitize` (crates/mt-core/src/lib.rs), той самий код, що
+ * матчить worktree при детекції стану `running` — розсинхрон неможливий.
+ * Тест-вектори: 'research/collect data' → 'research-collect-data',
+ * 'my-task_01' → 'my-task_01', '' → ''.
  * @param {string} name ім'я задачі (може містити /)
- * @returns {string} санітизоване ім'я
+ * @returns {string} санітизоване ім'я ([^a-zA-Z0-9_-] → '-')
  */
 export function sanitizeTaskName(name: string): string;
-/** Всі можливі стани задачі. */
-export const NODE_STATES: readonly ["needs-plan", "waiting", "running", "pending-audit", "resolved", "failed", "invalidated"];
+/**
+ * Валідує id вузла для створення задачі (НЕ виправляє — повертає помилку).
+ *
+ * Логіка — Rust `validate_name` (crates/mt-core/src/lib.rs); спільні
+ * тест-вектори в `npm/lib/tests/fixtures/name-vectors.json`. Правила (docs spec §8):
+ * сегменти `[a-z0-9-]+`, роздільник `/`; без порожніх/`.`/`..` сегментів,
+ * провідного/кінцевого `/`, великих літер, `_`, пробілів, traversal.
+ * @param {string} name id вузла (може містити /)
+ * @returns {string | null} текст помилки або null якщо валідне
+ */
+export function validateTaskName(name: string): string | null;
+/** Всі можливі стани задачі відповідно до специфікації. */
+export const NODE_STATES: readonly ["unassigned", "pending", "waiting", "blocked", "plan-review", "spawned", "running", "stalled", "pending-audit", "resolved", "failed", "unresolvable"];

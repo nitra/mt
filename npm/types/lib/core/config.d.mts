@@ -33,21 +33,5 @@ export function resolveWorktreesDir(config: typeof CONFIG_DEFAULTS, root: string
  * @returns {string} model id
  */
 export function resolveModelByTier(config: typeof CONFIG_DEFAULTS, modelTier: string | undefined): string;
-export namespace CONFIG_DEFAULTS {
-    let mt_dir: string;
-    let worktrees_dir: string;
-    let warn_worktrees_above: number;
-    let max_worktrees: number;
-    let default_budget_sec: number;
-    let budget_hard_sec_multiplier: number;
-    let progress_timeout_sec: number;
-    let claude_model: string;
-    let audit_model: string;
-    namespace model_map {
-        let MIM: string;
-        let AVG: string;
-        let MAX: string;
-    }
-    let stale_worktree_min: number;
-    let system_prompt: string;
-}
+/** Дефолтні значення конфігурації (джерело істини — mt-core `config_defaults`). */
+export const CONFIG_DEFAULTS: any;

@@ -33,8 +33,8 @@ describe('createWorktree', () => {
     const result = createWorktree(join(root, '.worktrees'), 'demo-1', root)
 
     expect(result).not.toBeNull()
-    expect(execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], { cwd: result.worktreePath, encoding: 'utf8' }).trim()).toBe(
-      'mt/demo-1'
-    )
+    expect(
+      execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], { cwd: result.worktreePath, encoding: 'utf8' }).trim()
+    ).toBe('mt/demo-1')
   })
 })

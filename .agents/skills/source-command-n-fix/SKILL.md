@@ -1,6 +1,6 @@
 ---
-name: "source-command-n-fix"
-description: "Виправити проєкт відповідно до всіх правил в .cursor/rules/"
+name: 'source-command-n-fix'
+description: 'Виправити проєкт відповідно до всіх правил в .cursor/rules/'
 ---
 
 # source-command-n-fix

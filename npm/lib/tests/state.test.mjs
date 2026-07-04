@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { NODE_STATES, sanitizeTaskName } from '../core/state.mjs'
 
-// Деривація стану перенесена в Rust (scanner/src/lib.rs) — її покривають cargo-тести.
+// Деривація стану перенесена в Rust (crates/mt-core/src/lib.rs) — її покривають cargo-тести.
 // Тут лишилось тільки те, що ще живе в JS: перелік станів і sanitize імен worktree.
 
 // ------- NODE_STATES -------
@@ -26,7 +26,7 @@ describe('NODE_STATES', () => {
 })
 
 // ------- sanitizeTaskName -------
-// ВАЖЛИВО: ці вектори мають збігатися з Rust-тестом `sanitize_vectors` (scanner/src/lib.rs).
+// ВАЖЛИВО: ці вектори мають збігатися з Rust-тестом `sanitize_vectors` (crates/mt-core/src/lib.rs).
 
 describe('sanitizeTaskName', () => {
   test('replaces slashes and special chars with hyphens', () => {

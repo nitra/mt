@@ -4,3 +4,5 @@
 .cursor/hooks.json
 npm/tsconfig.emit-types.json
 .marksman.toml
+.claude/settings.local.json
+npm/lib/tests/fixtures/name-vectors.json

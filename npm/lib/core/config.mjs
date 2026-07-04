@@ -1,36 +1,18 @@
 /**
  * Завантаження конфігурації `.mt.json` для mt-команд.
  *
- * Читає JSON з кореня репо (або з вказаного шляху), мержить із дефолтами.
- * Підтримує per-task override через task.md (якщо задача передає свої налаштування).
- *
+ * Дефолти та merge-логіка (включно з deep merge `model_map`) живуть у Rust-ядрі
+ * (crates/mt-core/src/config.rs через napi-аддон). Читання файлів лишається тут —
  * FS ін'єктується для тестованості без диска.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cwd as processCwd } from 'node:process'
 
-/** Дефолтні значення конфігурації. */
-export const CONFIG_DEFAULTS = {
-  mt_dir: './mt',
-  worktrees_dir: './.worktrees',
-  warn_worktrees_above: 4,
-  max_worktrees: 8,
-  default_budget_sec: 1800,
-  default_mode: 'human',
-  default_model_tier: 'AVG',
-  budget_hard_sec_multiplier: 3,
-  progress_timeout_sec: 300,
-  claude_model: 'claude-sonnet-4-6',
-  audit_model: 'claude-haiku-4-5-20251001',
-  model_map: {
-    MIM: 'claude-haiku-4-5-20251001',
-    AVG: 'claude-sonnet-4-6',
-    MAX: 'claude-opus-4-8'
-  },
-  stale_worktree_min: 30,
-  system_prompt: '.mt/system-prompt.md'
-}
+import { loadNative } from './native.mjs'
+
+/** Дефолтні значення конфігурації (джерело істини — mt-core `config_defaults`). */
+export const CONFIG_DEFAULTS = loadNative().configDefaults()
 
 /**
  * Завантажує конфігурацію з `.mt.json` і мержить із дефолтами.
@@ -47,26 +29,9 @@ export function loadConfig(deps = {}) {
   const exists = deps.exists ?? existsSync
 
   const configPath = join(root, '.mt.json')
+  const raw = exists(configPath) ? readFile(configPath, 'utf8') : null
 
-  if (!exists(configPath)) {
-    return { ...CONFIG_DEFAULTS }
-  }
-
-  let raw
-  try {
-    raw = JSON.parse(readFile(configPath, 'utf8'))
-  } catch {
-    return { ...CONFIG_DEFAULTS }
-  }
-
-  return {
-    ...CONFIG_DEFAULTS,
-    ...raw,
-    model_map: {
-      ...CONFIG_DEFAULTS.model_map,
-      ...raw.model_map
-    }
-  }
+  return loadNative().mergeConfig(raw)
 }
 
 /**

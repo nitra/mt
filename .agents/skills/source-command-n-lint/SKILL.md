@@ -1,6 +1,6 @@
 ---
-name: "source-command-n-lint"
-description: "Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід"
+name: 'source-command-n-lint'
+description: 'Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід'
 ---
 
 # source-command-n-lint

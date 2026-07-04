@@ -18,10 +18,10 @@ describe('MT documentation', () => {
     expect(contents).not.toMatch(unsupportedSurface)
   })
 
-  test('contains exactly the 168 transferred ADRs without legacy runtime names', () => {
+  test('contains exactly the 181 transferred ADRs without legacy runtime names', () => {
     const adrFiles = readdirSync(adrDir).filter(file => file.endsWith('.md'))
 
-    expect(adrFiles).toHaveLength(168)
+    expect(adrFiles).toHaveLength(181)
     for (const file of adrFiles) {
       expect(readFileSync(join(adrDir, file), 'utf8'), file).not.toMatch(legacyRuntime)
     }

@@ -2,7 +2,8 @@
  * Розбирає argv `mt init`: перший non-flag токен — ім'я, решта — прапорці
  * (прокидаються в бінарник вербатим; авторитетний парсинг — у Rust).
  * @param {string[]} args аргументи після `init`
- * @returns {{ name: string | null, flags: string[], error?: string }}
+ * @returns {{ name: string | null, flags: string[], error?: string }} розібране ім'я,
+ *   список прапорців для бінарника та опційний текст помилки парсингу
  */
 export function parseInitArgs(args: string[]): {
     name: string | null;
@@ -15,7 +16,7 @@ export function parseInitArgs(args: string[]): {
  * @param {{
  *   cwd?: string,
  *   log?: (m: string) => void,
- *   spawnSync?: typeof import("node:child_process").spawnSync,
+ *   spawnSync?: typeof spawnSync,
  *   binPath?: string,
  *   readFile?: (p: string, enc: string) => string,
  *   exists?: (p: string) => boolean
@@ -25,7 +26,7 @@ export function parseInitArgs(args: string[]): {
 export default function init(args: string[], deps?: {
     cwd?: string;
     log?: (m: string) => void;
-    spawnSync?: typeof import("node:child_process").spawnSync;
+    spawnSync?: typeof spawnSync;
     binPath?: string;
     readFile?: (p: string, enc: string) => string;
     exists?: (p: string) => boolean;

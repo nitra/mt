@@ -204,14 +204,14 @@ touch .mt/wake
 
 **TODO (майбутній daemon):**
 
-| Умова | Повідомлення |
-|-------|-------------|
-| `pending` (h.md) > `stale_worktree_min` хв | потрібна участь людини |
-| ≥ 3 поспіль `audit-result: failed` | audit loop — потрібна людина |
-| вузол → `unresolvable` | спроби вичерпано |
-| `stalled` (claim + grace минули) | потрібен takeover |
-| граф blocked (всі `unassigned`/`pending`/failed-deps) | граф заблокований |
-| вільне місце < `min_free_disk_gb` | disk space alert |
+| Умова                                                 | Повідомлення                 |
+| ----------------------------------------------------- | ---------------------------- |
+| `pending` (h.md) > `stale_worktree_min` хв            | потрібна участь людини       |
+| ≥ 3 поспіль `audit-result: failed`                    | audit loop — потрібна людина |
+| вузол → `unresolvable`                                | спроби вичерпано             |
+| `stalled` (claim + grace минули)                      | потрібен takeover            |
+| граф blocked (всі `unassigned`/`pending`/failed-deps) | граф заблокований            |
+| вільне місце < `min_free_disk_gb`                     | disk space alert             |
 
 ---
 

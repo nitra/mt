@@ -13,14 +13,23 @@ function makeCtx(overrides = {}) {
     config: { worktrees_dir: './.worktrees' },
     mkdir: () => null,
     exists: p => Object.hasOwn(fs, p),
-    writeFile: (p, c) => { fs[p] = c },
+    writeFile: (p, c) => {
+      fs[p] = c
+    },
     readFile: p => {
       if (Object.hasOwn(fs, p)) return fs[p]
-      const e = new Error('ENOENT'); e.code = 'ENOENT'; throw e
+      const e = new Error('ENOENT')
+      e.code = 'ENOENT'
+      throw e
     },
     // mock ігнорує каталог і повертає basenames усіх .md-ключів (інвентарі живуть у .meta/)
-    readdir: () => Object.keys(fs).filter(k => k.endsWith('.md')).map(k => k.split('/').pop()),
-    rmFile: p => { delete fs[p] },
+    readdir: () =>
+      Object.keys(fs)
+        .filter(k => k.endsWith('.md'))
+        .map(k => k.split('/').pop()),
+    rmFile: p => {
+      delete fs[p]
+    },
     execSync: () => '',
     ...overrides
   }
@@ -66,7 +75,7 @@ describe('create', () => {
 
   test('uncommitted warning з переліком', () => {
     const { deps, logs } = makeCtx({
-      execSync: cmd => cmd.includes('status') ? ' M file.txt' : ''
+      execSync: cmd => (cmd.includes('status') ? ' M file.txt' : '')
     })
     worktree(['create', 'feat/warn', 'desc'], deps)
     expect(logs.some(l => l.includes('незакоміче') && l.includes('file.txt'))).toBe(true)
@@ -74,7 +83,12 @@ describe('create', () => {
 
   test('git fail → повертає 1', () => {
     const { deps } = makeCtx({
-      execSync: cmd => { if (cmd.includes('worktree add')) { throw new Error('git fail') } return '' }
+      execSync: cmd => {
+        if (cmd.includes('worktree add')) {
+          throw new Error('git fail')
+        }
+        return ''
+      }
     })
     expect(worktree(['create', 'feat/fail', 'desc'], deps)).toBe(1)
   })
@@ -111,7 +125,12 @@ describe('remove (ефемерний — прибирає гілку)', () => {
 
   test('видаляє гілку через git branch -D', () => {
     const cmds = []
-    const { deps, fs } = makeCtx({ execSync: cmd => { cmds.push(cmd); return '' } })
+    const { deps, fs } = makeCtx({
+      execSync: cmd => {
+        cmds.push(cmd)
+        return ''
+      }
+    })
     fs['/repo/.worktrees/my-branch'] = ''
     fs['/repo/.worktrees/.meta/my-branch.md'] = 'content'
     worktree(['remove', 'my-branch'], deps)
@@ -129,9 +148,7 @@ describe('list', () => {
   test('показує активні та осиротілі', () => {
     const { deps, fs, logs } = makeCtx({
       execSync: cmd =>
-        cmd.includes('list --porcelain')
-          ? 'worktree /repo/.worktrees/feat-a\nbranch refs/heads/feat/a\n'
-          : ''
+        cmd.includes('list --porcelain') ? 'worktree /repo/.worktrees/feat-a\nbranch refs/heads/feat/a\n' : ''
     })
     fs['/repo/.worktrees/.meta/feat-a.md'] = '# feat/a\n\nDesc A\n\nCreated: 2026-06-01\n'
     fs['/repo/.worktrees/.meta/feat-b.md'] = '# feat/b\n\nDesc B\n\nCreated: 2026-06-02\n'
@@ -144,8 +161,7 @@ describe('list', () => {
 describe('prune', () => {
   test('видаляє осиротілі інвентарі (без активного checkout)', () => {
     const { deps, fs, logs } = makeCtx({
-      execSync: cmd =>
-        cmd.includes('list --porcelain') ? 'worktree /repo/.worktrees/feat-a\n' : ''
+      execSync: cmd => (cmd.includes('list --porcelain') ? 'worktree /repo/.worktrees/feat-a\n' : '')
     })
     fs['/repo/.worktrees/.meta/feat-a.md'] = '# feat/a\n' // активний
     fs['/repo/.worktrees/.meta/feat-orphan.md'] = '# feat/orphan\n' // осиротілий
@@ -159,8 +175,7 @@ describe('prune', () => {
 describe('inventory', () => {
   test('JSON-масив зі станом active', () => {
     const { deps, fs, logs } = makeCtx({
-      execSync: cmd =>
-        cmd.includes('list --porcelain') ? 'worktree /repo/.worktrees/feat-a\n' : ''
+      execSync: cmd => (cmd.includes('list --porcelain') ? 'worktree /repo/.worktrees/feat-a\n' : '')
     })
     fs['/repo/.worktrees/.meta/feat-a.md'] = '# feat/a\n\nDesc A\n\nCreated: 2026-06-01\n'
     fs['/repo/.worktrees/.meta/feat-b.md'] = '# feat/b\n\nDesc B\n\nCreated: 2026-06-02\n'

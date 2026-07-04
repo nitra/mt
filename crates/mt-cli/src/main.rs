@@ -14,15 +14,15 @@ fn usage() -> ! {
 }
 
 /// Parses `create` flags after `<tasks_dir> <name>`. Unknown flags are ignored.
-fn parse_create_opts(args: &[String]) -> mt_scanner::CreateOpts {
-    let mut opts = mt_scanner::CreateOpts::default();
+fn parse_create_opts(args: &[String]) -> mt_core::CreateOpts {
+    let mut opts = mt_core::CreateOpts::default();
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "--mode" => {
                 opts.mode = match args.get(i + 1).map(String::as_str) {
-                    Some("agent") => Some(mt_scanner::Mode::Agent),
-                    Some("human") => Some(mt_scanner::Mode::Human),
+                    Some("agent") => Some(mt_core::Mode::Agent),
+                    Some("human") => Some(mt_core::Mode::Human),
                     _ => {
                         eprintln!("Error: --mode must be agent|human");
                         process::exit(2);
@@ -83,8 +83,8 @@ fn main() {
             let tasks_dir = args[2].clone();
             // --worktrees overrides discovery; otherwise discover via git from tasks_dir.
             let worktrees = parse_worktrees_arg(&args)
-                .unwrap_or_else(|| mt_scanner::discover_worktrees(&PathBuf::from(&tasks_dir)));
-            match mt_scanner::scan_tasks(tasks_dir, worktrees) {
+                .unwrap_or_else(|| mt_core::discover_worktrees(&PathBuf::from(&tasks_dir)));
+            match mt_core::scan_tasks(tasks_dir, worktrees) {
                 Ok(nodes) => println!("{}", serde_json::to_string_pretty(&nodes).unwrap()),
                 Err(e) => {
                     eprintln!("Error: {e}");
@@ -99,7 +99,7 @@ fn main() {
             let tasks_dir = args[2].clone();
             let name = args[3].clone();
             let opts = parse_create_opts(&args[4..]);
-            match mt_scanner::create_task(tasks_dir, name, opts) {
+            match mt_core::create_task(tasks_dir, name, opts) {
                 Ok(outcome) => println!(
                     "{}",
                     serde_json::to_string_pretty(&outcome.to_cli_json()).unwrap()
@@ -116,10 +116,10 @@ fn main() {
             let workspaces = if args.len() >= 3 {
                 args[2..]
                     .iter()
-                    .flat_map(|d| mt_scanner::find_all_tasks_dirs_from(&PathBuf::from(d)))
+                    .flat_map(|d| mt_core::find_all_tasks_dirs_from(&PathBuf::from(d)))
                     .collect()
             } else {
-                match mt_scanner::find_all_tasks_dirs() {
+                match mt_core::find_all_tasks_dirs() {
                     Ok(ws) => ws,
                     Err(e) => {
                         eprintln!("Error: {e}");

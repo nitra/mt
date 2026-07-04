@@ -1,48 +1,27 @@
 /**
- * @typedef {{
- *   id: string,
- *   path: string,
- *   dir: string,
- *   deps: string[],
- *   state: string,
- *   composite: boolean,
- *   children: string[]
- * }} TaskInfo
- */
-/**
- * Рекурсивно знаходить всі задачі DAG у mt_dir.
- * Задача = директорія що містить task.md.
+ * Знаходить усі задачі DAG у mt_dir (директорії з task.md).
  * @param {string} mtDir абсолютний шлях до mt/
- * @param {{
- *   readdirSync?: (d: string) => string[],
- *   existsSync?: (p: string) => boolean,
- *   readFileSync?: (p: string, enc: string) => string
- * }} [deps] ін'єкції
+ * @param {{ binPath?: string, spawnSync?: SpawnSyncFn }} [deps] ін'єкції
  * @returns {{ dir: string, relPath: string }[]} список знайдених задач
  */
 export function findTasks(mtDir: string, deps?: {
-    readdirSync?: (d: string) => string[];
-    existsSync?: (p: string) => boolean;
-    readFileSync?: (p: string, enc: string) => string;
+    binPath?: string;
+    spawnSync?: SpawnSyncFn;
 }): {
     dir: string;
     relPath: string;
 }[];
 /**
- * Сканує DAG і повертає всі задачі з деривованими станами.
+ * Сканує DAG і повертає всі задачі з деривованими станами (включно з blocked та
+ * worktree→running — усе обчислює бінарник).
  * @param {string} mtDir абсолютний шлях до mt/
- * @param {Set<string>} activeWorktrees активні worktree імена
- * @param {{
- *   readdirSync?: (d: string) => string[],
- *   existsSync?: (p: string) => boolean,
- *   readFileSync?: (p: string, enc: string) => string
- * }} [deps] ін'єкції
+ * @param {Set<string>} activeWorktrees активні worktree імена (опційно)
+ * @param {{ binPath?: string, spawnSync?: SpawnSyncFn }} [deps] ін'єкції
  * @returns {TaskInfo[]} список задач
  */
 export function scanTasks(mtDir: string, activeWorktrees: Set<string>, deps?: {
-    readdirSync?: (d: string) => string[];
-    existsSync?: (p: string) => boolean;
-    readFileSync?: (p: string, enc: string) => string;
+    binPath?: string;
+    spawnSync?: SpawnSyncFn;
 }): TaskInfo[];
 /**
  * Топологічне сортування задач (алгоритм Кана).
@@ -81,4 +60,10 @@ export type TaskInfo = {
     state: string;
     composite: boolean;
     children: string[];
+};
+export type SpawnSyncFn = (bin: string, args: string[], opts: object) => {
+    status: number | null;
+    stdout: string;
+    stderr: string;
+    error?: Error;
 };

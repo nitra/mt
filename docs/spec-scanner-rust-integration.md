@@ -3,8 +3,8 @@
 Статус: **погоджено — готово до реалізації** (всі рішення зафіксовані; §9.4 workspaces свідомо відкладено)
 Дата: 2026-06-13
 
-> **Принцип (директива користувача):** *усе, що стосується роботи з файловою системою, має бути в Rust.* JS не виконує жодних ФС-читань для скану — включно з виявленням активних worktree (це переноситься в Rust, §5). JS-шар лише запускає бінарник, парсить JSON і робить чисто-графові операції (топосорт) над результатом.
-Пов'язані ADR: `20260613-071723-заміна-js-сканера-на-виклик-rust-бінарника-mt-scanner.md`, `20260611-193434-вирівнювання-scanner-state-з-специфікацією-mt.md`
+> **Принцип (директива користувача):** _усе, що стосується роботи з файловою системою, має бути в Rust._ JS не виконує жодних ФС-читань для скану — включно з виявленням активних worktree (це переноситься в Rust, §5). JS-шар лише запускає бінарник, парсить JSON і робить чисто-графові операції (топосорт) над результатом.
+> Пов'язані ADR: `20260613-071723-заміна-js-сканера-на-виклик-rust-бінарника-mt-scanner.md`, `20260611-193434-вирівнювання-scanner-state-з-специфікацією-mt.md`
 
 ## 1. Мета і scope
 
@@ -19,10 +19,11 @@ JS-шар залишається тонким адаптером: запуска
 1. **Виклик** — `spawnSync(bin, ['scan', mtDir], { encoding: 'utf8' })`, парсинг `stdout` як JSON. (з ADR `…071723`)
 2. **Доставка бінарника** — модель esbuild/swc: головний пакет без бінарника, платформні підпакети в `optionalDependencies`.
 3. **Платформи на старті — рівно 2:**
-   | Підпакет | `os`/`cpu`/`libc` | Rust target triple | покриття |
-   |---|---|---|---|
-   | `@7n/mt-darwin-arm64` | darwin / arm64 / — | `aarch64-apple-darwin` | усі Apple Silicon |
-   | `@7n/mt-linux-x64` | linux / x64 / **без `libc`** | `x86_64-unknown-linux-musl` (static) | **весь** Linux x64 (Alpine, Ubuntu, Docker, CI) |
+
+   | Підпакет              | `os`/`cpu`/`libc`            | Rust target triple                   | покриття                                        |
+   | --------------------- | ---------------------------- | ------------------------------------ | ----------------------------------------------- |
+   | `@7n/mt-darwin-arm64` | darwin / arm64 / —           | `aarch64-apple-darwin`               | усі Apple Silicon                               |
+   | `@7n/mt-linux-x64`    | linux / x64 / **без `libc`** | `x86_64-unknown-linux-musl` (static) | **весь** Linux x64 (Alpine, Ubuntu, Docker, CI) |
 
    Linux — статичний musl-бінарник без поля `libc`, тому один пакет покриває і glibc, і musl на x64. **Не** покриваються: Intel Mac, Linux arm64, Windows — додаються пізніше одним підпакетом кожен без зміни коду шима.
 
@@ -30,16 +31,16 @@ JS-шар залишається тонким адаптером: запуска
 
 `scanTasks` зараз повертає **плоский** список; `mt-scanner scan` повертає **вкладене дерево** з іншими полями та snake_case-станами.
 
-| Аспект | JS `scanTasks` (зараз) | Rust `mt-scanner scan` | Дія адаптера |
-|---|---|---|---|
-| структура | плоский `TaskInfo[]` | вкладене `TaskNode[]` (`children: TaskNode[]`) | **flatten** дерева в плоский список |
-| `id`/`path` | `id == path == relPath` (відносний від mt/) | `id` = ім'я листа, `path` = відносний шлях | використовувати `path` як `id` і `path` |
-| `dir` | абсолютний шлях (потрібен `run.mjs`) | **немає** | відновити: `join(mtDir, node.path)` |
-| composite | `composite: boolean`, `children: string[]` (шляхи дітей) | `is_composite: boolean`, `children: TaskNode[]` | `composite = is_composite`; `children = node.children.map(c => c.path)` |
-| стани | kebab: `pending-audit`, `plan-review` | snake: `pending_audit`, `plan_review` | `state.replace(/_/g, '-')` (єдиний трансформ покриває всі) |
-| `running` від worktree | так (JS `activeWorktrees`) | **переноситься в Rust** (§5) | прибрати з JS — Rust сам виявляє worktree й підвищує стан |
-| `agent_retry_max` | інжектиться через `deps` | Rust читає сам із `.mt.json` | прибрати інжекцію; джерело істини — `.mt.json` |
-| deps | з `deps/` директорії | з `deps/` директорії — **семантика збігається** | без змін |
+| Аспект                 | JS `scanTasks` (зараз)                                   | Rust `mt-scanner scan`                          | Дія адаптера                                                            |
+| ---------------------- | -------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------- |
+| структура              | плоский `TaskInfo[]`                                     | вкладене `TaskNode[]` (`children: TaskNode[]`)  | **flatten** дерева в плоский список                                     |
+| `id`/`path`            | `id == path == relPath` (відносний від mt/)              | `id` = ім'я листа, `path` = відносний шлях      | використовувати `path` як `id` і `path`                                 |
+| `dir`                  | абсолютний шлях (потрібен `run.mjs`)                     | **немає**                                       | відновити: `join(mtDir, node.path)`                                     |
+| composite              | `composite: boolean`, `children: string[]` (шляхи дітей) | `is_composite: boolean`, `children: TaskNode[]` | `composite = is_composite`; `children = node.children.map(c => c.path)` |
+| стани                  | kebab: `pending-audit`, `plan-review`                    | snake: `pending_audit`, `plan_review`           | `state.replace(/_/g, '-')` (єдиний трансформ покриває всі)              |
+| `running` від worktree | так (JS `activeWorktrees`)                               | **переноситься в Rust** (§5)                    | прибрати з JS — Rust сам виявляє worktree й підвищує стан               |
+| `agent_retry_max`      | інжектиться через `deps`                                 | Rust читає сам із `.mt.json`                    | прибрати інжекцію; джерело істини — `.mt.json`                          |
+| deps                   | з `deps/` директорії                                     | з `deps/` директорії — **семантика збігається** | без змін                                                                |
 
 ## 4. Цільова архітектура JS
 
@@ -48,8 +49,9 @@ JS-шар залишається тонким адаптером: запуска
 Ім'я бінарника: `mt-scanner` + `.exe` на `process.platform === 'win32'` (закладається **зараз**, щоб додавання Windows було add-only — §6.5).
 
 Порядок пошуку:
+
 1. `process.env.MT_SCANNER_BIN` — явний override (dev, CI, тести). Якщо заданий — використати як є.
-2. Production: `require.resolve('@7n/mt-' + key + '/' + binName)`, де `key = `${process.platform}-${process.arch}`` (`darwin-arm64`, `linux-x64`, у майбутньому `win32-x64`), `binName = win32 ? 'mt-scanner.exe' : 'mt-scanner'`.
+2. Production: `require.resolve('@7n/mt-' + key + '/' + binName)`, де `key =`${process.platform}-${process.arch}`` (`darwin-arm64`, `linux-x64`, у майбутньому `win32-x64`), `binName = win32 ? 'mt-scanner.exe' : 'mt-scanner'`.
 3. Dev-fallback: `<repoRoot>/target/release/mt-scanner`, потім `…/target/debug/mt-scanner`.
 4. Інакше — кинути **зрозумілу** помилку:
    `mt-scanner: немає prebuilt для "<key>". Постав MT_SCANNER_BIN=/шлях/до/бінарника або додай підпакет @7n/mt-<key>.`
@@ -94,16 +96,18 @@ JS-шар залишається тонким адаптером: запуска
 
 - `mt-scanner scan <tasks_dir> [--worktrees <comma-list>]`:
   - Якщо `--worktrees` **заданий** — використати цей список (детермінований вхід для тестів).
-  - Якщо **не** заданий — Rust сам виявляє активні worktree: `git worktree list --porcelain` (через `std::process::Command`) із кореня репо, що містить `tasks_dir`; парсинг ідентичний поточному JS `parseWorktreeList` (останній компонент шляху кожного `worktree `-рядка).
+  - Якщо **не** заданий — Rust сам виявляє активні worktree: `git worktree list --porcelain` (через `std::process::Command`) із кореня репо, що містить `tasks_dir`; парсинг ідентичний поточному JS `parseWorktreeList` (останній компонент шляху кожного `worktree`-рядка).
 - Порт `sanitizeTaskName` у Rust (точна копія JS-конвенції; синхронність — спільними тест-векторами, §4.3).
 
 ### 5.2 Логіка детекції (всередині `detect_state`/пост-процесу Rust)
 
 Повторює пріоритет зі специфікації станів. Вузол підвищується до `Running`, якщо існує активний worktree, чия назва починається з sanitized-шляху:
+
 ```
 running, якщо node.state ∈ {PlanReview, Spawned, Waiting, Blocked, Pending, Unassigned, Failed}
          і  ∃ wt ∈ worktrees: wt.starts_with(sanitize(node.path.replace('/', "-")))
 ```
+
 Не чіпає вищі за пріоритетом стани (`PendingAudit`, `Resolved`, `Unresolvable`, вже-`Running` через sentinel). Інтегрується в наявний `apply_blocked`-прохід (обидва — пост-процеси над зібраним деревом).
 
 ### 5.3 Наслідки для JS
@@ -114,6 +118,7 @@ running, якщо node.state ∈ {PlanReview, Spawned, Waiting, Blocked, Pending
 ## 6. Доставка бінарника
 
 ### 6.1 Структура платформного підпакета
+
 ```
 packages/mt-darwin-arm64/
   package.json   { "name":"@7n/mt-darwin-arm64", "version":"<lockstep>",
@@ -124,15 +129,18 @@ packages/mt-linux-x64/
                    "os":["linux"], "cpu":["x64"], "files":["mt-scanner"] }   // без libc
   mt-scanner
 ```
+
 Версія підпакетів — **lockstep** з `@7n/mt` (публікуються разом).
 
 ### 6.2 `npm/package.json`
+
 ```json
 "optionalDependencies": {
   "@7n/mt-darwin-arm64": "<same-as-@7n/mt>",
   "@7n/mt-linux-x64": "<same-as-@7n/mt>"
 }
 ```
+
 `files` головного пакета бінарника **не** містить.
 
 ### 6.3 CI — розширення `.github/workflows/npm-publish.yml`
@@ -149,11 +157,13 @@ Tooling — **`cargo-zigbuild`** (рішення §9.2): один Linux-ранн
 - Тригер `paths: npm/**` доповнити `scanner/**` (зміна Rust → перепублікація).
 
 ### 6.4 `target/` лишається в `.gitignore`
+
 Бінарники в git не комітяться; для dev — `cargo build --release` + fallback резолвера (§4.1, крок 3).
 
 ### 6.5 Розширення на нові платформи (Windows / linux-arm64 / Intel Mac) — пізніше, add-only
 
 Архітектура масштабується додаванням рядків, **без зміни логіки**:
+
 - **linux-arm64**: `+ packages/mt-linux-arm64` (`aarch64-unknown-linux-musl`, без `libc`) + CI-job (з `cargo-zigbuild` — без нового тулчейну).
 - **darwin-x64** (Intel Mac): `+ packages/mt-darwin-x64` + native `macos-13` job.
 - **Windows**: `+ packages/mt-win32-x64` (`x86_64-pc-windows-msvc`, бінарник `mt-scanner.exe`) + **окремий native `windows-latest` job** (MSVC не йде через zigbuild — ортогонально до вибору musl-tooling). Path-логіка Rust уже портабельна (нормалізація `\`→`/`, `.lines()` ковтає `\r\n`); резолвер уже знає про `.exe` (§4.1). Потрібне лише фактичне тестування worktree-матчингу й `git worktree list` на Windows-runner.
@@ -162,12 +172,12 @@ Tooling — **`cargo-zigbuild`** (рішення §9.2): один Linux-ранн
 
 ## 7. Тести
 
-| Файл | Вплив | Дія |
-|---|---|---|
-| `npm/lib/tests/state.test.mjs` | блоки `deriveNodeState — *` і `isComposite` тестують видалену логіку | видалити ці блоки; лишити тести `sanitizeTaskName`/`NODE_STATES` |
-| `npm/lib/tests/run.test.mjs` | інжектить віртуальну ФС у `scanTasks` — DI більше не керує сканом | переписати: реальні tmp-дерева задач + збілджений бінарник (`MT_SCANNER_BIN`), або мок шима через `deps.spawnSync` |
-| `scanner/src/*` | **нуль `#[test]`** — після видалення JS зникає покриття деривації станів | **додати Rust unit-тести** на `detect_state`/`apply_blocked`/`read_deps_dir`/`parse_frontmatter`/**worktree→running (§5)**/`sanitize` (спільні вектори з JS), що відтворюють кейси зі старого `state.test.mjs` |
-| решта команд-тестів | через `scanTasks` | де покладаються на віртуальну ФС — мокати `deps.spawnSync` або tmp-дерева |
+| Файл                           | Вплив                                                                    | Дія                                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm/lib/tests/state.test.mjs` | блоки `deriveNodeState — *` і `isComposite` тестують видалену логіку     | видалити ці блоки; лишити тести `sanitizeTaskName`/`NODE_STATES`                                                                                                                                               |
+| `npm/lib/tests/run.test.mjs`   | інжектить віртуальну ФС у `scanTasks` — DI більше не керує сканом        | переписати: реальні tmp-дерева задач + збілджений бінарник (`MT_SCANNER_BIN`), або мок шима через `deps.spawnSync`                                                                                             |
+| `scanner/src/*`                | **нуль `#[test]`** — після видалення JS зникає покриття деривації станів | **додати Rust unit-тести** на `detect_state`/`apply_blocked`/`read_deps_dir`/`parse_frontmatter`/**worktree→running (§5)**/`sanitize` (спільні вектори з JS), що відтворюють кейси зі старого `state.test.mjs` |
+| решта команд-тестів            | через `scanTasks`                                                        | де покладаються на віртуальну ФС — мокати `deps.spawnSync` або tmp-дерева                                                                                                                                      |
 
 **Vitest global-setup:** один раз збілдити бінарник (`cargo build --release`) і виставити `MT_SCANNER_BIN`, щоб тести команд бачили реальний скан.
 

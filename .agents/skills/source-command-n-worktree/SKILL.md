@@ -1,6 +1,6 @@
 ---
-name: "source-command-n-worktree"
-description: "Створення та керування git-worktree через n-cursor worktree CLI: ізольований workspace у .worktrees/<branch>/ з інвентарним файлом-описом"
+name: 'source-command-n-worktree'
+description: 'Створення та керування git-worktree через n-cursor worktree CLI: ізольований workspace у .worktrees/<branch>/ з інвентарним файлом-описом'
 ---
 
 # source-command-n-worktree

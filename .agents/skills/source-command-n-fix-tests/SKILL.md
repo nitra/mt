@@ -1,6 +1,6 @@
 ---
-name: "source-command-n-fix-tests"
-description: "Ітеративно дописати тести щоб підвищити mutation score — читає вцілілі мутанти з COVERAGE.md і запускає агент до конвергенції"
+name: 'source-command-n-fix-tests'
+description: 'Ітеративно дописати тести щоб підвищити mutation score — читає вцілілі мутанти з COVERAGE.md і запускає агент до конвергенції'
 ---
 
 # source-command-n-fix-tests
