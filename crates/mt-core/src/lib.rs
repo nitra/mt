@@ -10,6 +10,7 @@ pub mod config;
 pub mod frontmatter;
 pub mod lifecycle;
 pub mod nnn;
+pub mod runner;
 pub mod signal;
 pub mod spawn;
 pub mod worktree;
