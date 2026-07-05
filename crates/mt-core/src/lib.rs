@@ -5,9 +5,12 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 pub mod artifacts;
+pub mod claims;
 pub mod config;
 pub mod frontmatter;
+pub mod lifecycle;
 pub mod nnn;
+pub mod spawn;
 pub mod worktree;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -52,6 +55,40 @@ pub struct WorkspaceInfo {
 }
 
 /// Виконавець вузла. Істина — прапор-файл `a.md`/`h.md`, не поле frontmatter.
+/// Пише прапор виконавця (`a.md` або `h.md`) і видаляє протилежний —
+/// інваріант «рівно один прапор» (§4.3). Повертає ім'я записаного файлу.
+pub fn write_executor_flag(
+    task_dir: &Path,
+    mode: Mode,
+    model_tier: &str,
+    skills: &[String],
+    qualification: Option<&str>,
+) -> Result<&'static str, String> {
+    match mode {
+        Mode::Agent => {
+            let skill_lines = skills
+                .iter()
+                .map(|s| format!("- {s}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let content = format!("## Model tier\n\n{model_tier}\n\n## Skills\n\n{skill_lines}\n");
+            write_atomic(&task_dir.join("a.md"), &content)?;
+            let _ = fs::remove_file(task_dir.join("h.md"));
+            Ok("a.md")
+        }
+        Mode::Human => {
+            let content = match qualification {
+                Some(q) => format!("## Qualification\n\n{q}\n"),
+                None => "## Qualification\n\n<!-- Опишіть необхідну кваліфікацію виконавця -->\n"
+                    .to_string(),
+            };
+            write_atomic(&task_dir.join("h.md"), &content)?;
+            let _ = fs::remove_file(task_dir.join("a.md"));
+            Ok("h.md")
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
@@ -74,6 +111,12 @@ pub struct CreateOpts {
     pub deps: Vec<String>,
     #[serde(default)]
     pub skills: Option<Vec<String>>,
+    /// Текст місії дитини (спека: `## Children` → `task:`); без нього — шаблон.
+    #[serde(default)]
+    pub task: Option<String>,
+    /// Для mode: human — кваліфікація виконавця (`## Children` → `qualification:`).
+    #[serde(default)]
+    pub qualification: Option<String>,
 }
 
 /// Результат `create_task`. CLI серіалізує через [`CreateOutcome::to_cli_json`].
@@ -958,35 +1001,34 @@ pub fn create_task(
         let frontmatter = format!(
             "---\nschema_version: 1\ncreated_at: {created_at}\nbudget_sec: {budget_sec}\nhint: {hint}\n---\n"
         );
-        write_atomic(&task_md, &format!("{frontmatter}{TASK_BODY}"))?;
+        let body = match &opts.task {
+            Some(text) => format!(
+                "\n## Mission\n\n{}\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Context\n\n<!-- Додатковий контекст для виконавця -->\n",
+                text.trim_end()
+            ),
+            None => TASK_BODY.to_string(),
+        };
+        write_atomic(&task_md, &format!("{frontmatter}{body}"))?;
 
         // Прапор виконавця — рівно один (§4.3).
-        let flag = match mode {
-            Mode::Agent => {
-                let skill_lines = skills
-                    .iter()
-                    .map(|s| format!("- {s}"))
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                let content =
-                    format!("## Model tier\n\n{model_tier}\n\n## Skills\n\n{skill_lines}\n");
-                write_atomic(&task_dir.join("a.md"), &content)?;
-                "a.md"
-            }
-            Mode::Human => {
-                let content =
-                    "## Qualification\n\n<!-- Опишіть необхідну кваліфікацію виконавця -->\n";
-                write_atomic(&task_dir.join("h.md"), content)?;
-                "h.md"
-            }
-        };
+        let flag = write_executor_flag(
+            &task_dir,
+            mode,
+            &model_tier,
+            &skills,
+            opts.qualification.as_deref(),
+        )?;
 
         // Залежності — порожні файли-ребра deps/<id>.md (§4.4).
         if !opts.deps.is_empty() {
             let deps_dir = task_dir.join("deps");
             fs::create_dir_all(&deps_dir).map_err(|e| e.to_string())?;
             for dep in &opts.deps {
-                write_atomic(&deps_dir.join(format!("{dep}.md")), "")?;
+                let dep_file = deps_dir.join(format!("{dep}.md"));
+                if let Some(parent) = dep_file.parent() {
+                    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+                }
+                write_atomic(&dep_file, "")?;
             }
         }
 

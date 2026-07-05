@@ -40,6 +40,11 @@ pub fn parse_front_matter(text: &str) -> Value {
     }
 }
 
+/// Парсить чистий YAML-блок (без `---`-маркерів) — напр. `.mt-claim.yml`.
+pub fn parse_yaml(text: &str) -> Value {
+    Value::Object(parse_yaml_block(text))
+}
+
 /// Повертає тіло документа (без front-matter, з обрізаним лівим whitespace).
 pub fn get_body(text: &str) -> String {
     match split_frontmatter(text) {
