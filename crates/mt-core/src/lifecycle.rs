@@ -61,7 +61,7 @@ fn archive_chain(dir: &Path, ts: &str) -> Result<bool, String> {
 }
 
 /// Дочірні вузли (директорії з `task.md`); `history/` і приховані — пропуск.
-fn child_nodes(dir: &Path) -> Vec<String> {
+pub(crate) fn child_nodes(dir: &Path) -> Vec<String> {
     let mut out = Vec::new();
     let Ok(entries) = fs::read_dir(dir) else {
         return out;
