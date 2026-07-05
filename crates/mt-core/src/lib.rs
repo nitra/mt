@@ -8,6 +8,7 @@ pub mod artifacts;
 pub mod claims;
 pub mod config;
 pub mod frontmatter;
+pub mod lifecycle;
 pub mod nnn;
 pub mod spawn;
 pub mod worktree;
