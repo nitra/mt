@@ -51,7 +51,7 @@ fn now_iso() -> String {
 }
 
 /// NNN наступної спроби: `count(run_*.md) + 1` (спека, «NNN source»).
-fn next_run_nnn(dir: &Path) -> u64 {
+pub(crate) fn next_run_nnn(dir: &Path) -> u64 {
     let count = fs::read_dir(dir)
         .map(|entries| {
             entries
@@ -154,16 +154,28 @@ pub fn write_fact(
     Ok(fact_file)
 }
 
-fn write_run(
+pub(crate) fn write_run(
     dir: &Path,
     nnn: &str,
     actor: &str,
     result: &str,
     sections: &str,
 ) -> Result<String, String> {
+    write_run_fm(dir, nnn, actor, result, sections, "")
+}
+
+/// Як [`write_run`], але з додатковими frontmatter-рядками (wall_sec тощо).
+pub(crate) fn write_run_fm(
+    dir: &Path,
+    nnn: &str,
+    actor: &str,
+    result: &str,
+    sections: &str,
+    extra_fm: &str,
+) -> Result<String, String> {
     let run_file = format!("run_{nnn}.md");
     let content = format!(
-        "---\nschema_version: 1\ncreated_at: {}\nactor: {actor}\nresult: {result}\n---\n{sections}",
+        "---\nschema_version: 1\ncreated_at: {}\nactor: {actor}\nresult: {result}\n{extra_fm}---\n{sections}",
         now_iso()
     );
     write_atomic(&dir.join(&run_file), &content)?;
