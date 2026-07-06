@@ -4,7 +4,7 @@
 //! claim ref вказує на commit із `.mt-claim.yml`. Модуль дає read-модель:
 //! node-hash, читання remote claims через git CLI і зіставлення з вузлами.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use chrono::{DateTime, Utc};
@@ -35,6 +35,30 @@ pub fn node_hash(tasks_root: &str, node_path: &str) -> String {
     }
     hex.truncate(20);
     hex
+}
+
+/// Префікс run refs (спека: `refs/mt/runs/<node-hash>/<token>`).
+pub const RUN_REF_PREFIX: &str = "refs/mt/runs";
+
+/// Git top-level, що містить `tasks_dir` (`git rev-parse --show-toplevel`).
+pub fn discover_repo_root(tasks_dir: &Path) -> Result<PathBuf, String> {
+    let out = git(tasks_dir, &["rev-parse", "--show-toplevel"])?;
+    Ok(PathBuf::from(out.trim()))
+}
+
+/// Канонічний шлях `tasks_dir` відносно `repo_root`, POSIX-нормалізований
+/// (`\` → `/`) — вхід для [`node_hash`] (спека: `<tasks-root>\0<node-path>`).
+pub fn tasks_root_relative(repo_root: &Path, tasks_dir: &Path) -> Result<String, String> {
+    let repo_root = repo_root
+        .canonicalize()
+        .map_err(|e| format!("repo root {}: {e}", repo_root.display()))?;
+    let tasks_dir = tasks_dir
+        .canonicalize()
+        .map_err(|e| format!("tasks dir {}: {e}", tasks_dir.display()))?;
+    let rel = tasks_dir
+        .strip_prefix(&repo_root)
+        .map_err(|_| "tasks dir escapes its git repository".to_string())?;
+    Ok(rel.to_string_lossy().replace('\\', "/"))
 }
 
 /// Один запис `git ls-remote origin 'refs/mt/claims/*'`.
@@ -445,6 +469,20 @@ mod tests {
         )
         .unwrap();
         assert!(ls.trim().is_empty());
+    }
+
+    #[test]
+    fn discovers_repo_root_and_relative_tasks_dir() {
+        let repo = TestRepo::new();
+        let tasks_dir = repo.work.path().join("mt");
+        std::fs::create_dir_all(&tasks_dir).unwrap();
+
+        let root = discover_repo_root(&tasks_dir).unwrap();
+        assert_eq!(
+            root.canonicalize().unwrap(),
+            repo.work.path().canonicalize().unwrap()
+        );
+        assert_eq!(tasks_root_relative(&root, &tasks_dir).unwrap(), "mt");
     }
 
     #[test]

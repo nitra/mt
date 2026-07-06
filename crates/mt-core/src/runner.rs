@@ -1,12 +1,14 @@
-//! Локальний run-wrapper (спека mt.md, «Wrapper-скрипт» — файловий рівень).
+//! Run-wrapper (спека mt.md, «Wrapper-скрипт») — git-режим за замовчуванням:
+//! CAS claim → detached worktree від `origin/main` → spawn агента у worktree
+//! → watchdog (hard budget → SIGKILL, progress-timeout за mtime) → підсумок
+//! через [`crate::signal`] (fact є → done/audit + composite вгору, інакше
+//! failed із секціями з `run-draft.md`) → комміт worktree → fenced publish.
 //!
-//! Local-режим без remote claims і worktree: preflight (deps resolved, без
-//! відкритого аудиту, вузол не running) → маркер `running_<pid>_until_<ts>` →
-//! spawn агента (sh -c, cwd = project root, ENV `MT_*`) → watchdog (hard
-//! budget → SIGKILL, progress-timeout за mtime вузла) → підсумок через
-//! [`crate::signal`]: fact є → done/audit (+composite вгору), інакше failed
-//! із секціями з `run-draft.md` або телеметрії. Git-протокол (CAS claims,
-//! fenced publish) — наступна фаза; цей модуль для solo-машини.
+//! Вимагає git-репозиторій з `origin`, до якого є push-доступ (claims/publish
+//! — реальні мутації спільного remote). Rejected claim / merge-conflict /
+//! вичерпаний publish-retry → `Err` (нормальний "інший runner виграв", не
+//! системний збій) — викликач (`orchestrate::run_auto`) додає вузол у
+//! skip-set цього проходу й переходить до інших.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -15,9 +17,15 @@ use std::time::{Duration, Instant, SystemTime};
 
 use serde::{Deserialize, Serialize};
 
+use crate::claims::{
+    acquire_claim, discover_repo_root, node_hash, tasks_root_relative, ClaimFields,
+};
+use crate::config::merge_config;
 use crate::frontmatter::parse_front_matter;
 use crate::nnn::pad_nnn;
+use crate::publish::{fenced_publish, PublishRequest};
 use crate::signal::{self, next_run_nnn, write_run_fm};
+use crate::worktree::{create_run_worktree, push_run_ref, remove_run_worktree};
 use crate::{accepted_fact_state, validate_name, FactState};
 
 /// Дефолтний шаблон команди агента ({path} — вузол відносно project root,
@@ -35,7 +43,7 @@ pub struct RunPlan {
     pub agent_cmd: String,
 }
 
-/// Підсумок спроби (файли вже записано).
+/// Підсумок спроби (файли вже опубліковані в `origin/main`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunOutcome {
     /// success | failed | progress-timeout | budget-exceeded
@@ -60,11 +68,12 @@ fn fm_u64(v: &serde_json::Value, key: &str) -> Option<u64> {
 }
 
 /// Preflight за спекою: a.md, deps resolved, без відкритого аудиту, вузол не
-/// running; бюджети — task.md > .mt.json > дефолти.
+/// running; бюджети — task.md > .mt.json > дефолти. Суто локальні перевірки
+/// (без git) — дешевий гейт перед дорожчим claim acquisition.
 pub fn preflight(tasks_dir: &str, node_path: &str) -> Result<RunPlan, String> {
     let dir = node_dir(tasks_dir, node_path)?;
     if !dir.join("a.md").is_file() {
-        return Err("вузол без a.md — локальний runner запускає лише агентські вузли".to_string());
+        return Err("вузол без a.md — runner запускає лише агентські вузли".to_string());
     }
     if crate::has_running_marker(&dir) {
         return Err("вузол уже running (є running_* маркер)".to_string());
@@ -134,7 +143,7 @@ pub fn preflight(tasks_dir: &str, node_path: &str) -> Result<RunPlan, String> {
     })
 }
 
-/// Останній mtime у піддереві вузла (для progress-watchdog).
+/// Останній mtime у піддереві (для progress-watchdog).
 fn latest_mtime(dir: &Path) -> SystemTime {
     let mut latest = SystemTime::UNIX_EPOCH;
     let mut stack = vec![dir.to_path_buf()];
@@ -179,21 +188,127 @@ fn md_section(text: &str, name: &str) -> Option<String> {
     (!s.is_empty()).then_some(s)
 }
 
-/// Запускає агента і супроводжує спробу до кінця. **Блокуючий** — викликач
-/// (Tauri/CLI) сам вирішує, в якому потоці це жити.
+fn git(dir: &Path, args: &[&str]) -> Result<String, String> {
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .output()
+        .map_err(|e| format!("git {}: {e}", args.join(" ")))?;
+    if !out.status.success() {
+        return Err(format!(
+            "git {}: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+}
+
+fn iso_now() -> String {
+    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
+
+fn iso_plus(sec: i64) -> String {
+    (chrono::Utc::now() + chrono::Duration::seconds(sec))
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
+
+/// Псевдо-унікальний токен спроби без залежності `uuid` (час + pid).
+fn fresh_token() -> String {
+    let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0);
+    format!("{nanos:x}-{}", std::process::id())
+}
+
+fn worktrees_dir_path(repo_root: &Path, config: &serde_json::Value) -> PathBuf {
+    let raw = config
+        .get("worktrees_dir")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("./.worktrees");
+    let rel = raw.strip_prefix("./").unwrap_or(raw);
+    if Path::new(rel).is_absolute() {
+        PathBuf::from(rel)
+    } else {
+        repo_root.join(rel)
+    }
+}
+
+/// Комітить усі зміни worktree (fact/run/plan/тощо); "нема що комітити" —
+/// не помилка (агент теоретично міг не лишити diff).
+fn commit_worktree(worktree: &Path, message: &str) -> Result<(), String> {
+    git(worktree, &["add", "-A"])?;
+    let status = git(worktree, &["status", "--porcelain"])?;
+    if status.is_empty() {
+        return Ok(());
+    }
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(worktree)
+        .args(["commit", "-q", "-m", message])
+        .env("GIT_AUTHOR_NAME", "mt-runner")
+        .env("GIT_AUTHOR_EMAIL", "mt-runner@localhost")
+        .env("GIT_COMMITTER_NAME", "mt-runner")
+        .env("GIT_COMMITTER_EMAIL", "mt-runner@localhost")
+        .output()
+        .map_err(|e| format!("git commit: {e}"))?;
+    if !out.status.success() {
+        return Err(format!(
+            "git commit: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(())
+}
+
+/// Запускає агента, супроводжує спробу до кінця і публікує результат через
+/// fenced publish. **Блокуючий** — викликач (Tauri/CLI) сам вирішує потік.
 pub fn run_node(tasks_dir: &str, node_path: &str) -> Result<RunOutcome, String> {
     let plan = preflight(tasks_dir, node_path)?;
-    let dir = node_dir(tasks_dir, node_path)?;
-    let project_root = Path::new(tasks_dir)
-        .parent()
-        .unwrap_or(Path::new("."))
-        .to_path_buf();
-    let rel_path = Path::new(tasks_dir)
-        .file_name()
-        .map(|n| format!("{}/{node_path}", n.to_string_lossy()))
-        .unwrap_or_else(|| node_path.to_string());
+
+    let repo_root = discover_repo_root(Path::new(tasks_dir))?;
+    let tasks_root_rel = tasks_root_relative(&repo_root, Path::new(tasks_dir))?;
+    let hash = node_hash(&tasks_root_rel, node_path);
+
+    let raw_config = fs::read_to_string(repo_root.join(".mt.json")).ok();
+    let config = merge_config(raw_config.as_deref());
+    let claim_lease_sec = fm_u64(&config, "claim_lease_sec").unwrap_or(3600) as i64;
+    let publish_retry_max = fm_u64(&config, "publish_retry_max").unwrap_or(8) as u32;
+    let publish_retry_base_ms = fm_u64(&config, "publish_retry_base_ms").unwrap_or(250);
+
+    git(&repo_root, &["fetch", "--quiet", "origin", "main"])?;
+    let base_sha = git(&repo_root, &["rev-parse", "origin/main"])?;
+
+    let token = fresh_token();
+    let runner_id = format!("mt-runner/{}", std::process::id());
+    let run_ref = format!("refs/mt/runs/{hash}/{token}");
+    let claimed_at = iso_now();
+    let lease_until = iso_plus(claim_lease_sec);
+    let fields = ClaimFields {
+        node: node_path,
+        actor: "agent",
+        runner_id: &runner_id,
+        claimed_at: &claimed_at,
+        lease_until: &lease_until,
+        token: &token,
+        generation: 1,
+        base_sha: &base_sha,
+        run_ref: &run_ref,
+    };
+    let claim = acquire_claim(&repo_root, &hash, &fields)?;
+    if !claim.accepted {
+        return Err("claim-lost: інший runner уже володіє цим вузлом".to_string());
+    }
+
+    let worktrees_dir = worktrees_dir_path(&repo_root, &config);
+    let worktree = create_run_worktree(&repo_root, &worktrees_dir, &hash, &token, &base_sha)?;
+    push_run_ref(&worktree, &hash, &token)?;
+
+    let wt_tasks_dir = worktree.join(&tasks_root_rel);
+    let wt_tasks_dir_str = wt_tasks_dir.to_string_lossy().into_owned();
+    let dir = wt_tasks_dir.join(node_path);
     let nnn_s = pad_nnn(plan.nnn);
 
+    let rel_path = format!("{tasks_root_rel}/{node_path}");
     let cmd = plan
         .agent_cmd
         .replace("{path}", &rel_path)
@@ -204,17 +319,21 @@ pub fn run_node(tasks_dir: &str, node_path: &str) -> Result<RunOutcome, String> 
     let mut child = Command::new("sh")
         .arg("-c")
         .arg(&cmd)
-        .current_dir(&project_root)
+        .current_dir(&worktree)
         .env("MT_BUDGET_SEC", plan.budget_sec.to_string())
         .env("MT_HARD_BUDGET_SEC", plan.budget_hard_sec.to_string())
         .env("MT_STARTED_AT", started_unix.to_string())
         .env("MT_RUN_NNN", &nnn_s)
         .env("MT_ATTEMPT", plan.attempt.to_string())
+        .env("MT_CLAIM_TOKEN", &token)
+        .env("MT_CLAIM_GENERATION", "1")
         .spawn()
         .map_err(|e| format!("spawn agent: {e}"))?;
 
-    // Локальний observability-маркер (git-ignored; НЕ lock) — сканер бачить running.
-    let marker = dir.join(format!(
+    // Локальний observability-маркер у ЖИВІЙ tasks_dir (git-ignored; НЕ lock)
+    // — сканер бачить running, доки claim — джерело правди щодо ownership.
+    let live_dir = node_dir(tasks_dir, node_path)?;
+    let marker = live_dir.join(format!(
         "running_{}_until_{}",
         child.id(),
         started_unix + plan.budget_hard_sec as i64
@@ -253,8 +372,9 @@ pub fn run_node(tasks_dir: &str, node_path: &str) -> Result<RunOutcome, String> 
     let wall_fm = format!("wall_sec: {wall_sec}\n");
 
     let fact_file = format!("fact_{nnn_s}.md");
-    if kill_reason.is_none() && dir.join(&fact_file).is_file() {
-        // Агент записав fact: audit-політика вирішує done чи audit.
+    let (result, run_file, out_fact_file, propagated) = if kill_reason.is_none()
+        && dir.join(&fact_file).is_file()
+    {
         let policy_required = fs::read_to_string(dir.join("task.md"))
             .map(|c| parse_front_matter(&c))
             .ok()
@@ -265,88 +385,126 @@ pub fn run_node(tasks_dir: &str, node_path: &str) -> Result<RunOutcome, String> 
             })
             .unwrap_or(false);
         let signaled = if policy_required {
-            signal::audit(tasks_dir, node_path, "agent")
+            signal::audit(&wt_tasks_dir_str, node_path, "agent")
         } else {
-            signal::done(tasks_dir, node_path, "agent")
+            signal::done(&wt_tasks_dir_str, node_path, "agent")
         };
         match signaled {
-            Ok(out) => {
-                return Ok(RunOutcome {
-                    result: "success".to_string(),
-                    run_file: out.run_file,
-                    fact_file: Some(out.fact_file),
-                    wall_sec,
-                    propagated: out.propagated,
-                });
-            }
+            Ok(out) => (
+                "success".to_string(),
+                out.run_file,
+                Some(out.fact_file),
+                out.propagated,
+            ),
             Err(check_err) => {
-                // ## Check провалився — спроба фіксується як failed (fact лишається
-                // для наступної спроби як контекст, «дірку» створює відсутність
-                // прийнятого run success).
                 let sections = format!(
                     "\n## Completed\n\nfact записано, але ## Check не пройшов\n\n## Blockers\n\n{check_err}\n\n## Next Attempt\n\nвиправити і повторити done\n"
                 );
                 let run_file = write_run_fm(&dir, &nnn_s, "agent", "failed", &sections, &wall_fm)?;
-                return Ok(RunOutcome {
-                    result: "failed".to_string(),
-                    run_file,
-                    fact_file: None,
-                    wall_sec,
-                    propagated: Vec::new(),
-                });
+                ("failed".to_string(), run_file, None, Vec::new())
             }
         }
+    } else {
+        let draft = fs::read_to_string(dir.join("run-draft.md")).unwrap_or_default();
+        let result = kill_reason.unwrap_or("failed").to_string();
+        let completed =
+            md_section(&draft, "Completed").unwrap_or_else(|| "невідомо (draft відсутній)".into());
+        let blockers = md_section(&draft, "Blockers")
+            .unwrap_or_else(|| format!("процес завершився без fact ({result})"));
+        let next = md_section(&draft, "Next Attempt")
+            .unwrap_or_else(|| "діагностувати попередній ран".into());
+        let sections = format!(
+            "\n## Completed\n\n{completed}\n\n## Blockers\n\n{blockers}\n\n## Next Attempt\n\n{next}\n"
+        );
+        let run_file = write_run_fm(&dir, &nnn_s, "agent", &result, &sections, &wall_fm)?;
+        (result, run_file, None, Vec::new())
+    };
+
+    commit_worktree(
+        &worktree,
+        &format!("mt: {node_path} run {nnn_s} ({result})"),
+    )?;
+
+    let publish_req = PublishRequest {
+        worktree: &worktree,
+        node_hash: &hash,
+        claim_sha: &claim.commit_sha,
+        token: &token,
+        run_ref_sha_before: &base_sha,
+    };
+    let publish = fenced_publish(
+        &repo_root,
+        &publish_req,
+        publish_retry_max,
+        publish_retry_base_ms,
+    )?;
+
+    if !publish.published {
+        // Worktree/run ref лишаються для debug (спека, «Failure-сімейство» /
+        // «Orphan worktree») — не видаляємо, наступний runner чи людина
+        // розбереться. Claim теж не чіпаємо: якщо fenced — він уже не наш.
+        return Err(if publish.fenced {
+            "claim-lost: втрачено ownership під час виконання, publish скасовано".to_string()
+        } else {
+            "publish: вичерпано retry — конкурентний publish виграв гонку, спробуйте пізніше"
+                .to_string()
+        });
     }
 
-    // Failure-сімейство: секції з run-draft.md, fallback — телеметрія.
-    let draft = fs::read_to_string(dir.join("run-draft.md")).unwrap_or_default();
-    let result = kill_reason.unwrap_or("failed").to_string();
-    let completed =
-        md_section(&draft, "Completed").unwrap_or_else(|| "невідомо (draft відсутній)".into());
-    let blockers = md_section(&draft, "Blockers")
-        .unwrap_or_else(|| format!("процес завершився без fact ({result})"));
-    let next =
-        md_section(&draft, "Next Attempt").unwrap_or_else(|| "діагностувати попередній ран".into());
-    let sections = format!(
-        "\n## Completed\n\n{completed}\n\n## Blockers\n\n{blockers}\n\n## Next Attempt\n\n{next}\n"
-    );
-    let run_file = write_run_fm(&dir, &nnn_s, "agent", &result, &sections, &wall_fm)?;
+    // Успішна публікація — worktree більше не потрібен.
+    let _ = remove_run_worktree(&repo_root, &worktree);
+
     Ok(RunOutcome {
         result,
         run_file,
-        fact_file: None,
+        fact_file: out_fact_file,
         wall_sec,
-        propagated: Vec::new(),
+        propagated,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::TestRepo;
 
     const TASK: &str = "---\nschema_version: 1\ncreated_at: 2026-06-06T10:00:00Z\nbudget_sec: 5\nbudget_hard_sec: 2\nprogress_timeout_sec: 60\n---\n\n## Task\n\nx\n";
 
-    fn node(tmp: &Path, path: &str) {
+    /// Пише task.md/a.md на диск, без git — для тестів `preflight()`
+    /// (суто файлова логіка, git-репо не потрібне).
+    fn node_files_only(tmp: &Path, path: &str) {
         let dir = tmp.join(path);
         fs::create_dir_all(&dir).unwrap();
         fs::write(dir.join("task.md"), TASK).unwrap();
         fs::write(dir.join("a.md"), "schema_version: 1\n").unwrap();
     }
 
-    fn with_agent_cmd(tmp: &Path, cmd: &str) {
+    /// Як [`node_files_only`], але коммітить і пушить у `origin/main` —
+    /// потрібно для `run_node()`: worktree чекаутиться саме з `origin/main`.
+    fn node(tmp: &Path, path: &str) {
+        node_files_only(tmp, path);
+        crate::test_support::run(tmp, &["add", "."]);
+        crate::test_support::run(tmp, &["commit", "-q", "-m", &format!("add {path}")]);
+        crate::test_support::run(tmp, &["push", "-q", "origin", "main"]);
+    }
+
+    fn with_agent_cmd(repo: &TestRepo, cmd: &str) {
         fs::write(
-            tmp.join(".mt.json"),
+            repo.work.path().join(".mt.json"),
             serde_json::json!({ "agent_cmd": cmd }).to_string(),
         )
         .unwrap();
+        crate::test_support::run(repo.work.path(), &["add", ".mt.json"]);
+        crate::test_support::run(repo.work.path(), &["commit", "-q", "-m", "config"]);
+        crate::test_support::run(repo.work.path(), &["push", "-q", "origin", "main"]);
     }
 
     #[test]
     fn preflight_blocks_unresolved_deps_and_running() {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path().join("mt");
-        node(&root, "a");
-        node(&root, "b");
+        node_files_only(&root, "a");
+        node_files_only(&root, "b");
         fs::create_dir_all(root.join("b/deps")).unwrap();
         fs::write(root.join("b/deps/a.md"), "").unwrap();
         let r = root.to_string_lossy().into_owned();
@@ -357,28 +515,37 @@ mod tests {
     }
 
     #[test]
-    fn run_success_writes_run_via_done() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path().join("mt");
+    fn run_success_writes_run_and_publishes_to_origin_main() {
+        let repo = TestRepo::new();
+        let root = repo.work.path().join("mt");
         node(&root, "solo");
         with_agent_cmd(
-            tmp.path(),
+            &repo,
             "printf -- '---\\nschema_version: 1\\n---\\n\\n## Summary\\n\\nok\\n' > {path}/fact_{nnn}.md",
         );
         let r = root.to_string_lossy().into_owned();
         let out = run_node(&r, "solo").unwrap();
         assert_eq!(out.result, "success");
         assert_eq!(out.fact_file.as_deref(), Some("fact_001.md"));
-        assert!(root.join("solo/run_001.md").is_file());
         assert!(!crate::has_running_marker(&root.join("solo")));
+
+        // Опубліковано в origin/main: claim/run ref прибрані, коміт на remote.
+        let claims = crate::test_support::output(
+            repo.work.path(),
+            &["ls-remote", "origin", "refs/mt/claims/*"],
+        );
+        assert!(claims.is_empty());
+        // Локальний main (той самий work-клон) підхопив публікацію.
+        assert!(root.join("solo/fact_001.md").is_file());
+        assert!(root.join("solo/run_001.md").is_file());
     }
 
     #[test]
-    fn hard_budget_kills_and_writes_failure_run() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path().join("mt");
+    fn hard_budget_kills_and_publishes_failure_run() {
+        let repo = TestRepo::new();
+        let root = repo.work.path().join("mt");
         node(&root, "slow");
-        with_agent_cmd(tmp.path(), "sleep 30");
+        with_agent_cmd(&repo, "sleep 30");
         let r = root.to_string_lossy().into_owned();
         let out = run_node(&r, "slow").unwrap();
         assert_eq!(out.result, "budget-exceeded");
@@ -389,12 +556,12 @@ mod tests {
     }
 
     #[test]
-    fn failure_takes_sections_from_draft() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path().join("mt");
+    fn failure_takes_sections_from_draft_and_publishes() {
+        let repo = TestRepo::new();
+        let root = repo.work.path().join("mt");
         node(&root, "fail");
         with_agent_cmd(
-            tmp.path(),
+            &repo,
             "printf -- '## Completed\\n\\nполовина\\n\\n## Blockers\\n\\nнемає доступу\\n\\n## Next Attempt\\n\\nдати ключ\\n' > {path}/run-draft.md; exit 1",
         );
         let r = root.to_string_lossy().into_owned();
@@ -403,5 +570,32 @@ mod tests {
         let run = fs::read_to_string(root.join("fail/run_001.md")).unwrap();
         assert!(run.contains("немає доступу"));
         assert!(run.contains("дати ключ"));
+    }
+
+    #[test]
+    fn rejected_claim_when_node_already_claimed() {
+        let repo = TestRepo::new();
+        let root = repo.work.path().join("mt");
+        node(&root, "solo");
+        with_agent_cmd(&repo, "true");
+        let r = root.to_string_lossy().into_owned();
+
+        let hash = node_hash("mt", "solo");
+        let base = repo.main_sha();
+        let fields = ClaimFields {
+            node: "solo",
+            actor: "agent",
+            runner_id: "other/1",
+            claimed_at: &iso_now(),
+            lease_until: &iso_plus(3600),
+            token: "already-there",
+            generation: 1,
+            base_sha: &base,
+            run_ref: "refs/mt/runs/x/already-there",
+        };
+        acquire_claim(repo.work.path(), &hash, &fields).unwrap();
+
+        let err = run_node(&r, "solo").unwrap_err();
+        assert!(err.contains("claim-lost"));
     }
 }
