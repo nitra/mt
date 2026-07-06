@@ -47,6 +47,8 @@ pub struct NodeArtifact {
     pub decision: Option<String>,
     pub wall_sec: Option<u64>,
     pub cost_usd: Option<f64>,
+    pub tokens_in: Option<u64>,
+    pub tokens_out: Option<u64>,
 }
 
 /// `(prefix, kind, rank)` для файлів форми `<prefix><NNN>.md`; rank —
@@ -129,6 +131,8 @@ pub fn list_node_artifacts(tasks_dir: &str, node_path: &str) -> Result<Vec<NodeA
                 decision: fm_str(&fm, "decision"),
                 wall_sec: fm.get("wall_sec").and_then(Value::as_u64),
                 cost_usd: fm.get("cost_usd").and_then(Value::as_f64),
+                tokens_in: fm.get("tokens_in").and_then(Value::as_u64),
+                tokens_out: fm.get("tokens_out").and_then(Value::as_u64),
             },
         ));
     }
