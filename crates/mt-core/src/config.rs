@@ -23,6 +23,7 @@ pub fn config_defaults() -> Value {
         "default_model_tier": "AVG",
         "budget_hard_sec_multiplier": 3,
         "progress_timeout_sec": 300,
+        "agent_concurrency": 5,
         "claude_model": "claude-sonnet-4-6",
         "audit_model": "claude-haiku-4-5-20251001",
         "model_map": {
