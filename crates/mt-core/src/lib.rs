@@ -11,9 +11,12 @@ pub mod frontmatter;
 pub mod lifecycle;
 pub mod nnn;
 pub mod orchestrate;
+pub mod publish;
 pub mod runner;
 pub mod signal;
 pub mod spawn;
+#[cfg(test)]
+mod test_support;
 pub mod worktree;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
