@@ -14,6 +14,8 @@ pub mod orchestrate;
 pub mod runner;
 pub mod signal;
 pub mod spawn;
+#[cfg(test)]
+mod test_support;
 pub mod worktree;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
