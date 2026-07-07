@@ -1,0 +1,114 @@
+---
+type: architecture
+description: 'CLI-контракт, конфігурація, монорепо, security model, відмовостійкість, bootstrap і наскрізні сценарії'
+tags: [operations, cli, config, security, scenarios]
+timestamp: 2026-07-07
+---
+
+# Експлуатація
+
+> Частина цільової архітектури **0.3.0-draft** — [зміст](index.md) · [огляд](overview.md)
+
+## CLI контракт
+
+Конфіг: `MT_DIR` env або `.mt.json` → `mt_dir`, дефолт `./mt/`. Всі команди — `--json`.
+
+```
+# ядро графа (без змін відносно 0.2.0)
+mt setup | init | plan | status | scan | run | kill | invalidate |
+   done | audit | failed | spawn | stop | cleanup | watch
+
+# хост і сесії (НОВЕ)
+mt serve [--relay wss://…]        ← headless agent-server (always-on машини)
+mt attach <node> [--remote]       ← інтерактивна сесія: локальний хост через
+                                    port-file або віддалений через relay; REPL
+mt handoff <node>                 ← «перенести сюди»: HandoffRequest + claim
+
+# акаунт і учасники (НОВЕ)
+mt login                          ← device-flow авторизація на relay
+mt sessions                       ← активні run-и акаунта, включно зі спільними
+                                    (хто де, хто тримає claim, моя роль)
+mt invite <root-node> <email> --role host|approver|viewer
+mt members <root-node>
+```
+
+`mt watch`/`mt run --auto` зберігаються як однопострільні входи тієї самої логіки, що живе в agent-server (fallback-режим без сервера). Exit codes `mt scan`/`mt watch`: `0` — ок, `1` — є вузли, що потребують уваги.
+
+`mt cleanup [--older-than N]` (дефолт 7 днів): orphan worktrees без active claim, мертві running-маркери, remote orphan run refs (старші `run_ref_ttl_days`), протухлі archive refs (старші `archive_ttl_days`).
+
+## Конфігурація (`.mt.json`)
+
+До конфігурації 0.2.0 (claim/publish/budget/retry/audit/model/skill_profiles — без змін) додаються:
+
+```json
+{
+  "relay_url": "wss://relay.example.com",
+  "server_port_file": "~/.nitra/server.port",
+  "device_key_path": "~/.nitra/device.key",
+  "interactive_claim_lease_sec": 900,
+  "interactive_claim_renew_sec": 60,
+  "session_archive": true,
+  "archive_ref_prefix": "refs/mt/archive",
+  "archive_ttl_days": 90,
+  "require_signed_approvals": false,
+  "surface_profiles": { "designer": "local-omlx", "writer": "litellm" },
+  "provider_profiles": {
+    "local-omlx":  { "base_url": "http://127.0.0.1:8080/v1", "model": "…" },
+    "local-ollama":{ "base_url": "http://127.0.0.1:11434/v1", "model": "…" },
+    "litellm":     { "base_url": "http://…/v1", "model": "…" }
+  }
+}
+```
+
+**Модель провайдера:** `model_map` (MIM/AVG/MAX) і `provider_profiles` — один механізм: tier резолвиться у профіль. Автономні run-и обирають за `model_tier` з `a.md`; інтерактивні можуть перевизначати профіль per-turn за `surface`-hint (`surface_profiles`); за відсутності — профіль сесії. LLM-транспорт — уніфікований provider-інтерфейс (OpenAI-compatible як мінімальний спільний знаменник; конкретика — у [stack.md](stack.md)).
+
+Per-node override: `mt/<node>/.mt-override.json`. `schema_version` — перше поле; невідома/відсутня → fail closed.
+
+## Монорепо: множинні `mt/`
+
+```
+monorepo/
+  mt/            ← глобальний (cross-workspace задачі)
+  packages/api/mt/
+  .worktrees/    ← завжди в git root
+```
+
+`MT_DIR` вказує на конкретний `mt/`; один orchestrator на один root. `mt/` не може бути в `.gitignore`d-директорії; scan пропускає приховані, `node_modules`/`target`/`dist`/`build`.
+
+## Security model
+
+- **Sandbox-профілі:** skill → профіль у `skill_profiles`: allowlist команд, network (off за замовчуванням), fs-scope (worktree). Команда поза allowlist → відмова.
+- **Secrets broker:** `a.md` → `secrets: [KEY]`; wrapper інжектить через ENV з OS keychain; маскує у виводах. У файлах вузлів секретів немає.
+- **PII:** у git — лише handles; мапінг handle → account у `.mt/directory.json` (git-ignored) та relay.
+- **Device keys:** приватні ключі не покидають keystore пристрою; relay зберігає лише pubkeys; компрометація пристрою → видалення device з relay (підписи перестають прийматись негайно завдяки pubkey-кешу з TTL).
+- **ACL:** relay — «хто і кому можна» (membership, кімнати); git-хостинг — доступ до remote; жодних списків доступу у файлах вузлів.
+- **Read-scope:** агент читає файли будь-яких вузлів свого `mt/` (trade-off); ізоляція — окремий `mt/`/remote на команду чи тенанта.
+
+## Відмовостійкість
+
+| Відмова | Поведінка |
+| --- | --- |
+| Relay недоступний | хости працюють: claim/publish/scan через git; wake — cron fallback; віддалені клієнти і push тимчасово недоступні; локальні клієнти працюють через WS/in-process |
+| Хост помер посеред сесії | claim спливає → stalled → takeover іншим хостом; журнал відновлюється з останнього запушеного run ref (втрата ≤ 1 незавершеного ходу) |
+| Git remote недоступний | інтерактивна сесія продовжується локально (коміти накопичуються), push ретраїться; done/handoff блокуються до відновлення |
+| Клієнт від'єднався | нічого: сесія живе на хості; реконект → реплей з `want_replay_from` |
+
+## Bootstrap
+
+```bash
+# Передумови: branch protection на main; relay розгорнутий (опційно для соло-локального)
+mt setup            # .mt.json + .mt/system-prompt.md + mt/ + git hook; fail closed без protection
+mt login            # реєстрація пристрою на relay (пропустити для offline-режиму)
+
+mt init my-project --task "..." --mode agent --budget-sec 3600
+mt run mt/my-project/        # автономно — або:
+mt attach mt/my-project/     # інтерактивно з будь-якої поверхні
+```
+
+## Наскрізні сценарії (Definition of Done архітектури)
+
+1. **Автономний headless (класичний MT):** init → watch → plan (composite) → spawn --approve → діти паралельно → аудит із clarification → composite-агрегація → resolved. Без relay, без клієнтів.
+2. **Мультихост, один акаунт:** хост A (`mt serve`) веде інтерактивну сесію → користувач на машині B робить «перенести сюди» → handoff: B продовжує ту саму розмову з повною історією; спроба писати без claim → відхилено CAS-ом.
+3. **Спільна задача, два акаунти:** A створює задачу → запрошує B (`approver`) → телефон B отримує стрічку і підписує ApprovalResponse → хост A звіряє підпис pubkey-єм пристрою B → виконує деструктивну дію → підпис видно у `run_NNN.md ## Approvals`. Потім роль B → `host` → B робить handoff і веде задачу далі; підписка стороннього акаунта на кімнату → відмова relay.
+4. **Dashboard:** `client_kind: "mt-dashboard"` підписується на піддерево → бачить live `NodeState`/`PlanReview`/`Committed` усього графа; апрув плану з телефона → `plan-approved_NNN.md` з підписом.
+5. **Деградація:** вимкнути relay посеред сценарію 2 → сесія на активному хості триває; handoff можливий через expiry+grace takeover; після повернення relay presence/push відновлюються.

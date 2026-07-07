@@ -99,7 +99,7 @@ pub fn fenced_publish(
 
     for attempt in 0..retry_max.max(1) {
         git(repo_root, &["fetch", "--quiet", "origin", "main"])?;
-        // Custom ref — явний fetch (спека: не fetch-иться стандартним refspec).
+        // Custom ref — явний fetch (спека: стандартний refspec його не покриває).
         let (claim_fetch_ok, _) = git_status(
             repo_root,
             &[

@@ -1,3 +1,10 @@
+---
+type: review
+description: 'Розбір зауважень рецензії контракту 0.2.0 і внесені зміни (fencing, TOCTOU, protected main)'
+tags: [review, contract]
+timestamp: 2026-06-11
+---
+
 # Відповідь на рецензію `mt.md`
 
 <!-- markdownlint-disable MD036 -->
