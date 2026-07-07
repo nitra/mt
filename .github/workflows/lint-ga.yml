@@ -38,4 +38,6 @@ jobs:
           | sudo tar -xz -C /usr/local/bin conftest
 
       - name: Lint GA
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # policy-adapter резолвить версії тулів через GitHub API (анонімно — rate limit)
         run: bunx n-cursor lint ga --read-only
