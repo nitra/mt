@@ -8,7 +8,7 @@
  * @param {string} name ім'я задачі (може містити /)
  * @returns {string} санітизоване ім'я ([^a-zA-Z0-9_-] → '-')
  */
-export function sanitizeTaskName(name: string): string
+export function sanitizeTaskName(name: string): string;
 /**
  * Валідує id вузла для створення задачі (НЕ виправляє — повертає помилку).
  *
@@ -19,19 +19,6 @@ export function sanitizeTaskName(name: string): string
  * @param {string} name id вузла (може містити /)
  * @returns {string | null} текст помилки або null якщо валідне
  */
-export function validateTaskName(name: string): string | null
+export function validateTaskName(name: string): string | null;
 /** Всі можливі стани задачі відповідно до специфікації. */
-export const NODE_STATES: readonly [
-  'unassigned',
-  'pending',
-  'waiting',
-  'blocked',
-  'plan-review',
-  'spawned',
-  'running',
-  'stalled',
-  'pending-audit',
-  'resolved',
-  'failed',
-  'unresolvable'
-]
+export const NODE_STATES: readonly ["unassigned", "pending", "waiting", "blocked", "plan-review", "spawned", "running", "stalled", "pending-audit", "resolved", "failed", "unresolvable"];
