@@ -1,0 +1,23 @@
+npm/lib/tests/run.test.mjs
+  s_7e5f9d7306be1a::t_c699120ec53c54 43,51
+npm/lib/tests/docs.test.mjs
+  s_7e5f9d7306be1a::t_afc39d5da0ddea 21-23,26
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_55304c217a846f 7-14,16-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "df347f2908acd09772f30961e76ba8dd57e2446f",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
