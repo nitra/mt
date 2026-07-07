@@ -1,0 +1,58 @@
+npm/docs/architecture/i18n.md
+  s_7e5f9d7306be1a::t_7268cca94ef05b 80-81
+  s_7e5f9d7306be1a::t_19b9ea71eb4adc 34-35
+  s_7e5f9d7306be1a::t_2b6e391ba88038 63-65
+  s_7e5f9d7306be1a::t_b3a9fbca913f89 117-119
+  s_7e5f9d7306be1a::t_2406e3a6788767 99-104,106
+npm/docs/architecture/surfaces.md
+  s_7e5f9d7306be1a::t_300bb8a850a963 1-79
+npm/docs/roadmap.md
+  s_7e5f9d7306be1a::t_4b8aaf81fbdd4c 1-53
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_315c1449b3405e 40
+  s_7e5f9d7306be1a::t_d8fcc834b5b490 34
+npm/docs/architecture/git.md
+  s_7e5f9d7306be1a::t_d5e6da7c210b17 60-62
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_7a18c3be0f5074 8
+  s_7e5f9d7306be1a::t_2ef9ec42b96667 17-18
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_ef0a1e79684258 7-14,16-30
+npm/docs/architecture/runtime.md
+  s_7e5f9d7306be1a::t_312866da3fa991 40
+  s_7e5f9d7306be1a::t_bf34a52627ecd2 99-100,106
+npm/docs/architecture/index.md
+  s_7e5f9d7306be1a::t_479bd4280182fe 10-12
+npm/docs/log.md
+  s_7e5f9d7306be1a::t_f5c0d47e4733c1 5-12
+npm/docs/architecture/access.md
+  s_7e5f9d7306be1a::t_a90aaaa95a17f7 73-79
+.cspell.json
+  s_7e5f9d7306be1a::t_c078a736621019 281
+  s_7e5f9d7306be1a::t_8e813c99ff823a 163-167
+  s_7e5f9d7306be1a::t_63c0b3cf9776e2 252
+  s_7e5f9d7306be1a::t_3d5e6cd6efbaeb 223
+  s_7e5f9d7306be1a::t_2d94748550081d 306-307
+  s_7e5f9d7306be1a::t_830dc7b5aeca45 152
+  s_7e5f9d7306be1a::t_3f7005e35c5c7b 95
+npm/.changes/260707-2129.md
+  s_7e5f9d7306be1a::t_008202375c8457 1-5
+npm/docs/architecture/operations.md
+  s_7e5f9d7306be1a::t_3c4e1d1964a72c 96-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "cb94d86e1a511bc0f9906572b4c1f0a8e7bf0a7c",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
