@@ -1,0 +1,21 @@
+npm/.changes/260707-2152.md
+  s_cd3866719fef15::t_c3e4a8e46d5204 1-5
+npm/README.md
+  s_cd3866719fef15::t_4483736e303c1b 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8f17447c3fa8a62be171c5511548bf3fdf1373e5",
+  "prompts": {},
+  "sessions": {
+    "s_cd3866719fef15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5bd63382-c5cc-46e7-8b86-26516f19e303",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
