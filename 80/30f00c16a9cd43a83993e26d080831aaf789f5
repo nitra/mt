@@ -1,0 +1,58 @@
+crates/mt-napi/vitest.config.mjs
+  s_274671db6c3891::t_16aab76e24d2ec 1-22
+.cspell.json
+  s_274671db6c3891::t_b49f57300d1465 125
+  s_274671db6c3891::t_16aab76e24d2ec 185,202
+  s_274671db6c3891::t_d0bf19d4a32770 305
+crates/mt-napi/docs/vitest.config.md
+  s_274671db6c3891::t_92a4860e9c1ae8 1-22
+npm/CHANGELOG.md
+  s_274671db6c3891::t_1a278d317ec098 3-8
+npm/docs/log.md
+  s_274671db6c3891::t_1a278d317ec098 5
+crates/mt-napi/package.json
+  s_274671db6c3891::t_8f7481236f34a6 5,8-11
+crates/mt-core/src/docs/claims.md
+  s_274671db6c3891::t_b49f57300d1465 1-59
+npm/docs/architecture/i18n.md
+  s_274671db6c3891::t_87d3521f6b56b9 32
+  s_274671db6c3891::t_1a278d317ec098 1-31,33-113
+npm/docs/architecture/index.md
+  s_274671db6c3891::t_1a278d317ec098 12
+crates/mt-napi/jsconfig.json
+  s_274671db6c3891::t_16aab76e24d2ec 1-10
+crates/mt-core/src/docs/config.md
+  s_274671db6c3891::t_b49f57300d1465 1-47
+npm/docs/index.md
+  s_274671db6c3891::t_1a278d317ec098 18
+crates/mt-core/src/docs/frontmatter.md
+  s_274671db6c3891::t_721466cd7db825 1-39
+crates/mt-napi/stryker.config.mjs
+  s_274671db6c3891::t_16aab76e24d2ec 1-18
+npm/package.json
+  s_274671db6c3891::t_1a278d317ec098 3
+.oxlintrc.json
+  s_274671db6c3891::t_2a208638a3e54e 15
+crates/mt-napi/docs/stryker.config.md
+  s_274671db6c3891::t_b2102df4d90d46 1-23
+crates/mt-napi/.changes/260707-0951.md
+  s_274671db6c3891::t_34df61abc12901 1-5
+npm/docs/vision.md
+  s_274671db6c3891::t_1a278d317ec098 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8030f00c16a9cd43a83993e26d080831aaf789f5",
+  "prompts": {},
+  "sessions": {
+    "s_274671db6c3891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f21d78-b127-4c7d-898d-d4c0f17f9668",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
