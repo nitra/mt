@@ -1,0 +1,55 @@
+crates/mt-napi/docs/vitest.config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-22
+docs/adr/260606-1323-один-файл-task-md-для-місії-та-inputs.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 2-4,7-8,12,16-17,21,25-27,32,34,36,38-42
+crates/mt-napi/CHANGELOG.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3-9
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 13-27
+  s_7e5f9d7306be1a::t_3199a7b454127c 7-11
+.cursor/rules/n-ci4.mdc
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 371-373,407-411
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 35-40,50
+crates/mt-napi/package.json
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3,5
+crates/mt-core/src/docs/config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-47
+.cursor/rules/n-js-run.mdc
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 80,87,113,136,145,152
+crates/mt-core/src/docs/frontmatter.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-39
+crates/mt-core/src/docs/claims.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-59
+crates/mt-napi/docs/stryker.config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-23
+npm/package.json
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3
+npm/CHANGELOG.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3-12
+.cspell.json
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 131,215,259,299,325
+  s_7e5f9d7306be1a::t_e0beb49eab64ad 187
+docs/adr/20260614-070000-task-create-rust-write-side.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 79-89
+.cursor/rules/n-test.mdc
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 150,167
+docs/adr/20260615-202339-plan-reject-max-ескалація-на-людину.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 2-4,7-8,11-12,15-17,20-21,24-28,31-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d0124db3395b0ef9a06c80b235a057365f994f53",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
