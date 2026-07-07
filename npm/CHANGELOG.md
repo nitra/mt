@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0] - 2026-07-07
+
+### Changed
+
+- docs: об'єднана цільова архітектура 0.3.0-draft — мердж графа задач mt.md і scaffold-spec v4 (пристрої/сесії/relay); реструктуризовано у глави docs/architecture/ з OKF-індексами (docs/index.md, docs/log.md) та frontmatter; mt.md позначено deprecated як цільова картина, лишається контрактом @7n/mt@0.2.x
+
 ## [0.6.0] - 2026-07-04
 
 ### Changed
