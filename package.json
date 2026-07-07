@@ -10,11 +10,6 @@
   "scripts": {
     "start": "bun ./npm/bin/mt.js",
     "test": "vitest run",
-    "lint": "bun run lint-ga && bun run lint-js && bun run lint-security && bun run lint-text && oxfmt .",
-    "lint-ga": "n-cursor lint-ga",
-    "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd . && bunx knip --no-config-hints",
-    "lint-security": "trufflehog filesystem . --no-update --exclude-paths .trufflehog-exclude --results=verified,unknown --fail",
-    "lint-text": "n-cursor lint-text",
     "oxfmt": "oxfmt .",
     "coverage": "n-cursor coverage"
   },

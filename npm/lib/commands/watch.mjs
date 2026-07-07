@@ -39,7 +39,7 @@ export default function watch(args, deps = {}) {
   const readFile = deps.readFile ?? ((p, enc) => readFileSync(p, enc))
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
   const statFn = deps.statSync ?? statSync
   const nowMs = deps.now ?? (() => Date.now())

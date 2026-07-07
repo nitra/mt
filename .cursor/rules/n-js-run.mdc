@@ -25,6 +25,7 @@ Rego-пакети, які запускає `npx @nitra/cursor fix js-run` / `npx
   "include": ["src/**/*"]
 }
 ```
+
 - `configmap.yaml`:
 
 ```yaml
@@ -33,6 +34,7 @@ data:
     - 'service.name='
     - 'service.namespace='
 ```
+
 - `package.json`:
 
 ```json
