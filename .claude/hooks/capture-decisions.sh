@@ -3,11 +3,18 @@
 # Runs async. Recursion guard: env var prevents the inner LLM CLI from
 # re-triggering this hook (the inner session inherits CAPTURE_DECISIONS_RUNNING=1).
 #
-# LLM CLI selection (first available wins):
-#   1. claude        — use `claude -p --model "$CAPTURE_DECISIONS_CLAUDE_MODEL"` (default: sonnet)
-#   2. cursor-agent  — use `cursor-agent -p --mode ask --model "$CAPTURE_DECISIONS_CURSOR_MODEL"`
-#                       (default: claude-4.6-sonnet-medium)
-#   neither          — exit 0 silently
+# Orchestrator sessions (JS-orchestrated `lint`/`skill`/`taze`/`release`/... that spawn
+# an internal agent/LLM session) set `ADR_HOOKS_SKIP=1` before spawning — this hook exits
+# silently, no log, before touching transcript or hook directories (spec 2026-06-30).
+#
+# Capture backend — `CAPTURE_DECISIONS_BACKEND` (default: pi):
+#   pi            — local `pi` only (npm-first lookup, offline/hermetic flags); unavailable
+#                   or no local model (`CAPTURE_DECISIONS_PI_MODEL`/`N_LOCAL_MIN_MODEL`) → skip
+#   claude        — force `claude -p --model "$CAPTURE_DECISIONS_CLAUDE_MODEL"` (default: sonnet)
+#   cursor-agent  — force `cursor-agent -p --mode ask --model "$CAPTURE_DECISIONS_CURSOR_MODEL"`
+#                   (default: claude-4.6-sonnet-medium)
+#   auto          — cascade by availability: pi → claude → cursor-agent → skip
+# In every mode an empty response from the chosen backend is final (no cascade on empty).
 #
 # Hook payloads:
 #   - Claude Code Stop: `transcript_path`, `session_id`, `CLAUDE_PROJECT_DIR`
@@ -20,6 +27,10 @@ if [[ -n "${CAPTURE_DECISIONS_RUNNING:-}" ]]; then
   exit 0
 fi
 export CAPTURE_DECISIONS_RUNNING=1
+
+if [[ -n "${ADR_HOOKS_SKIP:-}" ]]; then
+  exit 0
+fi
 
 INPUT=$(cat)
 TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty')
@@ -91,26 +102,38 @@ if [[ -z "$TRANSCRIPT" ]]; then
   exit 0
 fi
 
+# Файли, змінені в сесії (file_path із tool_use Edit/Write/MultiEdit) — спільне
+# джерело для structural-скіпів нижче.
+CHANGED_FILES=$(jq -r '
+  select(.type == "assistant" or .role == "assistant")
+  | .message as $m
+  | ($m.content // [])
+  | if type == "array" then
+      map(select(.type == "tool_use" and (.name == "Edit" or .name == "Write" or .name == "MultiEdit"))
+          | .input.file_path // empty)
+      | .[]
+    else empty end
+' "$TRANSCRIPT_PATH" 2>/dev/null | sort -u || true)
+
+# Cross-project skip: якщо в сесії редагувалися файли, але ЖОДЕН не під $PROJECT_ROOT —
+# це паралельна робота в іншому проєкті; ADR сюди не пишемо (чужі рішення не змішуємо).
+# Сесії без редагувань (чисте Q&A / дизайн-дискусія) не відкидаємо — це валідний ADR.
+# ENV `ADR_CAPTURE_SKIP_CROSS_PROJECT=0` вимикає скіп.
+if [[ "${ADR_CAPTURE_SKIP_CROSS_PROJECT:-1}" = "1" && -n "$CHANGED_FILES" ]]; then
+  if ! printf '%s\n' "$CHANGED_FILES" | has_in_project_change "$PROJECT_ROOT"; then
+    log "  → skipping ADR capture: cross-project session (no in-project changes)"
+    log "    files: $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ')"
+    exit 0
+  fi
+fi
+
 # Structural skip: якщо в сесії змінювалися лише tooling-файли — не викликаємо LLM.
 # ENV `ADR_NORMALIZE_SKIP_TOOLING_ONLY=0` вимикає скіп.
-if [[ "${ADR_NORMALIZE_SKIP_TOOLING_ONLY:-1}" = "1" ]]; then
-  CHANGED_FILES=$(jq -r '
-    select(.type == "assistant" or .role == "assistant")
-    | .message as $m
-    | ($m.content // [])
-    | if type == "array" then
-        map(select(.type == "tool_use" and (.name == "Edit" or .name == "Write" or .name == "MultiEdit"))
-            | .input.file_path // empty)
-        | .[]
-      else empty end
-  ' "$TRANSCRIPT_PATH" 2>/dev/null | sort -u || true)
-
-  if [[ -n "$CHANGED_FILES" ]]; then
-    if printf '%s\n' "$CHANGED_FILES" | is_tooling_only_change "$PROJECT_ROOT"; then
-      log "  → skipping ADR capture: tooling-only session"
-      log "    files: $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ')"
-      exit 0
-    fi
+if [[ "${ADR_NORMALIZE_SKIP_TOOLING_ONLY:-1}" = "1" && -n "$CHANGED_FILES" ]]; then
+  if printf '%s\n' "$CHANGED_FILES" | is_tooling_only_change "$PROJECT_ROOT"; then
+    log "  → skipping ADR capture: tooling-only session"
+    log "    files: $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ')"
+    exit 0
   fi
 fi
 
@@ -166,28 +189,124 @@ TRANSCRIPT FOLLOWS:
 EOF
 )
 
-PROMPT_FULL=$(printf '%s\n%s\n' "$PROMPT" "$TRANSCRIPT")
+# Scope: обмежуємо рішення поточним проєктом. Для змішаних сесій (правки і тут, і в
+# чужих репо) детермінований cross-project gate не спрацьовує, тож звужуємо обсяг у промпті.
+# Йде ПЕРЕД інструкціями, щоб не сприйматись як перший рядок транскрипту.
+SCOPE_LINE="CURRENT PROJECT ROOT: $PROJECT_ROOT
+SCOPE: Document ONLY decisions evidenced by changes within this project root. Ignore edits and discussion about files outside it (parallel work in other repositories)."
+PROMPT_FULL=$(printf '%s\n\n%s\n%s\n' "$SCOPE_LINE" "$PROMPT" "$TRANSCRIPT")
 
 CLAUDE_MODEL="${CAPTURE_DECISIONS_CLAUDE_MODEL:-sonnet}"
 CURSOR_MODEL="${CAPTURE_DECISIONS_CURSOR_MODEL:-claude-4.6-sonnet-medium}"
+BACKEND="${CAPTURE_DECISIONS_BACKEND:-pi}"
 
-if command -v claude >/dev/null 2>&1; then
+# npm-first pi lookup: без npx/npm exec/bunx у hook (мережа, кеш, package-manager locks
+# сповільнили б async hook). Root .bin (hoisted) -> nested @nitra/cursor .bin -> system PATH.
+find_pi_cmd() {
+  local candidate
+  for candidate in \
+    "$PROJECT_ROOT/node_modules/.bin/pi" \
+    "$PROJECT_ROOT/node_modules/@nitra/cursor/node_modules/.bin/pi"
+  do
+    if [[ -x "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  command -v pi 2>/dev/null || true
+}
+
+# Повертає 0 і виставляє RESPONSE/USED_BACKEND, якщо pi реально викликано (навіть з
+# порожньою відповіддю — це фінальний результат, не привід переходити до наступного). Повертає 1,
+# якщо pi недоступний або модель не сконфігурована — тільки це запускає auto-каскад.
+try_pi() {
+  local pi_cmd model
+  pi_cmd="$(find_pi_cmd)"
+  if [[ -z "$pi_cmd" ]]; then
+    log "  → pi not found, skipping capture"
+    return 1
+  fi
+  model="${CAPTURE_DECISIONS_PI_MODEL:-${N_LOCAL_MIN_MODEL:-}}"
+  if [[ -z "$model" ]]; then
+    log "  → no local model configured (CAPTURE_DECISIONS_PI_MODEL / N_LOCAL_MIN_MODEL), skipping capture"
+    return 1
+  fi
+  log "  → using pi (model: $model)"
+  RESPONSE=$(printf '%s' "$PROMPT_FULL" \
+    | "$pi_cmd" -p \
+        --no-session \
+        --mode text \
+        --no-tools \
+        --no-context-files \
+        --no-extensions \
+        --no-skills \
+        --no-prompt-templates \
+        --offline \
+        --model "$model" \
+    2>>"$LOG" || true)
+  USED_BACKEND="pi"
+  return 0
+}
+
+try_claude() {
+  if ! command -v claude >/dev/null 2>&1; then
+    return 1
+  fi
   log "  → using claude CLI (model: $CLAUDE_MODEL)"
   RESPONSE=$(printf '%s' "$PROMPT_FULL" | claude -p --model "$CLAUDE_MODEL" 2>>"$LOG" || true)
-elif command -v cursor-agent >/dev/null 2>&1; then
+  USED_BACKEND="claude"
+  return 0
+}
+
+try_cursor_agent() {
+  if ! command -v cursor-agent >/dev/null 2>&1; then
+    return 1
+  fi
   log "  → using cursor-agent CLI (model: $CURSOR_MODEL)"
   RESPONSE=$(cursor-agent -p --mode ask --output-format text --model "$CURSOR_MODEL" -- "$PROMPT_FULL" 2>>"$LOG" || true)
-else
-  log "  → no LLM CLI found (claude/cursor-agent), skipping"
-  exit 0
-fi
+  USED_BACKEND="cursor-agent"
+  return 0
+}
+
+case "$BACKEND" in
+  pi)
+    if ! try_pi; then
+      exit 0
+    fi
+    ;;
+  claude)
+    if ! try_claude; then
+      log "  → claude CLI not found (CAPTURE_DECISIONS_BACKEND=claude), skipping"
+      exit 0
+    fi
+    ;;
+  cursor-agent)
+    if ! try_cursor_agent; then
+      log "  → cursor-agent CLI not found (CAPTURE_DECISIONS_BACKEND=cursor-agent), skipping"
+      exit 0
+    fi
+    ;;
+  auto)
+    # Каскад за доступністю бекенду (pi -> claude -> cursor-agent), НЕ за результатом
+    # виклику: щойно якийсь бекенд реально викликано, `try_*` повертає 0 і `&&`
+    # коротко замикає ланцюг — наступні бекенди не викликаються навіть при порожній відповіді.
+    if ! try_pi && ! try_claude && ! try_cursor_agent; then
+      log "  → no backend available (pi/claude/cursor-agent), skipping"
+      exit 0
+    fi
+    ;;
+  *)
+    log "  → unknown CAPTURE_DECISIONS_BACKEND=$BACKEND, skipping"
+    exit 0
+    ;;
+esac
 
 RESPONSE_TRIMMED=$(printf '%s' "$RESPONSE" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 
 log "  → response length: ${#RESPONSE_TRIMMED}, first 200: ${RESPONSE_TRIMMED:0:200}"
 
 if [[ -z "$RESPONSE_TRIMMED" ]]; then
-  log "  → empty response from LLM CLI"
+  log "  → empty response from $USED_BACKEND"
   exit 0
 fi
 if [[ "$RESPONSE_TRIMMED" == "NONE" ]]; then
@@ -199,7 +318,7 @@ if ! printf '%s' "$RESPONSE_TRIMMED" | grep -q '^## '; then
   exit 0
 fi
 
-TS=$(date +%Y%m%d-%H%M%S)
+TS=$(date +%y%m%d-%H%M)
 
 # Slug із першого `## [ADR|Runbook|Knowledge] <heading>`-рядка відповіді.
 # Логіка локальна (без додаткового LLM-виклику): використовуємо вже згенерований heading.

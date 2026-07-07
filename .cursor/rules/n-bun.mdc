@@ -7,49 +7,7 @@ version: '2.1'
 
 Проект використовує тільки Bun для керування залежностями та запуску скриптів.
 
-**Одноразові CLI (hasura, eslint, vite, cypress тощо):**
-
-- Якщо в проєкті вже використовується **`npx`** (скрипти, CI, Dockerfile) — **залишай `npx`**, не замінюй на `bunx`.
-- Якщо новий виклик CLI додається з нуля і в цьому репозиторії прийнято лише Bun — можна `bunx <tool>`.
-
-Заборонено використовувати як менеджер пакетів / lockfile:
-
-- `npm install`, `yarn`, `pnpm` (і відповідні lockfile, крім `bun.lock`)
-
-Дозволені команди:
-
-- `bun i`
-- `bun run <script>`
-- `bun add <pkg>`
-- `bun add -d <pkg>`
-- `bun remove <pkg>`
-- `bunx <tool>`
-- `npx <tool>`
-
-**Не додавай** у `dependencies` / `devDependencies` пакети, які **використовуються лише як CLI** і їх достатньо викликати через **`bunx <pkg>`** (або **`npx`**, якщо в проєкті так прийнято): наприклад **oxlint**, **jscpd**, **eslint** у корені тощо. Виняток — пакет потрібен як **бібліотека** (імпорт у коді), peer для іншого пакета, або інструмент **не** покривається `bunx` у вашому CI.
-
-Lockfile у репозиторії: `bun.lock`.
-Не створювати `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`.
-Видалити якщо вони є. Видалити .yarn та .yarnrc.yml якщо вони є.
-
-У корені репозиторію має бути **`bunfig.toml`** з **hoisted** лінкером (пласке `node_modules`, сумісне з інструментами, які не розуміють ізольований layout Bun):
-
-- Канон `bunfig.toml`: `bunfig.toml`:
-
-```toml
-[install]
-linker = "hoisted"
-```
-
-Для Bun monorepo:
-
-- Встановлювати залежності у відповідному пакеті, а не в корені без потреби.
-- Якщо залежність потрібна лише одному пакету, додавати її в директорії цього пакета.
-- У CI та локально запускати скрипти через `bun run`.
-
-В кореневому `package.json` не повинно бути `dependencies`, а в `devDependencies` — тільки модулі `@nitra/*`. **Виняток (root-only)** — Vitest/Stryker peer/tools для `n-cursor coverage`: `vitest`, `@vitest/coverage-v8`, `@stryker-mutator/vitest-runner`; а також `@playwright/test` для e2e-тестів. Тримати їх **у корені** доводиться у будь-якому монорепо-споживачі, бо правило `test` enabled завжди (`test/auto.md` = `завжди`), а класти ці пакети у workspace-и не можна: published пакети (`npm-module.mdc`) не мають мати `devDependencies`, а інші workspace-и однаково запускають coverage оркестратор з кореня. Якщо в package.json є поля `packageManager`, то прибрати їх, також прибрати всі директорії та файли для yarn.
-
-- Заборонені top-level поля у root `package.json` (з причинами): `package.json`:
+- `package.json`:
 
 ```json
 {
@@ -57,16 +15,78 @@ linker = "hoisted"
   "dependencies": "кореневий package.json не повинен містити dependencies — додай у workspace-пакети (bun.mdc)"
 }
 ```
+- `bunfig.toml`:
 
-Коли зміна відбувається в Dockerfile, то використовувати
+```toml
+[install]
+linker = "hoisted"
+```
+
+## Rego-gate: відповідність bunfig.toml канонічному шаблону
+
+Rego-пакет: `bun.bunfig`
+
+Цільовий файл: `bunfig.toml` (корінь репо).
+
+Шаблон (leaf-значення, які gate порівнює): [bunfig.toml.snippet.toml](./template/bunfig.toml.snippet.toml)
+
+Gate порівнює кожен leaf-ключ у кожній секції шаблону з фактичним значенням у `bunfig.toml`. Зайві ключі та секції — ігноруються. Deny-повідомлення виникає, якщо:
+
+- секція відсутня або не є обʼєктом (`bunfig.toml: відсутня секція [install]`)
+- leaf-ключ має інше значення (`bunfig.toml: у секції [install] має бути linker = "hoisted"`)
+
+## Структура lockfile та менеджер пакетів
+
+Проект використовує **тільки Bun** для керування залежностями та запуску скриптів.
+
+**Заборонені lockfile / директорії** (мають бути відсутні у репозиторії):
+
+- `package-lock.json`
+- `yarn.lock`
+- `pnpm-lock.yaml`
+- `.yarnrc.yml`
+- `.yarn/`
+
+Якщо якийсь із цих файлів чи директорій існує — **видали** його.
+
+**Обовʼязковий lockfile:** `bun.lock` (має бути присутній у корені).
+
+**Заборонені команди менеджерів пакетів:**
+
+- `npm install`, `yarn`, `pnpm` і їх відповідники lockfile (крім `bun.lock`)
+
+**Дозволені команди:**
+
+- `bun i`
+- `bun run <script>`
+- `bun add <pkg>`
+- `bun add -d <pkg>`
+- `bun remove <pkg>`
+- `bunx <tool>`
+- `npx <tool>` — якщо у проєкті вже використовується `npx` (не замінюй на `bunx`)
+
+**Одноразові CLI (`bunx` / `npx`):**
+
+- Якщо в проєкті вже використовується **`npx`** (скрипти, CI, Dockerfile) — **залишай `npx`**, не замінюй на `bunx`.
+- Якщо новий виклик CLI додається з нуля і в репозиторії прийнято лише Bun — можна `bunx <tool>`.
+
+**Не додавай** у `dependencies` / `devDependencies` пакети, які **використовуються лише як CLI** і їх достатньо викликати через **`bunx <pkg>`** (або **`npx`**, якщо в проєкті так прийнято): наприклад **oxlint**, **jscpd**, **eslint** у корені тощо. Виняток — пакет потрібен як **бібліотека** (імпорт у коді), peer для іншого пакета, або інструмент **не** покривається `bunx` у вашому CI.
+
+**Monorepo:**
+
+- Встановлювати залежності у відповідному пакеті, а не в корені без потреби.
+- Якщо залежність потрібна лише одному пакету, додавати її в директорії цього пакета.
+- У CI та локально запускати скрипти через `bun run`.
+
+**Dockerfile:**
 
 ```dockerfile
 FROM oven/bun:alpine AS build-env
 ```
 
-замість образу node
+замість образу node.
 
-У **GitHub Actions** не вставляй у workflow окремі кроки **`actions/setup-node`**, **`oven-sh/setup-bun`**, **`actions/cache`** та **`bun install`** — їх **заборонено** дублювати в кожному job; завжди використовуй **локальний composite** (деталі й заборона дублювання — **ga.mdc**). Під капотом composite уже містить Node **24**, Bun, кеш і **`bun install --frozen-lockfile`**.
+**GitHub Actions:** не вставляй у workflow окремі кроки **`actions/setup-node`**, **`oven-sh/setup-bun`**, **`actions/cache`** та **`bun install`** — їх **заборонено** дублювати в кожному job; завжди використовуй **локальний composite** (деталі й заборона дублювання — **ga.mdc**). Під капотом composite уже містить Node **24**, Bun, кеш і **`bun install --frozen-lockfile`**.
 
 Після **`actions/checkout@v6`** (`persist-credentials: false`):
 
@@ -76,12 +96,17 @@ FROM oven/bun:alpine AS build-env
 
 Якщо в репозиторії action збережено під **`./npm/github-actions/setup-bun-deps`**, у `uses:` вкажи цей шлях замість `.github/actions/…` (**ga.mdc**).
 
-## lint
+## Rego-gate: заборонені поля та devDependencies у кореневому package.json
 
-Якщо в кореневому @package.json  існують скрипти з префіксом `lint-`, обов'язково створюй `lint` скрипт, який буде запускати всі ці скрипти з лінт-префіксом.
+Rego-пакет: `bun.package_json`
 
-У кінці скрипта `lint` додай `&& oxfmt .`.
+Цільовий файл: кореневий `package.json`.
 
-Якщо в **`.n-cursor.json`** у масиві **`rules`** є **`docker`**, у кореневому `package.json` **обов'язково** скрипт **`lint-docker`** (див. **`docker.mdc`**) і рядок **`bun run lint-docker`** у **`lint`**. Якщо є **`k8s`** — **обов'язково** **`lint-k8s`** і **`bun run lint-k8s`** у **`lint`** (див. **`k8s.mdc`**).
+Список заборонених top-level полів (template-driven): [package.json.deny.json](./template/package.json.deny.json)
 
-**Зворотній інваріант:** якщо правила **немає** в `rules` (або воно явно перенесене в **`disable-rules`**), скрипту **`lint-<id>`** у кореневому `package.json` бути **не може**, і ланцюжок агрегованого **`scripts.lint`** не має містити **`bun run lint-<id>`**. Інакше `bun run lint` падатиме на вимкненому правилі — `n-cursor lint-<id>` ігнорує `.n-cursor.json` і обходить дерево незалежно від `rules`/`disable-rules`. Для скриптів із кількома власниками (як **`lint-image`** — обслуговує і **`image-avif`**, і **`image-compress`**) скрипт лишається дозволеним, поки активний **хоч один** власник; зворотній інваріант тригериться лише коли в `rules` немає **жодного** з них. Перевірка — **`npx @nitra/cursor fix bun`**.
+Gate виносить два класи deny:
+
+1. **Заборонені top-level поля** — будь-яке поле з `package.json.deny.json` присутнє у файлі (навіть із порожнім значенням `{}`).
+2. **devDependencies не з білого списку** — дозволені лише `@nitra/*` та root-only тестові peer/tools (`vitest`, `@vitest/coverage-v8`, `@stryker-mutator/vitest-runner`, `@playwright/test`). Будь-який інший пакет → deny. CLI-тули, які `n-cursor lint` спавнить через `bunx` (oxlint, jscpd, v8r, github-actionlint тощо), у root не пінуються — вони приїжджають як `dependencies` пакета `@nitra/cursor` (npm-module.mdc).
+
+Перевірки, що потребують FS або cross-file контексту (наприклад наявність `yarn.lock`), лишаються у JS-шарі.

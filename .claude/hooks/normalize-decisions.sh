@@ -7,7 +7,8 @@
 # tree. Never invokes git — developer reviews via `git status` / `git diff`.
 #
 # LLM CLI selection (first available wins):
-#   1. claude        — `claude -p --model "$ADR_NORMALIZE_MODEL"` (default: sonnet)
+#   1. pi            — `pi -p --model "$ADR_NORMALIZE_PI_MODEL"` (default: N_CLOUD_AVG_MODEL)
+#   2. claude        — `claude -p --model "$ADR_NORMALIZE_MODEL"` (default: sonnet)
 #   2. cursor-agent  — `cursor-agent -p --mode ask --output-format text --model …`
 #                      (default: claude-4.6-sonnet-medium)
 #   neither          — exit 0 silently
@@ -26,6 +27,13 @@ if [ -n "${ADR_NORMALIZE_RUNNING:-}" ]; then
   exit 0
 fi
 export ADR_NORMALIZE_RUNNING=1
+
+# Orchestrator sessions (JS-orchestrated lint/skill/taze/release/... that spawn an
+# internal agent/LLM session) set ADR_HOOKS_SKIP=1 before spawning — exit silently,
+# no log, before touching hook directories (spec 2026-06-30).
+if [ -n "${ADR_HOOKS_SKIP:-}" ]; then
+  exit 0
+fi
 
 INPUT=$(cat || true)
 CURSOR_WORKSPACE_ROOT=$(printf '%s' "$INPUT" | jq -r '.workspace_roots[0] // empty' 2>/dev/null || true)
@@ -50,6 +58,15 @@ draft_transcript_path() {
     NR==1 && /^---$/ { fm=1; next }
     fm && /^---$/    { exit }
     fm && /^transcript: / { sub(/^transcript: /, ""); print; exit }
+  ' "$1" 2>/dev/null
+}
+
+# Витягає поле `captured:` з YAML frontmatter ADR-чернетки.
+draft_captured_date() {
+  awk '
+    NR==1 && /^---$/ { fm=1; next }
+    fm && /^---$/    { exit }
+    fm && /^captured: / { sub(/^captured: /, ""); print; exit }
   ' "$1" 2>/dev/null
 }
 
@@ -224,9 +241,13 @@ PROMPT_HEADER=$(cat <<'EOF'
 
 1. `delete` — драфт тривіальний / повністю покритий іншим існуючим clean-ADR-ом / порожній. Поясни короткою причиною українською.
 
-2. `rewrite` — драфт має самостійну цінність як decision record. Повертай у `content` повний фінальний вміст файлу у форматі MADR 4.0.0 minimal:
-   - Без YAML frontmatter (жодного `session:`, `captured:`, `transcript:`).
-   - Заголовок `# <Title>` українською.
+2. `rewrite` — драфт має самостійну цінність як decision record. Повертай у `content` повний фінальний вміст файлу у форматі MADR 4.0.0 minimal з OKF v0.1 frontmatter:
+   - YAML frontmatter OKF v0.1 на початку файлу (без `#` заголовка після — `title:` вже є у frontmatter):
+     ---
+     type: ADR
+     title: <заголовок без "ADR:" prefix, лапки якщо є двокрапка чи спецсимвол>
+     description: <одне речення — суть рішення>
+     ---
    - Один рядок `**Status:** Accepted` і один рядок `**Date:** YYYY-MM-DD` — дату беремо з поля `captured:` оригінальної чернетки (перші 10 символів ISO-дати).
    - Далі секції з точними MADR headings англійською: `## Context and Problem Statement`, `## Considered Options`, `## Decision Outcome`, `### Consequences`, `## More Information`.
    - У `## Considered Options` перелічуй лише варіанти, які є в драфті/transcript. Якщо альтернатив не було, додай bullet `Інші варіанти в transcript не обговорювалися.`
@@ -265,20 +286,57 @@ date +%s > "$STATE_FILE"
 
 CLAUDE_MODEL="${ADR_NORMALIZE_MODEL:-sonnet}"
 CURSOR_MODEL="${ADR_NORMALIZE_CURSOR_MODEL:-claude-4.6-sonnet-medium}"
+PI_MODEL="${ADR_NORMALIZE_PI_MODEL:-${N_CLOUD_AVG_MODEL:-openai-codex/gpt-5.5}}"
 
 RESPONSE_FILE="$TMP_DIR/response.txt"
 
-if command -v claude >/dev/null 2>&1; then
-  log "using claude CLI (model: $CLAUDE_MODEL)"
-  claude -p --model "$CLAUDE_MODEL" < "$FULL_PROMPT_FILE" > "$RESPONSE_FILE" 2>>"$LOG" || true
-elif command -v cursor-agent >/dev/null 2>&1; then
-  log "using cursor-agent CLI (model: $CURSOR_MODEL)"
-  FULL_PROMPT=$(cat "$FULL_PROMPT_FILE")
-  cursor-agent -p --mode ask --output-format text --model "$CURSOR_MODEL" -- "$FULL_PROMPT" > "$RESPONSE_FILE" 2>>"$LOG" || true
-else
-  log "no LLM CLI found, skipping"
-  exit 0
+# Backend selection. `local` — конвеєр на малій локальній моделі (privacy + $0,
+# `npm/scripts/lib/adr/normalize-pipeline.mjs`); `pi`/`claude`/`cursor` — single-shot
+# у хмару. Auto-default: local, якщо налаштовано `N_LOCAL_MIN_MODEL`, інакше
+# pi → claude → cursor. Команда local-бекенда override-иться через ADR_NORMALIZE_LOCAL_CMD
+# (для тестів/in-repo: `node npm/bin/n-cursor.js adr-normalize-local`).
+BACKEND="${ADR_NORMALIZE_BACKEND:-}"
+if [ -z "$BACKEND" ]; then
+  if [ -n "${N_LOCAL_MIN_MODEL:-}" ]; then
+    BACKEND=local
+  elif command -v pi >/dev/null 2>&1; then
+    BACKEND=pi
+  elif command -v claude >/dev/null 2>&1; then
+    BACKEND=claude
+  elif command -v cursor-agent >/dev/null 2>&1; then
+    BACKEND=cursor
+  else
+    BACKEND=none
+  fi
 fi
+
+ADR_LOCAL_CMD="${ADR_NORMALIZE_LOCAL_CMD:-npx --no @nitra/cursor adr-normalize-local}"
+
+case "$BACKEND" in
+  local)
+    log "using local pipeline backend (model: ${N_LOCAL_MIN_MODEL:-?})"
+    # local-бекенд будує власні дрібні промпти з батча — FULL_PROMPT_FILE не потрібен.
+    # shellcheck disable=SC2086
+    $ADR_LOCAL_CMD --batch "$BATCH_LIST" --clean "$CLEAN_LIST" --adr-dir "$ADR_DIR" > "$RESPONSE_FILE" 2>>"$LOG" || true
+    ;;
+  pi)
+    log "using pi CLI (model: $PI_MODEL)"
+    pi -p --model "$PI_MODEL" --no-prompt-templates < "$FULL_PROMPT_FILE" > "$RESPONSE_FILE" 2>>"$LOG" || true
+    ;;
+  claude)
+    log "using claude CLI (model: $CLAUDE_MODEL)"
+    claude -p --model "$CLAUDE_MODEL" < "$FULL_PROMPT_FILE" > "$RESPONSE_FILE" 2>>"$LOG" || true
+    ;;
+  cursor)
+    log "using cursor-agent CLI (model: $CURSOR_MODEL)"
+    FULL_PROMPT=$(cat "$FULL_PROMPT_FILE")
+    cursor-agent -p --mode ask --output-format text --model "$CURSOR_MODEL" -- "$FULL_PROMPT" > "$RESPONSE_FILE" 2>>"$LOG" || true
+    ;;
+  *)
+    log "no LLM backend available, skipping"
+    exit 0
+    ;;
+esac
 
 if [ ! -s "$RESPONSE_FILE" ]; then
   log "empty LLM response"
@@ -407,11 +465,15 @@ while IFS= read -r op_json; do
           continue
           ;;
       esac
-      # Keep the draft's `YYYYMMDD-HHMMSS-` prefix on the clean file: the name
+      # Keep the draft's timestamp prefix on the clean file: the name
       # stays anchored to capture time, only the slug part changes between draft
-      # and clean, and docs/adr/ keeps sorting chronologically. Drafts without a
-      # timestamp prefix fall back to a bare `<slug>.md`.
+      # and clean, and docs/adr/ keeps sorting chronologically. New drafts use
+      # `YYMMDD-HHMM-`; older `YYYYMMDD-HHMMSS-` drafts are still supported.
+      # Drafts without a timestamp prefix fall back to a bare `<slug>.md`.
       case "$FILE" in
+        [0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]-*)
+          DEST_SLUG="$(printf '%s' "$FILE" | cut -c1-11)-$SLUG"
+          ;;
         [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]-*)
           DEST_SLUG="$(printf '%s' "$FILE" | cut -c1-15)-$SLUG"
           ;;
@@ -420,6 +482,24 @@ while IFS= read -r op_json; do
           ;;
       esac
       DEST_PATH=$(resolve_unique_slug_path "$DEST_SLUG")
+      # OKF fallback: if LLM omitted the type: ADR frontmatter, prepend minimal one.
+      OKF_HAS_TYPE=$(printf '%s\n' "$CONTENT" | awk '
+        /^---$/ && !fm { fm=1; next }
+        fm && /^---$/  { exit }
+        fm && /^type:/ { print "yes"; exit }
+      ')
+      if [ "$OKF_HAS_TYPE" != "yes" ]; then
+        DRAFT_TITLE=$(printf '%s\n' "$CONTENT" | awk '/^# / { sub(/^# (ADR: )?/, ""); print; exit }')
+        [ -z "$DRAFT_TITLE" ] && DRAFT_TITLE="$SLUG"
+        DRAFT_TITLE_YAML=$(printf '%s' "$DRAFT_TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        CONTENT="---
+type: ADR
+title: \"${DRAFT_TITLE_YAML}\"
+---
+
+${CONTENT}"
+        log "okf-fallback: prepended OKF frontmatter for $FILE"
+      fi
       printf '%s\n' "$CONTENT" > "$DEST_PATH"
       rm -- "$SRC_PATH"
       # Record bare slug → final path so a same-batch merge-into can target
@@ -444,7 +524,7 @@ while IFS= read -r op_json; do
           ;;
       esac
       # Resolve the target clean file. The LLM gives a bare `<slug>.md`, but the
-      # real file usually carries a `YYYYMMDD-HHMMSS-` prefix. Try, in order:
+      # real file usually carries a timestamp prefix. Try, in order:
       #   1. exact name in docs/adr/,
       #   2. a rewrite of this batch that produced that slug (SLUG_MAP),
       #   3. a unique existing clean file whose name ends with `-<slug>.md`.
