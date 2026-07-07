@@ -57,7 +57,9 @@ Run ref: `refs/mt/runs/<node-hash>/<token>` — гілка робочого ст
 - **Автономний run:** wrapper оновлює run ref на власний розсуд (мінімум — на завершення); run ref потрібен для debug і fenced publish.
 - **Інтерактивний run (ЗМІНЕНО):** **кожен хід** (turn) = коміт у worktree (правки файлів + append у `.nitra/session.jsonl`) + **негайний push run ref**. Це і є механізм міграції між пристроями, відновлення після смерті хоста та handover іншому користувачу. `session.jsonl` — event log розмови (Envelope-и — див. [runtime.md](runtime.md)); `.nitra/state.json` — метадані (курсор, профіль провайдера). Ані `.nitra/`, ані скріншоти **ніколи** не потрапляють у `main`.
 
-**Архів сесії:** при publish run ref видаляється (як у базовому MT), але якщо `session_archive: true` — журнал зберігається у `refs/mt/archive/<node-hash>/<NNN>` (GC за `archive_ttl_days`), а `run_NNN.md` отримує поле `session_archive:`. Handover-приватність: передача архіву = передача всіх чорнових реплік; операція «передати з нового checkpoint» (squash стану + обрізаний журнал у свіжий run) — TODO, зафіксований як обмеження.
+**Архів сесії:** при publish run ref видаляється (як у базовому MT), але якщо `session_archive: true` — журнал зберігається у `refs/mt/archive/<node-hash>/<NNN>` (GC за `archive_ttl_days`), а `run_NNN.md` отримує поле `session_archive:`.
+
+**Checkpoint-handoff (приватність передачі).** Звичайний handoff передає run ref разом із повним `session.jsonl` — всі чорнові репліки. Для передачі стороннім є режим «з checkpoint»: тримач пише `run_NNN (result: handoff)` і **свіжий run ref**, що містить лише стан worktree + дистильований summary останніх ходів, без журналу розмови; повний `session.jsonl` іде в archive ref, видимий лише авторові. Приймач продовжує з чистого контексту (run N+1). Вибір режиму — параметр `mt handoff --checkpoint` / політика per-node.
 
 ## Fenced publish
 
