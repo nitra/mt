@@ -60,6 +60,24 @@ timestamp: 2026-07-07
 - **Життєвий цикл:** agent-server стартує MCP-сервер ліниво при першому ході surface, що його потребує; помирає разом із сесією або за idle-TTL. Схеми тулів MCP-сервера потрапляють у контекст агента лише для ходів цього surface — спеціалізація і є економія контексту.
 - **Межа довіри:** MCP-тул виконується з боку хоста — деструктивні виклики проходять той самий mid-run approval-гейт ([access.md](access.md)), що й нативні.
 
+Схема декларації:
+
+```jsonc
+// .mt.json
+{
+  "mcp_servers": {
+    "figma": {
+      "command": "npx",
+      "args": ["figma-mcp"],
+      "env": { "FIGMA_TOKEN": "secret:figma-token" },  // secret: → OS keychain, як secrets в a.md
+      "idle_ttl_sec": 600                                // default 600; 0 → жити до кінця сесії
+    }
+  }
+}
+```
+
+Значення `secret:<key>` резолвиться secrets-брокером ([operations.md](operations.md)) — токени не лежать у конфігу відкритим текстом.
+
 ## Звʼязка з sandbox
 
 `tools` і `skills` профілю **обмежуються** sandbox-політикою вузла: ефективний набір = перетин профілю surface і `skill_profiles`-allowlist вузла ([operations.md](operations.md), security model). Surface не може дати агенту більше, ніж дозволяє задача: `a.md.skills` вузла — стеля, surface — спеціалізація в її межах.
