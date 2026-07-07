@@ -1,0 +1,71 @@
+npm/docs/architecture/stack.md
+  s_c2e5824e86d3d9::t_59bd55022ac7df 8-9,11-50,52-60,62-85
+  s_c2e5824e86d3d9::t_730d1fddf2280e 51
+  s_c2e5824e86d3d9::t_0676b8a325ad8c 1-10
+  s_c2e5824e86d3d9::t_4587ee71ae0eb6 61
+npm/docs/mt.md
+  s_c2e5824e86d3d9::t_e889f92663c87f 11
+  s_c2e5824e86d3d9::t_9254becec1e0d9 1-7,12
+npm/.changes/1783394459952-c58b70.md
+  s_c2e5824e86d3d9::t_2accfe1cb2e6c9 1-4
+  s_c2e5824e86d3d9::t_297cd7fe0fa2e8 5
+crates/mt-core/src/publish.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 102
+crates/mt-core/src/test_support.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 1,48
+.cspell.json
+  s_c2e5824e86d3d9::t_0e8c50cba15fea 20,24-25,27-29,34-35,37-38,42,50-53,55,57,61,65,73,88-90,92,111,115,118-120,125,129,131-135,151,154-156,158-160,167,170,178,188-189,206,208,219-220,227-228,231,234,238-240,245,257-259,262-264,267-268,277,280,283,288,290,292,296,302-303
+  s_c2e5824e86d3d9::t_ae0c473b360325 101
+  s_c2e5824e86d3d9::t_6b6213ac0152da 121,126
+  s_c2e5824e86d3d9::t_96b43d94697f52 82
+crates/mt-core/src/runner.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 5,482
+crates/mt-core/src/claims.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 212,214,335,388,421
+npm/docs/architecture/graph.md
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-324
+npm/docs/architecture/operations.md
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-114
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+npm/docs/architecture/overview.md
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-57
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+npm/docs/index.md
+  s_c2e5824e86d3d9::t_f6a0f1abd7df28 17
+  s_c2e5824e86d3d9::t_fdd4f429b6c960 1-16,18-25
+npm/docs/architecture/runtime.md
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-153
+npm/docs/mt-impl.md
+  s_c2e5824e86d3d9::t_6b803345273be7 1-7
+npm/docs/architecture/git.md
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-86
+npm/docs/review-response.md
+  s_c2e5824e86d3d9::t_90b50c9cf2b18f 1-7
+npm/docs/log.md
+  s_c2e5824e86d3d9::t_e3f7687391c930 1-22
+npm/docs/architecture/access.md
+  s_c2e5824e86d3d9::t_24913621cd20ac 1-2,4-81
+  s_c2e5824e86d3d9::t_8c1a7f197c77fa 3
+npm/docs/architecture/index.md
+  s_c2e5824e86d3d9::t_d9c1e7867970d5 1-2,4-17
+  s_c2e5824e86d3d9::t_f6a0f1abd7df28 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "07f1e197afb5f32d954adb7b5d7c351951ff4933",
+  "prompts": {},
+  "sessions": {
+    "s_c2e5824e86d3d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f90009fa-d8c5-46ca-a24b-f75a388de496",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
