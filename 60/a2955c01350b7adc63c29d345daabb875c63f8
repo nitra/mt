@@ -1,0 +1,35 @@
+npm/docs/mt.md
+  s_c2e5824e86d3d9::t_730d1fddf2280e 5
+npm/docs/architecture.md
+  s_c2e5824e86d3d9::t_50310dad12f9a0 56,58,62,79,85,91,121,141,143,168,182,192,224,237,255,298,306,333,350,358,374,376,417,426,448,454,456,472,482,486,502,537,551,555,575,591,601,603,609,638,652,664,676,678,705,733,744,753,762,774
+  s_c2e5824e86d3d9::t_730d1fddf2280e 12,585,607,758
+npm/docs/stack.md
+  s_c2e5824e86d3d9::t_730d1fddf2280e 44
+crates/mt-core/src/publish.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 102
+crates/mt-core/src/test_support.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 1,48
+.cspell.json
+  s_c2e5824e86d3d9::t_0e8c50cba15fea 20,24-25,27-29,34-35,37-38,42,50-53,55,57,61,65,73,87-89,91,110,114,117-119,123,126,128-132,148,151-153,155-157,164,167,175,185-186,203,205,216-217,224-225,228,231,235-237,242,254-256,259-261,264-265,274,277,280,285,287,289,293,299-300
+  s_c2e5824e86d3d9::t_ae0c473b360325 100
+crates/mt-core/src/runner.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 5,482
+crates/mt-core/src/claims.rs
+  s_c2e5824e86d3d9::t_730d1fddf2280e 212,214,335,388,421
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "60a2955c01350b7adc63c29d345daabb875c63f8",
+  "prompts": {},
+  "sessions": {
+    "s_c2e5824e86d3d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f90009fa-d8c5-46ca-a24b-f75a388de496",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
