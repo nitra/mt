@@ -1,0 +1,21 @@
+.cspell.json
+  s_7e5f9d7306be1a::t_1a3e89ff42b54e 236
+npm/docs/architecture/i18n.md
+  s_7e5f9d7306be1a::t_8b347e9ebdd671 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8a9380fe63999637680d676c4207506bca379684",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
