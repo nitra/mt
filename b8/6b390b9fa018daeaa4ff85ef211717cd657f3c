@@ -1,0 +1,177 @@
+npm/lib/core/docs/config.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 54
+  s_fdee6198be9d22::t_478a1062986fcb 1-53,55-58
+docs/нотатка-doc-files-беклог-fix-timeout.md
+  s_fdee6198be9d22::t_bd46de51e299bf 25-34
+  s_fdee6198be9d22::t_29b9e47746de8e 38
+  s_fdee6198be9d22::t_e6cbae73e9317b 22-24
+  s_fdee6198be9d22::t_418e9c31b64af8 35-37
+  s_fdee6198be9d22::t_47458a1a482816 39-41
+  s_fdee6198be9d22::t_786063fb2eb3d1 1-21,42
+crates/mt-cli/src/docs/main.md
+  s_fdee6198be9d22::t_ea32f8fae38a05 18
+  s_fdee6198be9d22::t_9dbaa46c93c2ab 1-17,19-43
+crates/mt-core/src/docs/frontmatter.md
+  s_fdee6198be9d22::t_ea32f8fae38a05 1-32
+npm/lib/commands/docs/invalidate.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 20
+  s_fdee6198be9d22::t_b07cc7351f224c 1-19,21-40
+crates/mt-napi/src/docs/lib.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 34
+  s_fdee6198be9d22::t_69624e84730c2a 15
+  s_fdee6198be9d22::t_67a9bce6bcbf1d 1-14,16-33,35-49
+crates/mt-core/src/docs/signal.md
+  s_fdee6198be9d22::t_69624e84730c2a 19-36
+  s_fdee6198be9d22::t_8df1f3bb187fa7 1-18,37-66
+npm/docs/index.md
+  s_fdee6198be9d22::t_e4d56a78f9a575 1-6
+crates/mt-core/src/docs/worktree.md
+  s_fdee6198be9d22::t_69624e84730c2a 21-49
+  s_fdee6198be9d22::t_6acd0fec869fb4 1-20,50-57
+npm/lib/commands/docs/scan.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 57-67
+  s_fdee6198be9d22::t_71d291e4ff2efe 1-56,68-77
+crates/mt-core/src/docs/spawn.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 54
+  s_fdee6198be9d22::t_5fb3e26c62e01b 1-53,55-82
+npm/lib/commands/docs/watch.md
+  s_fdee6198be9d22::t_f7586a3b7dcaf2 13
+  s_fdee6198be9d22::t_435297c8c78ad4 1-12,14-33
+crates/mt-core/src/docs/ledger.md
+  s_fdee6198be9d22::t_ea32f8fae38a05 1-32
+.cspell.json
+  s_fdee6198be9d22::t_586d45ec0bed05 32-34,49,51,73,83,243
+  s_fdee6198be9d22::t_89036919163afc 96,109,120,152-154,189-190,202,236,264,270,285,294,328
+  s_fdee6198be9d22::t_ea32f8fae38a05 4-6,89,99-100,102,105,111,113,129,132,135,164,170,178,192,194-195,206,221,225,238,246,252,258,262,267,273,277,288,297,300
+crates/mt-core/src/docs/claims.md
+  s_fdee6198be9d22::t_245d3c9b922f8e 31
+  s_fdee6198be9d22::t_48ac663fea5e42 28-30
+  s_fdee6198be9d22::t_acd6f14206f2de 32-34
+  s_fdee6198be9d22::t_de48d2ffe40450 1-27,35-43
+npm/.changes/260707-2255.md
+  s_fdee6198be9d22::t_b835b7f5efb6b7 1-5
+crates/mt-cli/src/docs/index.md
+  s_fdee6198be9d22::t_56a79b14b546e2 1-9
+crates/mt-core/src/docs/config.md
+  s_cd3866719fef15::t_15f4617f77b885 1-36
+crates/mt-core/src/docs/index.md
+  s_fdee6198be9d22::t_bb1e80b1b82873 1-23
+crates/mt-core/src/docs/lib.md
+  s_7e5f9d7306be1a::t_875695daf9d128 1-44
+crates/mt-core/src/docs/orchestrate.md
+  s_7e5f9d7306be1a::t_7015e73bfd8a75 1-40
+crates/mt-core/src/docs/runner.md
+  s_7077186e4294df::t_3ea10c23a939b5 1-54
+crates/mt-napi/docs/build.md
+  s_fdee6198be9d22::t_417c49bfe5e930 1-24
+crates/mt-napi/docs/index.md
+  s_fdee6198be9d22::t_270e49dd04f9af 1-9
+crates/mt-napi/src/docs/index.md
+  s_fdee6198be9d22::t_bc99571b0a4453 1-9
+npm/docs/stryker.config.md
+  s_fdee6198be9d22::t_7faafd287d4c92 1-28
+npm/docs/vitest.config.md
+  s_fdee6198be9d22::t_e9bcd7eb9837eb 1-28
+npm/lib/commands/docs/done.md
+  s_fdee6198be9d22::t_6a12406b98b9a2 1-42
+npm/lib/commands/docs/failed.md
+  s_fdee6198be9d22::t_00c2dd2b1f5255 1-39
+npm/lib/commands/docs/index.md
+  s_fdee6198be9d22::t_e54d69f084a265 1-23
+npm/lib/commands/docs/init.md
+  s_fdee6198be9d22::t_bac670246fa9b2 1-38
+npm/lib/commands/docs/kill.md
+  s_fdee6198be9d22::t_3e07e3ca99db07 1-27
+npm/lib/commands/docs/plan.md
+  s_fdee6198be9d22::t_fbab64472e9520 1-33
+npm/lib/commands/docs/run.md
+  s_fdee6198be9d22::t_36a51e8533df72 1-83
+npm/lib/commands/docs/setup.md
+  s_fdee6198be9d22::t_cb51c01b7f50ff 1-32
+npm/lib/commands/docs/status.md
+  s_7077186e4294df::t_9a9e28a17a82e8 1-32
+npm/lib/commands/docs/verify.md
+  s_fdee6198be9d22::t_f62b3622d1120d 1-44
+npm/lib/commands/docs/worktree.md
+  s_fdee6198be9d22::t_11f75f26263e14 1-56
+npm/lib/core/docs/index.md
+  s_fdee6198be9d22::t_1f14fe43586a0b 1-17
+npm/lib/core/docs/task-command.md
+  s_fdee6198be9d22::t_400c5866390cd7 1-31
+npm/lib/docs/cli.md
+  s_7077186e4294df::t_4fc28c4d8e1947 1-30
+npm/lib/docs/index.md
+  s_fdee6198be9d22::t_283ba37bb95fc2 1-9
+npm/lib/tests/docs/index.md
+  s_fdee6198be9d22::t_0eaac696f94619 1-9
+crates/mt-core/src/docs/artifacts.md
+  s_7e5f9d7306be1a::t_e1641201c1badc 1-36
+crates/mt-core/src/docs/nnn.md
+  s_fdee6198be9d22::t_f533a603d41f2d 1-34
+crates/mt-core/src/docs/publish.md
+  s_fdee6198be9d22::t_b5abd6d6fe59eb 1-41
+crates/mt-core/src/docs/lifecycle.md
+  s_fdee6198be9d22::t_c982f63bc004f4 1-38
+crates/mt-core/src/docs/test_support.md
+  s_fdee6198be9d22::t_50f071dae2eefa 1-33
+npm/lib/commands/docs/audit.md
+  s_fdee6198be9d22::t_f4412f165b0937 1-40
+npm/lib/commands/docs/spawn.md
+  s_fdee6198be9d22::t_b4418ba3357703 1-40
+npm/lib/core/docs/frontmatter.md
+  s_fdee6198be9d22::t_c45b1085430ab2 1-41
+npm/lib/core/docs/native.md
+  s_fdee6198be9d22::t_443e12c6379d7d 1-35
+npm/lib/core/docs/nnn.md
+  s_fdee6198be9d22::t_dc77b9ca545047 1-31
+npm/lib/core/docs/scanner-bin.md
+  s_fdee6198be9d22::t_dee367079e7b38 1-30
+npm/lib/core/docs/scanner.md
+  s_fdee6198be9d22::t_2e5023f91532a6 1-48
+npm/lib/core/docs/state.md
+  s_fdee6198be9d22::t_5cf32f6795f5f8 1-33
+npm/lib/core/docs/worktree.md
+  s_fdee6198be9d22::t_9c3b52acf14a5a 1-41
+npm/lib/tests/docs/global-setup.md
+  s_fdee6198be9d22::t_509e72f0917592 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b86b390b9fa018daeaa4ff85ef211717cd657f3c",
+  "prompts": {},
+  "sessions": {
+    "s_7077186e4294df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b608ee0e-997d-4727-882b-933696e35b81",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_cd3866719fef15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5bd63382-c5cc-46e7-8b86-26516f19e303",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_fdee6198be9d22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "43854abd-01bf-43d1-a273-752895f85b3d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
