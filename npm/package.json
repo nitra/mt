@@ -28,7 +28,8 @@
     "index.js",
     "README.md",
     "CHANGELOG.md",
-    "!**/*.test.mjs"
+    "!**/*.test.mjs",
+    "!**/tests/**"
   ],
   "type": "module",
   "main": "./index.js",
