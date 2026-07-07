@@ -209,9 +209,9 @@ fn git_stdin(repo: &Path, args: &[&str], stdin: &str) -> Result<String, String> 
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-/// Пише claim-комміт (blob → tree → commit-tree) без checkout/індексу —
+/// Пише claim-коміт (blob → tree → commit-tree) без checkout/індексу —
 /// придатне для headless runner без робочого дерева проєкту. `parent` —
-/// `base_sha` для першого claim, попередній claim-комміт для renew/takeover
+/// `base_sha` для першого claim, попередній claim-коміт для renew/takeover
 /// (спека: «Новий claim commit має parent = попередній claim commit»).
 fn create_claim_commit(repo: &Path, parent: &str, fields: &ClaimFields) -> Result<String, String> {
     let blob_sha = git_stdin(repo, &["hash-object", "-w", "--stdin"], &claim_yaml(fields))?;
@@ -332,7 +332,7 @@ pub fn fetch_remote_claims(repo_root: &Path, grace_sec: i64) -> Result<Vec<Claim
     if refs.is_empty() {
         return Ok(Vec::new());
     }
-    // Custom refs не fetch-яться стандартним refspec — тягнемо явно (спека).
+    // Custom refs не покриваються стандартним refspec — тягнемо явно (спека).
     git(
         repo_root,
         &[
@@ -385,7 +385,7 @@ mod tests {
         .unwrap();
         assert!(first.accepted);
 
-        // Другий CAS-push з тим самим create-only лізом (expect empty) —
+        // Другий CAS-push з тим самим create-only lease (expect empty) —
         // ref уже існує, тож приймається лише один.
         let second = acquire_claim(
             repo.work.path(),
@@ -418,7 +418,7 @@ mod tests {
         assert!(renewed.accepted);
         assert_ne!(renewed.commit_sha, first.commit_sha);
 
-        // Ланцюг claim-коммітів: parent нового = попередній claim-комміт (не main).
+        // Ланцюг claim-комітів: parent нового = попередній claim-коміт (не main).
         let parent = output(
             repo.work.path(),
             &["rev-parse", &format!("{}^", renewed.commit_sha)],

@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.10.0] - 2026-07-07
+
+### Changed
+
+- docs: vision — мета-цикл ретроспективного самопокращення процесу (аналіз audit trail, пропозиції кращих skills/інструментів)
+
+### Fixed
+
+- CI: n-cursor lint ga/text (новий синтаксис CLI), eslint-помилки unicorn у lib, стабілізація rmSync у тестах, лічильник ADR 175
+
+## [0.9.0] - 2026-07-07
+
+### Added
+
+- docs: глава архітектури i18n.md — багатомовність (base-канон, derived-переклади у refs/mt/i18n, worktree-матеріалізація, contract-aware перекладач)
+
+## [0.8.0] - 2026-07-07
+
+### Added
+
+- docs: зафіксовано мету проєкту (vision.md) — платформа задач для людей і ШІ, пʼять крос-вимірів
+
+## [0.7.0] - 2026-07-07
+
+### Changed
+
+- docs: об'єднана цільова архітектура 0.3.0-draft — мердж графа задач mt.md і scaffold-spec v4 (пристрої/сесії/relay); реструктуризовано у глави docs/architecture/ з OKF-індексами (docs/index.md, docs/log.md) та frontmatter; mt.md позначено deprecated як цільова картина, лишається контрактом @7n/mt@0.2.x
+
 ## [0.6.0] - 2026-07-04
 
 ### Changed

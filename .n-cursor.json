@@ -5,29 +5,28 @@
     "bun",
     "changelog",
     "ci4",
+    "doc-files",
     "feedback",
     "ga",
     "image-compress",
-    "js-lint",
-    "js-lint-ci",
+    "js",
     "js-run",
     "npm-module",
+    "rust",
     "security",
     "test",
     "text",
     "worktree"
   ],
-  "ignore": [".worktrees"],
+  "ignore": [
+    ".worktrees"
+  ],
   "skills": [
     "adr-normalize",
-    "coverage-fix",
-    "fix",
-    "fix-tests",
+    "doc-files",
     "lint",
     "llm-patch",
     "publish-telegram",
-    "start-check",
-    "taze",
-    "worktree"
+    "taze"
   ]
 }

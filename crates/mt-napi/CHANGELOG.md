@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1] - 2026-07-07
+
+### Changed
+
+- release: @7n/mt@0.8.0
+- chore: package.json — type module + engines (js.mdc канон); vitest/stryker/jsconfig конфіги (T0-автофікси) + файлові доки
+
 ## [0.1.0] - 2026-07-04
 
 ### Added

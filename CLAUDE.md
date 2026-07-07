@@ -10,45 +10,42 @@
 @.cursor/rules/n-bun.mdc
 @.cursor/rules/n-changelog.mdc
 @.cursor/rules/n-ci4.mdc
+@.cursor/rules/n-doc-files.mdc
 @.cursor/rules/n-feedback.mdc
 @.cursor/rules/n-ga.mdc
 @.cursor/rules/n-image-compress.mdc
-@.cursor/rules/n-js-lint-ci.mdc
-@.cursor/rules/n-js-lint.mdc
 @.cursor/rules/n-js-run.mdc
+@.cursor/rules/n-js.mdc
 @.cursor/rules/n-npm-module.mdc
+@.cursor/rules/n-rust.mdc
 @.cursor/rules/n-security.mdc
 @.cursor/rules/n-test.mdc
 @.cursor/rules/n-text.mdc
 @.cursor/rules/n-worktree.mdc
 
-## Лінт і ESLint (без паралельних запусків)
+## Лінт і ESLint (паралелізм)
 
-Щоб не запускати **кілька** одночасних **`eslint`** (і не перевантажувати диск/CPU), **заборонено** стартувати `bun run lint` / `lint-js` / `eslint` **паралельно** в різних Bash-задачах, **фонових** shells чи **субагентах** (Task тощо). Має бути **один** послідовний прогон на сесію; команда **`/n-lint`** — **не** ділити на паралельні підзадачі. Деталі: `.cursor/skills/n-lint/SKILL.md`.
+Дельта-`lint` (типовий задачний прогін) — **без черги**, паралельні запуски по різних файлах дозволені. `npx @nitra/cursor lint --full` має **вбудовану глобальну чергу** (spec 2026-07-03): один full-прогін на машину; запуск у черзі показує свою позицію, решту черги і живий прогрес-бар активного прогону (`⏳ lint --full у черзі #… · працює pid … [██…] 5/12 · …` — штатна черга, не зависання; fail-closed таймаут 45 хв). Ідентичний повтор --full на незміненому дереві дедуплікується (`♻️ … пропускаю`). Координувати запуски вручну не треба. Деталі: `.cursor/skills/n-lint/SKILL.md`.
 
-## Worktree-only skills (`meta.json` → `worktree: true`)
+## Worktree-only skills (`main.json` → `worktree: true`)
 
-Скіл із **`worktree: true`** у `meta.json` запускається **виключно** в окремому git-worktree (`.worktrees/<current-branch>-<suffix>/`) — **не** в основному дереві й **не** паралельно. Перший крок такого скіла (блок `n-cursor:worktree:start` у його `SKILL.md`) — **preflight**: якщо `git rev-parse --show-toplevel` не вказує під `.worktrees/`, **STOP** і не питай користувача про назву гілки; створи worktree від поточної гілки готовим snippet з `SKILL.md` за конвенцією `<current-branch>-<suffix>` і без shell expansion (без command substitution, variable expansion чи backticks). Чисте робоче дерево — **не** привід пропустити preflight.
+Скіл із **`worktree: true`** у `main.json` запускається **виключно** в окремому git-worktree (`.worktrees/<current-branch>-<suffix>/`) — **не** в основному дереві й **не** паралельно. Перший крок такого скіла (блок `n-cursor:worktree:start` у його `SKILL.md`) — **preflight**: якщо `git rev-parse --show-toplevel` не вказує під `.worktrees/`, **STOP** і не питай користувача про назву гілки; створи worktree від поточної гілки готовим snippet з `SKILL.md` за конвенцією `<current-branch>-<suffix>` і без shell expansion (без command substitution, variable expansion чи backticks). Чисте робоче дерево — **не** привід пропустити preflight.
+
+## Файлова документація (`doc-files` — обовʼязковий крок, як lint)
+
+Після зміни чи додавання кодового файлу його файлова дока (`<dir>/docs/<stem>.md`) має бути **актуальною** — це **обовʼязковий крок кожної задачі**, нарівні з lint. Застарілість детермінується за **CRC** джерела у frontmatter доки. PostToolUse hook (`hook --post-tool-use`) **сигналить** про дрейф після правки через per-file lint правила. Регенерація — `/doc-files` (JS-оркестрована, не диспатч субагентів). Агрегуюча дока (module-summary, доменні) — окремий скіл `/doc-aggregate`, за запитом.
 
 ## Skills
 
 - `.cursor/skills/n-adr-normalize/SKILL.md` — Ручний запуск ADR-нормалізації — обхід порогу й min-interval, прогон одного батчу чернеток через LLM, перегляд результату через git diff
   Команда: `/n-adr-normalize`
-- `.cursor/skills/n-coverage-fix/SKILL.md` — Автономна команда: запускає n-cursor coverage → читає вцілілих мутантів → ітеративно пише тести до конвергенції (max 3 ітерації)
-  Команда: `/n-coverage-fix`
-- `.cursor/skills/n-fix/SKILL.md` — Виправити проєкт відповідно до всіх правил в .cursor/rules/
-  Команда: `/n-fix`
-- `.cursor/skills/n-fix-tests/SKILL.md` — Ітеративно дописати тести щоб підвищити mutation score — читає вцілілі мутанти з COVERAGE.md і запускає агент до конвергенції
-  Команда: `/n-fix-tests`
-- `.cursor/skills/n-lint/SKILL.md` — Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід
+- `.cursor/skills/n-doc-files/SKILL.md` — Обовʼязковий крок задачі (як lint): для кожного зміненого/нового кодового файлу (js/mjs/ts/vue/py) JS-оркестрована генерація лаконічної поведінкової української md-документації у теку docs/ поряд із кодом, зі звіркою застарілості за CRC у frontmatter
+  Команда: `/n-doc-files`
+- `.cursor/skills/n-lint/SKILL.md` — Запустити дельта-лінт (npx @nitra/cursor lint) по змінених файлах vs origin, виправити порушення й підтвердити чистий вихід
   Команда: `/n-lint`
 - `.cursor/skills/n-llm-patch/SKILL.md` — Підготовка самодостатнього текстового промпта для іншого Claude/Cursor-агента — read-only аналіз CWD без жодних змін у поточному репо
   Команда: `/n-llm-patch`
 - `.cursor/skills/n-publish-telegram/SKILL.md` — Підготовка матеріалу з поточного контексту для публікації в Telegram-каналі команди
   Команда: `/n-publish-telegram`
-- `.cursor/skills/n-start-check/SKILL.md` — Smoke-перевірка bun-монорепо: зайти в кожен воркспейс зі `start`-скриптом, прогнати `start` і зафіксувати, чи проєкт взагалі запускається без негайного краху
-  Команда: `/n-start-check`
 - `.cursor/skills/n-taze/SKILL.md` — Оновлення версій модулів проекту з аналізом major-змін і автоматичним рефакторингом несумісного коду
   Команда: `/n-taze`
-- `.cursor/skills/n-worktree/SKILL.md` — Створення та керування git-worktree через n-cursor worktree CLI: ізольований workspace у .worktrees/<branch>/ з інвентарним файлом-описом
-  Команда: `/n-worktree`

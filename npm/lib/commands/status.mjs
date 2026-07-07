@@ -62,7 +62,7 @@ export default function status(args, deps = {}) {
   const readFile = deps.readFile ?? ((p, enc) => readFileSync(p, enc))
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, { ...opts, encoding: 'utf8' }))
 
   // Парсимо аргументи

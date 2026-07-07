@@ -37,7 +37,6 @@ export function makeWorktreeName(taskPath, epochSec) {
  * @returns {{ worktreePath: string, branch: string } | null} worktree або null якщо вже існує
  */
 export function createWorktree(worktreesDir, worktreeName, root, deps = {}) {
-  // eslint-disable-next-line sonarjs/os-command
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, opts))
   const mkdirSyncFn = deps.mkdirSync ?? mkdirSync
 
@@ -79,7 +78,6 @@ export function createWorktree(worktreesDir, worktreeName, root, deps = {}) {
  * }} [deps] ін'єкції
  */
 export function removeWorktree(worktreePath, root, deps = {}) {
-  // eslint-disable-next-line sonarjs/os-command
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, opts))
   try {
     execSyncFn(`git worktree remove --force "${worktreePath}"`, { cwd: root, encoding: 'utf8' })
@@ -104,7 +102,6 @@ export function removeWorktree(worktreePath, root, deps = {}) {
  * @returns {{ ok: boolean, error?: string }} результат
  */
 export function mergeWorktree(worktreePath, root, deps = {}) {
-  // eslint-disable-next-line sonarjs/os-command
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, opts))
   let branch
 
@@ -161,18 +158,19 @@ export function mergeWorktree(worktreePath, root, deps = {}) {
  * @returns {Set<string>} set імен worktrees
  */
 export function listActiveWorktrees(root, deps = {}) {
-  // eslint-disable-next-line sonarjs/os-command
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, opts))
 
   try {
     const out = execSyncFn('git worktree list --porcelain', { cwd: root, encoding: 'utf8' })
     const names = new Set()
     for (const line of String(out).split('\n')) {
-      if (line.startsWith('worktree ')) {
-        const path = line.slice('worktree '.length).trim()
-        const name = path.split('/').pop() ?? ''
-        if (name) names.add(name)
+      if (!line.startsWith('worktree ')) {
+        continue
       }
+
+      const path = line.slice('worktree '.length).trim()
+      const name = path.split('/').pop() ?? ''
+      if (name) names.add(name)
     }
     return names
   } catch {

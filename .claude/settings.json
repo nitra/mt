@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx --no @nitra/cursor post-tool-use-fix",
+            "command": "npx --no @nitra/cursor hook --post-tool-use",
             "timeout": 300
           }
         ]
