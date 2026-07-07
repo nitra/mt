@@ -1,0 +1,67 @@
+npm/types/lib/commands/verify.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 13-19
+npm/types/lib/commands/plan.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 6-11,26-34
+npm/types/lib/core/task-command.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 9-12,19-24
+npm/types/lib/commands/kill.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-25
+npm/types/lib/commands/spawn.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/commands/worktree.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,17-57
+npm/types/lib/core/frontmatter.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,13,21,28
+npm/types/lib/commands/status.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-21
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7-11,13-27
+npm/types/lib/commands/failed.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/nnn.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 6,13,20,27,34,41
+npm/types/lib/commands/done.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/config.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 11-14,21,28,35,37
+npm/types/lib/core/native.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-20,27-29
+npm/types/lib/commands/init.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 9-12,26-33
+npm/types/lib/commands/audit.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/state.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 11,22,24
+npm/types/lib/core/scanner-bin.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-20,25
+npm/types/lib/commands/watch.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-22,24-27
+npm/types/lib/commands/invalidate.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 15-23
+npm/types/lib/commands/scan.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-21
+npm/types/lib/commands/run.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 18-29
+npm/types/lib/core/worktree.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,20-26,35-37,47-52,61-63,74-77
+npm/types/lib/commands/setup.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-25
+npm/types/lib/core/scanner.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7-13,22-25,32,39,46-48,54,56-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ac279a6981f80e17f5d32d564b3e813faf46d2f9",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
