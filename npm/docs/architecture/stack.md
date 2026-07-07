@@ -1,6 +1,13 @@
+---
+type: stack
+description: 'Конкретні технологічні рішення реалізації архітектури 0.3.0-draft; зміна стеку не змінює архітектуру'
+tags: [stack, rust, bun, tauri]
+timestamp: 2026-07-07
+---
+
 # Nitra MT — референсний стек
 
-> Доповнення до [architecture.md](architecture.md) 0.3.0-draft. Архітектура technology-agnostic; цей документ фіксує конкретні технологічні рішення референсної реалізації та їх обґрунтування. Зміна стеку не змінює архітектуру.
+> Доповнення до [цільової архітектури](index.md) 0.3.0-draft. Архітектура technology-agnostic; цей документ фіксує конкретні технологічні рішення референсної реалізації та їх обґрунтування. Зміна стеку не змінює архітектуру.
 
 ## Компоненти
 
@@ -51,7 +58,7 @@
 ## Relay-інфраструктура
 
 - Bun + PostgreSQL; auth — інтерфейс `verifySession(token) → {account_id}` із dev-реалізацією (magic tokens), продакшн — Ory Kratos за тим самим інтерфейсом;
-- Push: FCM (data-повідомлення трьох типів з architecture.md); модуль за інтерфейсом, dev-заглушка;
+- Push: FCM (data-повідомлення трьох типів — див. [access.md](access.md)); модуль за інтерфейсом, dev-заглушка;
 - Деплой: Dockerfile (oven/bun) + k8s (Deployment + Service; Postgres — CNPG);
 - Ліміти: rate limit на з'єднання, кадр ≤ 2 MB, буфер ≤ 200 Envelope/run.
 
