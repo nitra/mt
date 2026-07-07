@@ -9,6 +9,7 @@
 * [Координація через git](git.md) - CAS claim (create/renewal/takeover/handoff), run ref і журнал сесії, fenced publish, паралелізм
 * [Runtime: хости, сесії, поверхні](runtime.md) - agent-server (orchestrator + runner + session host), протокол подій v3, інтерактивна сесія = run вузла, міграція, preview
 * [Люди, пристрої, доступ](access.md) - акаунти і ключі, relay та його межі, membership і ролі, три approval-гейти, push-нотифікації
+* [Багатомовність (i18n)](i18n.md) - base-канон і derived-переклади у `refs/mt/i18n`, worktree-матеріалізація, contract-aware перекладач, authored-захист
 * [Експлуатація](operations.md) - CLI-контракт, конфігурація, монорепо, security model, відмовостійкість, bootstrap, Definition of Done
 
 ## Довідково
