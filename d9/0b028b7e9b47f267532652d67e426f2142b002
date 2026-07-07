@@ -1,0 +1,21 @@
+.github/workflows/lint-ga.yml
+  s_7e5f9d7306be1a::t_17b4ec26fc6718 41-42
+.github/workflows/lint-text.yml
+  s_7e5f9d7306be1a::t_24da755aa506f4 61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d90b028b7e9b47f267532652d67e426f2142b002",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
