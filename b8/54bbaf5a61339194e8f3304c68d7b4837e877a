@@ -1,0 +1,171 @@
+npm/lib/commands/watch.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 42
+.markdownlint-cli2.jsonc
+  s_7e5f9d7306be1a::t_1451c2a332db0c 10,12-13
+npm/types/lib/commands/scan.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 14-24
+npm/types/lib/commands/done.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7
+npm/types/lib/commands/plan.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 6,21-32
+npm/types/lib/commands/setup.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 16-28
+hk.pkl
+  s_7e5f9d7306be1a::t_6bb9f4ab21c3cc 15
+npm/lib/commands/worktree.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 363
+npm/types/lib/commands/kill.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 16-28
+npm/types/lib/core/nnn.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 6,13,20,27,34,41
+npm/lib/commands/done.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 29
+npm/types/lib/commands/verify.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 13-22
+npm/lib/commands/invalidate.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 40
+npm/types/lib/commands/run.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 18-32
+.github/workflows/lint-text.yml
+  s_7e5f9d7306be1a::t_047dd0a770094e 61
+npm/lib/cli.mjs
+  s_7e5f9d7306be1a::t_1fe6792187ecd6 21-35
+  s_7e5f9d7306be1a::t_d597b8f849cd19 45-46
+knip.json
+  s_7e5f9d7306be1a::t_1ffc43b6daff9d 37-40
+  s_7e5f9d7306be1a::t_1e69b5839b13a5 5
+npm/lib/core/scanner.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 134-135,137-139,203-204,206-208
+  s_274671db6c3891::t_1a53ef28d1066a 209
+npm/types/lib/commands/init.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 9-12,26-36
+npm/types/lib/core/frontmatter.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7,13,21,28
+npm/lib/tests/run.test.mjs
+  s_7e5f9d7306be1a::t_394baf70a4a56c 37
+  s_7e5f9d7306be1a::t_03f51cc0cff200 36,39
+npm/types/lib/commands/audit.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7
+npm/lib/commands/tests/worktree.test.mjs
+  s_7e5f9d7306be1a::t_b4ad183db37726 2
+  s_7e5f9d7306be1a::t_44bcafc1f9581c 12-14
+crates/mt-napi/.changes/260707-0940.md
+  s_7e5f9d7306be1a::t_3054ff920e58a0 1-5
+npm/lib/commands/scan.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 37
+npm/types/lib/core/task-command.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 9-18,25-33
+npm/types/lib/commands/status.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 14-24
+npm/types/lib/core/native.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 14-20,27-29
+npm/types/lib/commands/spawn.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7
+.github/workflows/lint-ga.yml
+  s_7e5f9d7306be1a::t_277da0fffdde52 41
+npm/types/lib/core/config.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 11-14,21,28,35,37
+npm/types/lib/core/scanner-bin.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 14-20,25
+npm/types/lib/commands/worktree.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7,17-57
+npm/.changes/260707-0919.md
+  s_7e5f9d7306be1a::t_d7c587e6ae4c5d 1-5
+npm/lib/commands/kill.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 74
+npm/lib/tests/docs.test.mjs
+  s_7e5f9d7306be1a::t_79861b2aabb680 21,24
+npm/lib/commands/run.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 111,269
+npm/lib/commands/status.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 65
+npm/lib/tests/worktree.test.mjs
+  s_7e5f9d7306be1a::t_1ba9ec8dcf35dd 26
+  s_7e5f9d7306be1a::t_36fee82406c462 25,28
+.github/workflows/npm-publish.yml
+  s_7e5f9d7306be1a::t_9b3bacd145537e 107
+  s_7e5f9d7306be1a::t_afed4562fb7de5 52-53
+  s_7e5f9d7306be1a::t_976aca7726a671 97
+  s_7e5f9d7306be1a::t_85412cde4bd892 148
+  s_7e5f9d7306be1a::t_c0be8c39fea408 108-110,114
+  s_7e5f9d7306be1a::t_534b039ace398e 122
+.oxlintrc.json
+  s_7e5f9d7306be1a::t_c439cac5bcd244 15
+npm/lib/core/worktree.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 167-168,170-173
+npm/types/lib/core/scanner.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7-16,25-32,39,46,53-58,64,66-83
+npm/types/lib/commands/invalidate.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 15-26
+npm/lib/commands/audit.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 30
+npm/types/lib/core/worktree.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7,20-31,40-46,56-65,74-79,90-97
+npm/lib/core/native.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 92
+  s_274671db6c3891::t_4971f97a950bce 93-94
+npm/types/lib/commands/watch.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 16-24,26-30
+npm/types/lib/commands/failed.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7
+crates/mt-napi/package.json
+  s_7e5f9d7306be1a::t_601745ae22b767 7,13-18
+.cspell.json
+  s_7e5f9d7306be1a::t_f00bb18cd77020 126-127
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 4-6,32,47,49,71,81,88,97-98,100,103,108,110,128,131,134,160,166,174,185,187,189-190,197,201,219,231,243,246,255,259,264,268,285,288
+  s_7e5f9d7306be1a::t_3054ff920e58a0 84,236
+  s_7e5f9d7306be1a::t_ca60eaebf97928 237
+  s_7e5f9d7306be1a::t_a4bc10fd66daa8 115
+npm/types/lib/core/state.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 11,22,24-37
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7-14,16-30
+.cursor/rules/n-bun.mdc
+  s_274671db6c3891::t_56f01516083456 18
+.cursor/rules/n-ga.mdc
+  s_274671db6c3891::t_4cbddebc1911eb 15,50,81,127,137,179,185
+.cursor/rules/n-js-run.mdc
+  s_274671db6c3891::t_337ff2d92016b1 28,37
+.cursor/rules/n-js.mdc
+  s_274671db6c3891::t_74138896cd5056 60,72,80
+.cursor/rules/n-npm-module.mdc
+  s_274671db6c3891::t_9c194ae345ade2 26,80,86
+.cursor/rules/n-security.mdc
+  s_274671db6c3891::t_7035c35825863e 49
+.cursor/rules/n-text.mdc
+  s_274671db6c3891::t_735ddc9159e34c 26,39,55,73,83,91,99,165
+CLAUDE.md
+  s_274671db6c3891::t_844006d07f3377 6
+bun.lock
+  s_7e5f9d7306be1a::t_50a7b01f4e02a8 21,26,872,1454,2142-2143,2242-2243
+crates/mt-napi/jsconfig.json
+  s_274671db6c3891::t_4d6122b9645683 1-10
+crates/mt-napi/stryker.config.mjs
+  s_274671db6c3891::t_b3ffd3a389fa8f 1-18
+crates/mt-napi/vitest.config.mjs
+  s_274671db6c3891::t_c673cae1a1a425 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b854bbaf5a61339194e8f3304c68d7b4837e877a",
+  "prompts": {},
+  "sessions": {
+    "s_274671db6c3891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f21d78-b127-4c7d-898d-d4c0f17f9668",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
