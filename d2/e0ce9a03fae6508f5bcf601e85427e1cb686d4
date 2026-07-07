@@ -1,0 +1,25 @@
+npm/docs/architecture.md
+  s_c2e5824e86d3d9::t_500aebc766375b 1-801
+npm/docs/stack.md
+  s_c2e5824e86d3d9::t_59bd55022ac7df 1-78
+npm/docs/mt.md
+  s_c2e5824e86d3d9::t_e889f92663c87f 4-5
+npm/.changes/1783394459952-c58b70.md
+  s_c2e5824e86d3d9::t_2accfe1cb2e6c9 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d2e0ce9a03fae6508f5bcf601e85427e1cb686d4",
+  "prompts": {},
+  "sessions": {
+    "s_c2e5824e86d3d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f90009fa-d8c5-46ca-a24b-f75a388de496",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
