@@ -1,0 +1,51 @@
+npm/docs/architecture/overview.md
+  s_7e5f9d7306be1a::t_9b3f6678ef4341 58-75
+npm/docs/architecture/access.md
+  s_7e5f9d7306be1a::t_5e1870d6365cce 73-85
+npm/docs/log.md
+  s_7e5f9d7306be1a::t_c2ccdf3b98308e 5-14
+npm/.changes/260707-2153.md
+  s_7e5f9d7306be1a::t_43f564e099af61 1-5
+npm/docs/architecture/surfaces.md
+  s_7e5f9d7306be1a::t_8dad4f9d528b07 63-80
+npm/docs/architecture/operations.md
+  s_7e5f9d7306be1a::t_cc33d89c1f79c5 67-83
+npm/docs/architecture/runtime.md
+  s_7e5f9d7306be1a::t_42f2826e7542f2 108-114
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_93b6ee7fb8d6eb 28-34
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_fb949dfd7cbb7a 26
+npm/docs/architecture/graph.md
+  s_7e5f9d7306be1a::t_97c2b4f1cceb78 346
+  s_7e5f9d7306be1a::t_a8f9e4d62e6464 325-345
+.cspell.json
+  s_7e5f9d7306be1a::t_fd00559af18a27 301
+  s_7e5f9d7306be1a::t_bef125359c0f9f 286
+  s_7e5f9d7306be1a::t_79921934a8446a 186
+  s_7e5f9d7306be1a::t_f0fa6cc8ea2cac 104
+  s_7e5f9d7306be1a::t_a335afc6fdde6f 144-145
+  s_7e5f9d7306be1a::t_0ea25647916fb0 337
+  s_7e5f9d7306be1a::t_8fbf046c227343 316
+  s_7e5f9d7306be1a::t_3171f0119cf001 24-25
+npm/docs/mt.md
+  s_7e5f9d7306be1a::t_05b2f0871e3b99 12
+docs/adr/260606-1323-task-md-як-єдиний-файл-вузла.md
+  s_7e5f9d7306be1a::t_99d83535ad4962 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7cf2b1125215611a32be14290a52f03c34fef11a",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
