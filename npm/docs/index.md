@@ -15,6 +15,7 @@
 * [Координація через git](architecture/git.md) - CAS claim як єдине «перо», run ref із журналом сесії, fenced publish
 * [Runtime](architecture/runtime.md) - agent-server, протокол подій v3, інтерактивні сесії, міграція між хостами, preview
 * [Люди, пристрої, доступ](architecture/access.md) - relay, membership і ролі, три approval-гейти з Ed25519-підписами, push
+* [Багатомовність (i18n)](architecture/i18n.md) - base-канон і derived-переклади, worktree-матеріалізація, contract-aware перекладач
 * [Експлуатація](architecture/operations.md) - CLI, конфігурація, security model, відмовостійкість, наскрізні сценарії
 * [Референсний стек](architecture/stack.md) - технологічні рішення реалізації (Rust device-шар, Bun relay/`@7n/mt`)
 
