@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.0] - 2026-07-07
+
+### Added
+
+- docs: глава архітектури i18n.md — багатомовність (base-канон, derived-переклади у refs/mt/i18n, worktree-матеріалізація, contract-aware перекладач)
+
 ## [0.8.0] - 2026-07-07
 
 ### Added
