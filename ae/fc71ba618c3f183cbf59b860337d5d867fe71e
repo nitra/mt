@@ -1,0 +1,207 @@
+.claude/commands/n-doc-files.md
+  s_cd3866719fef15::t_cce1a22edececf 3,6,8
+.claude/commands/n-lint.md
+  s_cd3866719fef15::t_2bd0f1527dc8fb 3
+.claude/hooks/capture-decisions.sh
+  s_cd3866719fef15::t_e370205f36088e 6-17,31-34,105-129,132-136,192-197,201-254,257-264,267-302,309,321
+.claude/hooks/lib/tooling-only.sh
+  s_cd3866719fef15::t_8df783d72412ed 42-57
+.claude/hooks/normalize-decisions.sh
+  s_cd3866719fef15::t_53f304c7d16930 10-11,31-37,64-72,244-250,289,293-310,313-340,468,470-472,474-476,485-502,527
+.claude/settings.json
+  s_cd3866719fef15::t_3f85a84fa0d2e1 19
+.cspell.json
+  s_cd3866719fef15::t_c5b906049ed469 4-6,22,26-27,29-32,37-38,40-41,45,47,49,53-56,58,60,64,68,71,76,81,84,86,88,92-94,97-98,100,103,108,110,115-116,120,123-128,131-132,134,136,138-142,158,160-163,165-167,173,177,185,187,189-190,196-198,201-202,216,218,220,229-230,232,237-240,243-245,248-249,253-254,257,261,266,270-273,276-278,281-283,288,291-292,295,298,303,305-306,308,312,318-319
+.cursor/rules/n-adr.mdc
+  s_cd3866719fef15::t_98faf341635228 7,69-141
+.cursor/rules/n-bun.mdc
+  s_cd3866719fef15::t_fe5d14e771148f 10,12-49,51,53,55-59,67,69,71-72,74,76,82,88,90,100-104,106,108,110-111,113
+.cursor/rules/n-changelog.mdc
+  s_cd3866719fef15::t_837cc3eddc5487 3,7
+.cursor/rules/n-ci4.mdc
+  s_cd3866719fef15::t_eacf8ddf792e00 7,67,87,209,366-423
+.cursor/rules/n-doc-files.mdc
+  s_cd3866719fef15::t_c2618f5b8f073d 1-60
+.cursor/rules/n-feedback.mdc
+  s_cd3866719fef15::t_c00e388f8b15d7 32,45-46
+.cursor/rules/n-ga.mdc
+  s_cd3866719fef15::t_d4006c24ab9c6c 8,10,12-13,16,19,22-23,30-31,34-35,37-48,51,54,58,68,71-72,74-75,77-79,82,125,128-136,138,141,144-149,156,160,162-173,175,177,180,182-184,186,193,195,197,199,201,203-210,212,214,216,218,220,222,224-235,237,239,241,243,245,247,249-255,257,259,261,263,265,267,269-279,281,283,285-360,362,364
+.cursor/rules/n-image-compress.mdc
+  s_cd3866719fef15::t_181bfa62ef63d6 2,8,10,12,14,16,18-20,22-24,26,28,30-36,38
+.cursor/rules/n-js-run.mdc
+  s_cd3866719fef15::t_970ce56eaaf145 5,8,10,12,14,29,31-35,38,65,67,69,71,73,75-76,78,80,82-84,87,89-92,95,97,99,101,103,105-106,108,110,112-119,121,123,125,127,129,131,133,135-138,140,142-143,145,147-149,152,154-157,160,162,164,166-169,171,173,175
+.cursor/rules/n-js.mdc
+  s_cd3866719fef15::t_63337c27341f0d 2,5,8-59,61,63-71,73,75-79,81,83-90,92,94,96,98,100-105,107-113,115-117,128-185
+.cursor/rules/n-npm-module.mdc
+  s_cd3866719fef15::t_81261b969cefc3 12,16,18,20-21,23-27,53,63-66,70,73,81,87,90-98,101-119,132-350
+.cursor/rules/n-rust.mdc
+  s_cd3866719fef15::t_da831796f92f64 2-5,8-71
+.cursor/rules/n-security.mdc
+  s_cd3866719fef15::t_a3146b388dcfc6 2,8,10,12,14,50-73,81-82,86,88,90-116
+.cursor/rules/n-test.mdc
+  s_cd3866719fef15::t_f08d8b6e529b91 2-4,8-54,107-118,131,133,135,137,139,141,143-156,158-173,177,202,204,206,208,210,212,214,216,218,220,222,224,226-227,229,231,233,235,237,239,241-243,245,247,249,264
+.cursor/rules/n-text.mdc
+  s_cd3866719fef15::t_a134b785b527c1 7,9,11,13,27,40,48,56,58-71,73-76,78-79,84,86-90,92,94-98,100,163-183,186,188,190,192,194-205,208,210,214,218-220,222,224,226-278,280-286,289,291,293,295-297,302-328,330,332,334-345,347-348,352,354,356-358,362-364,366,368,370,372,374,376,378,380,382,384-386,388
+.cursor/rules/n-worktree.mdc
+  s_cd3866719fef15::t_577cfd8d306013 2,9-10,103-106,126
+.cursor/skills/n-adr-normalize/SKILL.md
+  s_cd3866719fef15::t_77a47c9b24dcf9 6,16,21-23,26,32
+.cursor/skills/n-doc-files/SKILL.md
+  s_cd3866719fef15::t_f5e17e9b499545 2,4-5,8,10,12,15,19-20,22,26-28,30-32,34-39,41,43,46,48-51,53-56,58,60-61,63,65,68,71-75,77,79-81,83,85-92,96-100
+.cursor/skills/n-lint/SKILL.md
+  s_cd3866719fef15::t_1fb54c8584d279 4-5,15,20-22,25,31,38,42-44,48,53,56,59-61,64,66,69,88,124,127,129,131,133,135-137,145,149-151
+.cursor/skills/n-llm-patch/SKILL.md
+  s_cd3866719fef15::t_e484a96d17e0ba 6,75-82,197-201,236-242,246-247,254
+.cursor/skills/n-publish-telegram/SKILL.md
+  s_cd3866719fef15::t_e11cb9408ce40f 5,14,16-20,22,34,37,39,42,45,50,70-71,78,80-81,83-84,86-89,91-92
+.cursor/skills/n-taze/SKILL.md
+  s_cd3866719fef15::t_3c35b6cb7126b4 6,16,21-23,26,32,77-83,85,115,134,142
+.github/workflows/lint-ga.yml
+  s_cd3866719fef15::t_4bdf8105247242 41-43
+.github/workflows/lint-text.yml
+  s_cd3866719fef15::t_95b6fe50da8be9 61-63
+.markdownlint-cli2.jsonc
+  s_cd3866719fef15::t_55df797cef9223 10,12-13
+.n-cursor.json
+  s_cd3866719fef15::t_15abd358fc31a4 8,12,15,21-23,26,30
+.oxlintrc.json
+  s_cd3866719fef15::t_aa52d32af015e8 15
+.pi/extensions/n-cursor-adr/index.ts
+  s_cd3866719fef15::t_a5aa78f74d68bc 51,58-64
+.pi/skills/n-doc-files/SKILL.md
+  s_cd3866719fef15::t_4be432e8e2a4e3 2,4,7,9
+.pi/skills/n-lint/SKILL.md
+  s_cd3866719fef15::t_9f62cc4d8bebd9 4
+AGENTS.md
+  s_cd3866719fef15::t_ff7391d5af453f 15,20,22,31-32,50,57-60
+CLAUDE.md
+  s_cd3866719fef15::t_63659d5e19ed48 13,18,20,26,28,30,32-36,42-44
+bun.lock
+  s_cd3866719fef15::t_0d07abaddde100 21,26,216,228,238,256-257,270,272,274,276,284,286,288,290,292,294,296,298,300,302,304,496,500,620,622,624,626,628,630,632,634,636,638,640,642,644,646,648,650,652,654,656,678,680,682,684,686,688,690,692,694,696,698,700,702,704,706,708,764-765,772,776,780,784,830,832,834,836,838,840,842,844,846,848,850,852,854,864,872,908,918,928,932,956-958,966,968,970,972,1050-1051,1070,1078,1088-1089,1094,1096,1104,1112,1124,1126,1128,1130,1134,1138,1140,1142,1144,1146,1168,1184,1190-1191,1214-1215,1224,1254-1255,1262,1280,1324,1338,1340,1362-1364,1376,1436,1454,1522-1523,1538-1539,1552-1558,1560-1576,1590-1593,1598-1599,1602-1605,1628-1629,1658,1672,1680,1684,1710,1722,1734,1760,1766,1768,1806,1830,1850,1864,1906,1908,1992,1996-2004,2022,2024,2044,2076-2077,2130,2142,2164,2178,2180,2194-2195,2200,2242-2243
+crates/mt-core/src/claims.rs
+  s_cd3866719fef15::t_1073a17f7e5433 212,214,335,388,421
+crates/mt-core/src/docs/claims.md
+  s_cd3866719fef15::t_c3dbc97edd5ab5 1-59
+crates/mt-core/src/docs/config.md
+  s_cd3866719fef15::t_5d952375c742ad 1-47
+crates/mt-core/src/docs/frontmatter.md
+  s_cd3866719fef15::t_7a323388af65b5 1-39
+crates/mt-core/src/publish.rs
+  s_cd3866719fef15::t_d563f41cb71752 102
+crates/mt-core/src/runner.rs
+  s_cd3866719fef15::t_dc1736fd6c4556 5,482
+crates/mt-core/src/test_support.rs
+  s_cd3866719fef15::t_5b34da3a319bce 1,48
+crates/mt-napi/CHANGELOG.md
+  s_cd3866719fef15::t_bcc4c231f6db67 3-9
+crates/mt-napi/docs/stryker.config.md
+  s_cd3866719fef15::t_e5b01e72813442 1-23
+crates/mt-napi/docs/vitest.config.md
+  s_cd3866719fef15::t_5c1124c4ee610f 1-22
+crates/mt-napi/jsconfig.json
+  s_cd3866719fef15::t_3a88307561b927 1-10
+crates/mt-napi/package.json
+  s_cd3866719fef15::t_3a262c0705c190 3,5,13-18
+crates/mt-napi/stryker.config.mjs
+  s_cd3866719fef15::t_99c107724cdf00 1-18
+crates/mt-napi/vitest.config.mjs
+  s_cd3866719fef15::t_a5a50ee228063b 1-22
+docs/adr/20260614-070000-task-create-rust-write-side.md
+  s_cd3866719fef15::t_759d3eadd5e17b 79-89
+docs/adr/20260615-202339-plan-reject-max-ескалація-на-людину.md
+  s_cd3866719fef15::t_29130659187301 2-4,7-8,11-12,15-17,20-21,24-28,31-32
+docs/adr/260606-1323-один-файл-task-md-для-місії-та-inputs.md
+  s_cd3866719fef15::t_0cff1d71d948b0 2-4,7-8,12,16-17,21,25-27,32,34,36,38-42
+knip.json
+  s_cd3866719fef15::t_b1b1b2f4628b62 5,37-40
+npm/CHANGELOG.md
+  s_cd3866719fef15::t_3743532ad740e5 3-30
+npm/docs/architecture/access.md
+  s_cd3866719fef15::t_fda56d65c3d739 2-5,8,10,12,14-16,18,20,22-31,33,35-43,45,47,49-54,56-57,59,61,63-67,69,71,73,75,77-79,81
+npm/docs/architecture/git.md
+  s_cd3866719fef15::t_2a524bd29827a6 1-86
+npm/docs/architecture/graph.md
+  s_cd3866719fef15::t_d558fec1afe52f 2-5,8,10,12,14,16,18,20-29,31,33,35-37,39,41-43,45,47,49-71,73,75,77-81,83,85-91,93,95,97,99-111,113-154,156-158,160-171,173-174,176,178,180-187,189,191,193-197,200-201,203-205,207,209,211,213-217,219-230,233-236,238-241,243-244,246-248,250,252,254-258,260,262,264-277,279,281-285,287,289-306,308,310,312,314,316-322,324
+npm/docs/architecture/i18n.md
+  s_cd3866719fef15::t_bdd5e4b36fe6d6 1-113
+npm/docs/architecture/index.md
+  s_cd3866719fef15::t_2fb818176886dc 1-18
+npm/docs/architecture/operations.md
+  s_cd3866719fef15::t_8151e56a4b39f2 1-114
+npm/docs/architecture/overview.md
+  s_cd3866719fef15::t_60b0f10d466c44 1-57
+npm/docs/architecture/runtime.md
+  s_cd3866719fef15::t_a0bc87f76cfc74 2-5,8,10,12,14,16,18,20-24,26,28,30,32-34,36,38,40,42,44-54,56,58,60-91,93,95-103,105,107,109,111,113,116-124,127,129,131,133-142,145,147,149,151-153
+npm/docs/architecture/stack.md
+  s_cd3866719fef15::t_4e4bc513cc2261 1-85
+npm/docs/index.md
+  s_cd3866719fef15::t_278fc91084e0ff 1-30
+npm/docs/log.md
+  s_cd3866719fef15::t_8beeee58cde889 1-24
+npm/docs/mt-impl.md
+  s_cd3866719fef15::t_0422e792e7cf46 1-7
+npm/docs/mt.md
+  s_cd3866719fef15::t_3d87d185e2c8c5 1-7,11-12
+npm/docs/review-response.md
+  s_cd3866719fef15::t_d11033d485d4ab 1-7
+npm/docs/vision.md
+  s_cd3866719fef15::t_9645f1e33b9108 1-49
+npm/lib/cli.mjs
+  s_cd3866719fef15::t_315bbb4394b1cb 21-35,45-46
+npm/lib/commands/audit.mjs
+  s_cd3866719fef15::t_356047686b715c 30
+npm/lib/commands/done.mjs
+  s_cd3866719fef15::t_f8db97676c56df 29
+npm/lib/commands/invalidate.mjs
+  s_cd3866719fef15::t_e1051b249fe413 40
+npm/lib/commands/kill.mjs
+  s_cd3866719fef15::t_984fb1f6ae6c73 74
+npm/lib/commands/run.mjs
+  s_cd3866719fef15::t_92848a56f27626 111,269
+npm/lib/commands/scan.mjs
+  s_cd3866719fef15::t_6ec56eb64e4783 37
+npm/lib/commands/status.mjs
+  s_cd3866719fef15::t_f82ec7e1011dcd 65
+npm/lib/commands/tests/worktree.test.mjs
+  s_cd3866719fef15::t_78285022c16a76 2,12-14
+npm/lib/commands/watch.mjs
+  s_cd3866719fef15::t_55fd174cff1c2c 42
+npm/lib/commands/worktree.mjs
+  s_cd3866719fef15::t_dcff83e134e794 363
+npm/lib/core/native.mjs
+  s_cd3866719fef15::t_408b7b0b6f1728 92-94
+npm/lib/core/scanner.mjs
+  s_cd3866719fef15::t_6e68fb8d70db5d 134-135,137-139,203-204,206-209
+npm/lib/core/worktree.mjs
+  s_cd3866719fef15::t_344eff87117147 167-168,170-173
+npm/lib/tests/docs.test.mjs
+  s_cd3866719fef15::t_d15fe181a4688c 21,24
+npm/lib/tests/run.test.mjs
+  s_cd3866719fef15::t_eb853e170af1b5 36-37,39
+npm/lib/tests/worktree.test.mjs
+  s_cd3866719fef15::t_40577dcd6f1d78 25-26,28
+npm/package.json
+  s_cd3866719fef15::t_2eca9dac89cae4 3
+npm/types/lib/cli.d.mts
+  s_cd3866719fef15::t_4035c27f85640b 13-27
+.github/workflows/npm-publish.yml
+  s_cd3866719fef15::t_018b3edad8fd88 52-53,97
+package.json
+  s_cd3866719fef15::t_367aded58f364e 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "aefc71ba618c3f183cbf59b860337d5d867fe71e",
+  "prompts": {},
+  "sessions": {
+    "s_cd3866719fef15": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5bd63382-c5cc-46e7-8b86-26516f19e303",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
