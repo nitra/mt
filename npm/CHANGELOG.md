@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0] - 2026-07-07
+
+### Changed
+
+- docs: vision — мета-цикл ретроспективного самопокращення процесу (аналіз audit trail, пропозиції кращих skills/інструментів)
+
+### Fixed
+
+- CI: n-cursor lint ga/text (новий синтаксис CLI), eslint-помилки unicorn у lib, стабілізація rmSync у тестах, лічильник ADR 175
+
 ## [0.9.0] - 2026-07-07
 
 ### Added
