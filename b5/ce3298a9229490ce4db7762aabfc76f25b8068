@@ -1,0 +1,83 @@
+npm/lib/tests/docs.test.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 21,24
+npm/lib/core/native.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 92-94
+npm/types/lib/cli.d.mts
+  s_274671db6c3891::t_f1c1d3718030d8 13-21
+  s_274671db6c3891::t_7ff6cd2ab7d4f7 22-27
+npm/.changes/260707-0919.md
+  s_274671db6c3891::t_3be174fc4ac2cd 1-5
+npm/lib/commands/audit.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 30
+.github/workflows/npm-publish.yml
+  s_274671db6c3891::t_3be174fc4ac2cd 53,97
+.github/workflows/lint-text.yml
+  s_274671db6c3891::t_3be174fc4ac2cd 61-62
+npm/lib/core/scanner.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 134-135,137-139,203-204,206-209
+crates/mt-napi/package.json
+  s_274671db6c3891::t_3be174fc4ac2cd 13-18
+npm/lib/commands/scan.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 37
+.github/workflows/lint-ga.yml
+  s_274671db6c3891::t_3be174fc4ac2cd 41-42
+crates/mt-napi/.changes/260707-0940.md
+  s_274671db6c3891::t_3be174fc4ac2cd 1-5
+.markdownlint-cli2.jsonc
+  s_274671db6c3891::t_3be174fc4ac2cd 10,12-13
+npm/lib/tests/worktree.test.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 25-26,28
+npm/lib/cli.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 21-35,45-46
+npm/lib/commands/worktree.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 363
+knip.json
+  s_274671db6c3891::t_3be174fc4ac2cd 5,37-39
+  s_274671db6c3891::t_07874edb251b3d 40
+npm/lib/core/worktree.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 167-168,170-173
+npm/lib/commands/invalidate.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 40
+npm/docs/architecture/i18n.md
+  s_274671db6c3891::t_3be174fc4ac2cd 32
+npm/lib/commands/status.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 65
+npm/lib/commands/kill.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 74
+npm/lib/commands/watch.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 42
+npm/lib/tests/run.test.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 36-37,39
+npm/lib/commands/tests/worktree.test.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 1-198
+hk.pkl
+  s_274671db6c3891::t_3be174fc4ac2cd 15
+npm/lib/commands/run.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 111,269
+npm/lib/commands/done.mjs
+  s_274671db6c3891::t_3be174fc4ac2cd 29
+bun.lock
+  s_274671db6c3891::t_8bf0196b453338 21,26,872,1454,2142-2143,2242-2243
+docs/adr/20260614-070000-task-create-rust-write-side.md
+  s_274671db6c3891::t_7a8be27b9bbb56 79-89
+docs/adr/20260615-202339-plan-reject-max-ескалація-на-людину.md
+  s_274671db6c3891::t_f3543944786573 2-4,7-8,11-12,15-17,20-21,24-28,31-32
+docs/adr/260606-1323-один-файл-task-md-для-місії-та-inputs.md
+  s_274671db6c3891::t_41aa8289b56a44 2-4,7-8,12,16-17,21,25-27,32,34,36,38-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b5ce3298a9229490ce4db7762aabfc76f25b8068",
+  "prompts": {},
+  "sessions": {
+    "s_274671db6c3891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f21d78-b127-4c7d-898d-d4c0f17f9668",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
