@@ -1,0 +1,62 @@
+.github/workflows/lint-text.yml
+  s_274671db6c3891::t_a926a81fb1bfcc 61
+.github/workflows/lint-ga.yml
+  s_274671db6c3891::t_0e8263121bec0d 41
+.cursor/rules/n-js.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 60,72,80
+.cursor/rules/n-js-run.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 28,37
+  s_274671db6c3891::t_67480d3a97dc87 80,87,145,152
+  s_274671db6c3891::t_e8109ca8a55aaa 136
+  s_274671db6c3891::t_4db1c2a1ee20df 113
+.cursor/rules/n-test.mdc
+  s_274671db6c3891::t_67480d3a97dc87 150,167
+npm/docs/vision.md
+  s_274671db6c3891::t_89fa3eb7905b1c 43
+  s_274671db6c3891::t_317540b83d2b4e 28-33
+CLAUDE.md
+  s_274671db6c3891::t_d0f91dcf9bb22b 6
+.cursor/rules/n-npm-module.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 26,80,86
+.cursor/rules/n-ga.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 15,50,81,127,137,179,185
+.cursor/rules/n-security.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 49
+.cursor/rules/n-ci4.mdc
+  s_274671db6c3891::t_7cdc922121de77 371-373,407-411
+.cursor/rules/n-text.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 26,39,55,73,83,91,99,165
+npm/.changes/260707-0915.md
+  s_274671db6c3891::t_9133c815e8843d 5
+  s_274671db6c3891::t_d0f91dcf9bb22b 1-4
+.github/workflows/npm-publish.yml
+  s_274671db6c3891::t_2ba37a8b66577c 52
+  s_274671db6c3891::t_53bd67314bf86d 106-109,113
+  s_274671db6c3891::t_b274d899966299 96
+  s_274671db6c3891::t_acfafd12c52a9c 121
+  s_274671db6c3891::t_7571ae62c44f15 147
+.cursor/rules/n-bun.mdc
+  s_274671db6c3891::t_d0f91dcf9bb22b 18
+.cspell.json
+  s_274671db6c3891::t_1beacb841f1e12 115
+  s_274671db6c3891::t_d0f91dcf9bb22b 4-6,32,47,49,71,81,88,97-98,100,103,108,110,127,130,133,159,165,173,185,187-188,195,199,217,229,241-242,245,254,258,263,267,280,285,288
+  s_274671db6c3891::t_30ab2f4f9a0c9c 125
+  s_274671db6c3891::t_f4462e6c3c74e2 84
+  s_274671db6c3891::t_96e04e38df6079 234-235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "41f8b6aac73fdc0cbf523569a1922272dae82d4c",
+  "prompts": {},
+  "sessions": {
+    "s_274671db6c3891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f21d78-b127-4c7d-898d-d4c0f17f9668",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
