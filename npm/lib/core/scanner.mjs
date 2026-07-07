@@ -131,10 +131,12 @@ export function topoSort(tasks) {
 
   for (const task of tasks) {
     for (const dep of task.deps) {
-      if (idToTask.has(dep)) {
-        adj.get(dep).push(task.id)
-        inDegree.set(task.id, (inDegree.get(task.id) ?? 0) + 1)
+      if (!idToTask.has(dep)) {
+        continue
       }
+
+      adj.get(dep).push(task.id)
+      inDegree.set(task.id, (inDegree.get(task.id) ?? 0) + 1)
     }
   }
 
@@ -181,7 +183,6 @@ export function areDepsResolved(task, taskMap) {
  * @returns {Set<string>} set імен worktree
  */
 export function getActiveWorktrees(root, deps = {}) {
-  // eslint-disable-next-line sonarjs/os-command
   const execSyncFn = deps.execSync ?? ((cmd, opts) => execSync(cmd, opts))
   try {
     const out = execSyncFn('git worktree list --porcelain', { cwd: root, encoding: 'utf8' })
@@ -199,11 +200,13 @@ export function getActiveWorktrees(root, deps = {}) {
 export function parseWorktreeList(output) {
   const names = new Set()
   for (const line of output.split('\n')) {
-    if (line.startsWith('worktree ')) {
-      const path = line.slice('worktree '.length).trim()
-      const name = path.split('/').pop() ?? ''
-      if (name) names.add(name)
+    if (!line.startsWith('worktree ')) {
+      continue
     }
+
+    const path = line.slice('worktree '.length).trim()
+    const name = path.split('/').pop() ?? ''
+    if (name) names.add(name)
   }
   return names
 }

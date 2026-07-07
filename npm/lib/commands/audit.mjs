@@ -27,7 +27,7 @@ export default function audit(args, deps = {}) {
   const writeFile = deps.writeFile ?? ((p, c, enc) => writeFileSync(p, c, enc))
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
   const nowFn = deps.now ?? (() => new Date().toISOString())
 

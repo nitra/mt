@@ -18,21 +18,21 @@ export const COMMAND_NAMES = [
 
 // Lazy loaders for dynamic imports
 const LAZY_HANDLERS = {
-  setup: () => import('./commands/setup.mjs').then(m => m.default),
-  init: () => import('./commands/init.mjs').then(m => m.default),
-  plan: () => import('./commands/plan.mjs').then(m => m.default),
-  verify: () => import('./commands/verify.mjs').then(m => m.default),
-  run: () => import('./commands/run.mjs').then(m => m.default),
-  status: () => import('./commands/status.mjs').then(m => m.default),
-  scan: () => import('./commands/scan.mjs').then(m => m.default),
-  watch: () => import('./commands/watch.mjs').then(m => m.default),
-  audit: () => import('./commands/audit.mjs').then(m => m.default),
-  done: () => import('./commands/done.mjs').then(m => m.default),
-  failed: () => import('./commands/failed.mjs').then(m => m.default),
-  spawn: () => import('./commands/spawn.mjs').then(m => m.default),
-  invalidate: () => import('./commands/invalidate.mjs').then(m => m.default),
-  kill: () => import('./commands/kill.mjs').then(m => m.default),
-  worktree: () => import('./commands/worktree.mjs').then(m => m.default)
+  setup: () => import('./commands/setup.mjs'),
+  init: () => import('./commands/init.mjs'),
+  plan: () => import('./commands/plan.mjs'),
+  verify: () => import('./commands/verify.mjs'),
+  run: () => import('./commands/run.mjs'),
+  status: () => import('./commands/status.mjs'),
+  scan: () => import('./commands/scan.mjs'),
+  watch: () => import('./commands/watch.mjs'),
+  audit: () => import('./commands/audit.mjs'),
+  done: () => import('./commands/done.mjs'),
+  failed: () => import('./commands/failed.mjs'),
+  spawn: () => import('./commands/spawn.mjs'),
+  invalidate: () => import('./commands/invalidate.mjs'),
+  kill: () => import('./commands/kill.mjs'),
+  worktree: () => import('./commands/worktree.mjs')
 }
 
 // Wrapper to normalize handlers
@@ -42,8 +42,8 @@ export const DEFAULT_HANDLERS = new Proxy(LAZY_HANDLERS, {
     if (!Object.hasOwn(target, prop)) return
     // Return wrapped lazy loader
     return async (args, deps) => {
-      const fn = await target[prop]()
-      return fn(args, deps)
+      const commandModule = await target[prop]()
+      return commandModule.default(args, deps)
     }
   }
 })

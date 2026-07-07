@@ -12,7 +12,7 @@ local linters = new Mapping<String, Step> {
     }
     ["npm-changelog"] {
         glob = List("npm/**")
-        check = "npx @nitra/cursor check changelog"
+        check = "npx @nitra/cursor lint"
     }
 }
 

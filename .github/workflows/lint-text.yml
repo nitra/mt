@@ -58,4 +58,6 @@ jobs:
           | sh -s -- -b /usr/local/bin
 
       - name: Lint text
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # policy-adapter резолвить версії тулів через GitHub API (анонімно — rate limit)
         run: bunx n-cursor lint text --read-only

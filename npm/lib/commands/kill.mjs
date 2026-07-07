@@ -71,7 +71,7 @@ export default function kill(args, deps = {}) {
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
   const unlink = deps.unlink ?? unlinkSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
 
   const [taskPath] = args
