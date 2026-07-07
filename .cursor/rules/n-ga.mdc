@@ -12,6 +12,7 @@ alwaysApply: false
 ```json
 { "[github-actions-workflow]": { "editor.defaultFormatter": "oxc.oxc-vscode" } }
 ```
+
 - `git-ai.yml`:
 
 ```yaml
@@ -46,6 +47,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git-ai ci github run
 ```
+
 - `clean-ga-workflows.yml`:
 
 ```yaml
@@ -76,6 +78,7 @@ jobs:
           save_period: 31
           save_min_runs_number: 0
 ```
+
 - `lint-ga.yml`:
 
 ```yaml
@@ -121,6 +124,7 @@ jobs:
       - name: Lint GA
         run: bunx n-cursor lint ga --read-only
 ```
+
 - `zizmor.yml`:
 
 ```yaml
@@ -130,6 +134,7 @@ rules:
       policies:
         '*': ref-pin
 ```
+
 - `clean-merged-branch.yml`:
 
 ```yaml
@@ -171,11 +176,13 @@ jobs:
         run: |
           echo "Deleted branches: ${DELETED_BRANCHES}"
 ```
+
 - `extensions.json`:
 
 ```json
 { "recommendations": ["github.vscode-github-actions"] }
 ```
+
 - `uses-min-versions`:
 
 ```json
