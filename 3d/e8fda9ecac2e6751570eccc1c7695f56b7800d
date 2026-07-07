@@ -1,0 +1,29 @@
+npm/docs/log.md
+  s_7e5f9d7306be1a::t_5e3f8c480dba05 5
+npm/docs/architecture/index.md
+  s_7e5f9d7306be1a::t_a5fbe3f440d200 12
+npm/docs/architecture/i18n.md
+  s_7e5f9d7306be1a::t_9f5aa6448470e7 1-113
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_b37ca9e26eb707 36
+npm/.changes/260707-0843.md
+  s_7e5f9d7306be1a::t_1cbda360463e83 1-5
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_69ae0ef1e9cfda 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3de8fda9ecac2e6751570eccc1c7695f56b7800d",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
