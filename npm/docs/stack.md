@@ -41,7 +41,7 @@
 ## Git-операції
 
 - Десктоп/сервери: системний `git` через підпроцес (як у `@7n/mt`);
-- Android: `gix` (feature `android`) — mobile всеодно ЛИШЕ клієнт, git потрібен хіба для read-only сценаріїв майбутнього.
+- Android: `gix` (feature `android`) — mobile все одно ЛИШЕ клієнт, git потрібен хіба для read-only сценаріїв майбутнього.
 
 ## Ключі та keystore
 

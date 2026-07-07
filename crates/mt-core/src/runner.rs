@@ -2,7 +2,7 @@
 //! CAS claim → detached worktree від `origin/main` → spawn агента у worktree
 //! → watchdog (hard budget → SIGKILL, progress-timeout за mtime) → підсумок
 //! через [`crate::signal`] (fact є → done/audit + composite вгору, інакше
-//! failed із секціями з `run-draft.md`) → комміт worktree → fenced publish.
+//! failed із секціями з `run-draft.md`) → коміт worktree → fenced publish.
 //!
 //! Вимагає git-репозиторій з `origin`, до якого є push-доступ (claims/publish
 //! — реальні мутації спільного remote). Rejected claim / merge-conflict /
@@ -479,7 +479,7 @@ mod tests {
         fs::write(dir.join("a.md"), "schema_version: 1\n").unwrap();
     }
 
-    /// Як [`node_files_only`], але коммітить і пушить у `origin/main` —
+    /// Як [`node_files_only`], але комітить і пушить у `origin/main` —
     /// потрібно для `run_node()`: worktree чекаутиться саме з `origin/main`.
     fn node(tmp: &Path, path: &str) {
         node_files_only(tmp, path);
