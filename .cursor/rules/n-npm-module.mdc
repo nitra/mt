@@ -23,6 +23,7 @@ Rego-пакети (запускаються через `npx @nitra/cursor fix`):
 ```json
 { "files": ["types"] }
 ```
+
 - `npm-publish.yml`:
 
 ```yaml
@@ -76,11 +77,13 @@ jobs:
         with:
           package: npm/package.json
 ```
+
 - `package.json`:
 
 ```json
 { "workspaces": ["npm"] }
 ```
+
 - `tsconfig.emit-types.json`:
 
 ```json

@@ -108,7 +108,7 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const writeFile = deps.writeFile ?? ((p, c, enc) => writeFileSync(p, c, enc))
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
   const spawnSyncFn = deps.spawnSync ?? spawnSync
   const nowFn = deps.now ?? (() => new Date().toISOString())
@@ -266,7 +266,7 @@ export default function run(args, deps = {}) {
   const readFile = deps.readFile ?? ((p, enc) => readFileSync(p, enc))
   const readdir = deps.readdir ?? (d => (existsSync(d) ? readdirSync(d) : []))
   const exists = deps.exists ?? existsSync
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
 
   // Парсимо аргументи

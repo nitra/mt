@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import worktree from './worktree.mjs'
+import worktree from '../worktree.mjs'
 
 const CREATED_RE = /Created: \d{4}-\d{2}-\d{2}/
 
@@ -9,7 +9,9 @@ function makeCtx(overrides = {}) {
 
   const deps = {
     cwd: '/repo',
-    log: s => logs.push(s),
+    log: s => {
+      logs.push(s)
+    },
     config: { worktrees_dir: './.worktrees' },
     mkdir: () => null,
     exists: p => Object.hasOwn(fs, p),

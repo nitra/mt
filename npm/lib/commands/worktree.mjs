@@ -360,7 +360,7 @@ export default function worktree(args, deps = {}) {
   const log = deps.log ?? (s => process.stdout.write(s + '\n'))
   const cfg = deps.config ?? loadConfig({ readFile: deps.readFile })
   const worktreesDir = resolveWorktreesDir(cfg, root)
-  // eslint-disable-next-line sonarjs/os-command
+
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { encoding: 'utf8', ...o }))
   const exists = deps.exists ?? existsSync
   const writeFile = deps.writeFile ?? ((p, c) => writeFileSync(p, c, 'utf8'))
