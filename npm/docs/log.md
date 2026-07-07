@@ -2,6 +2,16 @@
 
 ## 2026-07-07
 
+* **Update**: курування корпусу — мінус половина legacy, плюс точкові розкриття:
+  * видалено [review-response.md] (історичний артефакт: усі зауваження «Вирішено» і вшиті в mt.md) та [mt-impl.md] (реалізаційні деталі 0.2.x дублюються кодом і главами; наскрізний приклад перенесено);
+  * [mt.md](mt.md) — 🧊 frozen: не редагується, канон розвитку — architecture/; видалення — на M1;
+  * [architecture/graph.md](architecture/graph.md) — «Наскрізний приклад» у двох частинах: автономний граф (перенесено з mt-impl) + продовження в цільовій картині (attach failed-вузла, матеріалізація мовою, handoff, підпис із телефона);
+  * [architecture/overview.md](architecture/overview.md) — глосарій (13 термінів → глави);
+  * [architecture/operations.md](architecture/operations.md) — довідник ключів конфігурації (група → ключі → глава);
+  * [architecture/access.md](architecture/access.md) — trust-матриця (хто що бачить/перевіряє; чесна межа: без E2E у 0.3.0);
+  * [architecture/runtime.md](architecture/runtime.md) — помилкові гілки протоколу: reconnect за seq, backpressure (скидаються лише ефемерні), байти PreviewScreenshot поза стрічкою, ігнорування невідомих Event-варіантів;
+  * [architecture/surfaces.md](architecture/surfaces.md) — схема `mcp_servers` (secret:-резолв через брокер, idle_ttl);
+  * [vision.md](vision.md) — розділ «Ніша»: відбудова від Jira/Trello, Linear/Agent HQ, LangGraph/CrewAI.
 * **Update**: пакет рішень по відкритих питаннях архітектури (12 пунктів, brainstorm-цикл):
   * [architecture/surfaces.md](architecture/surfaces.md) (нова глава) — крос-програмковий вимір: surface-профіль як обʼєкт конфігурації (provider/prompt/skills/tools/context_kinds), MCP — нормативний механізм зовнішніх тулів, ефективний набір = перетин профілю і sandbox-стелі вузла; референсні designer/writer/cli;
   * [roadmap.md](roadmap.md) (новий) — M0 dogfood ядра → M1 agent-server локально → M2 mission control (relay + телефон-approver) → M3 dashboard/поверхні → M4 файловий i18n; milestone = demo-критерій; критерій готовності i18n живе тут (у DoD не додається — рішення);
