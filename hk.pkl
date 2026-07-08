@@ -12,7 +12,8 @@ local linters = new Mapping<String, Step> {
     }
     ["npm-changelog"] {
         glob = List("npm/**")
-        check = "npx @nitra/cursor lint"
+        check_first = false
+        fix = "N_CURSOR_CHANGELOG_AUTOFIX=1 npx @nitra/cursor lint changelog"
     }
 }
 
