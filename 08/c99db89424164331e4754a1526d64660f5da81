@@ -1,0 +1,27 @@
+.gitignore
+  s_ce9b8035673542::t_09711a332972f0 32
+package.json
+  s_ce9b8035673542::t_416cae06bfb576 18
+.mt.json
+  s_ce9b8035673542::t_37bb3488d0f54c 1-25
+npm/.changes/260708-0817.md
+  s_ce9b8035673542::t_7cdde5ab04774f 1-5
+bun.lock
+  s_ce9b8035673542::t_1255828a64245a 9,18,26,40-41,500
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "08c99db89424164331e4754a1526d64660f5da81",
+  "prompts": {},
+  "sessions": {
+    "s_ce9b8035673542": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3ae5da43-e41e-4690-9768-403762d08544",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
