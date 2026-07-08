@@ -3,7 +3,7 @@ type: JS Module
 title: run.mjs
 resource: npm/lib/commands/run.mjs
 docgen:
-  crc: c3a49fa3
+  crc: eb0b872b
   model: omlx/gemma-4-e2b-it-4bit
   score: 95
 ---

@@ -3,7 +3,7 @@ type: JS Module
 title: watch.mjs
 resource: npm/lib/commands/watch.mjs
 docgen:
-  crc: 6531f7ce
+  crc: 60cc96d4
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

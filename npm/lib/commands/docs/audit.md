@@ -3,7 +3,7 @@ type: JS Module
 title: audit.mjs
 resource: npm/lib/commands/audit.mjs
 docgen:
-  crc: bb3c9abf
+  crc: c1408ba4
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

@@ -3,7 +3,7 @@ type: JS Module
 title: status.mjs
 resource: npm/lib/commands/status.mjs
 docgen:
-  crc: 16546a54
+  crc: c2c53fb1
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

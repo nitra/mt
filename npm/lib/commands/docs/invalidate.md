@@ -3,7 +3,7 @@ type: JS Module
 title: invalidate.mjs
 resource: npm/lib/commands/invalidate.mjs
 docgen:
-  crc: 9eb66c28
+  crc: 8509a014
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

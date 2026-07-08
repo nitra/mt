@@ -3,7 +3,7 @@ type: JS Module
 title: native.mjs
 resource: npm/lib/core/native.mjs
 docgen:
-  crc: 40b02742
+  crc: ea2743e7
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

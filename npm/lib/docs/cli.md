@@ -3,7 +3,7 @@ type: JS Module
 title: cli.mjs
 resource: npm/lib/cli.mjs
 docgen:
-  crc: 7d92d1f3
+  crc: 44a17344
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

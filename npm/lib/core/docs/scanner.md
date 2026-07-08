@@ -3,7 +3,7 @@ type: JS Module
 title: scanner.mjs
 resource: npm/lib/core/scanner.mjs
 docgen:
-  crc: 363e9981
+  crc: 3a213b2f
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

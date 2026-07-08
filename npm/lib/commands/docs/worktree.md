@@ -3,7 +3,7 @@ type: JS Module
 title: worktree.mjs
 resource: npm/lib/commands/worktree.mjs
 docgen:
-  crc: 3c06720d
+  crc: 809028d8
   model: omlx/gemma-4-e2b-it-4bit
   score: 70
 ---

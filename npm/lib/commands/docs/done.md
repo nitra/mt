@@ -3,7 +3,7 @@ type: JS Module
 title: done.mjs
 resource: npm/lib/commands/done.mjs
 docgen:
-  crc: 71569aad
+  crc: c8a1e470
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

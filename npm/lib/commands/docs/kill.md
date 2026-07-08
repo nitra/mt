@@ -3,7 +3,7 @@ type: JS Module
 title: kill.mjs
 resource: npm/lib/commands/kill.mjs
 docgen:
-  crc: 7cb3f6cd
+  crc: d5275fc8
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---
