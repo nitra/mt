@@ -4,4 +4,4 @@
  * @param {object} [deps] ін'єкції
  * @returns {Promise<number>} exit code
  */
-export default function spawn(args: string[], deps?: object): Promise<number>;
+export default function spawn(args: string[], deps?: object): Promise<number>

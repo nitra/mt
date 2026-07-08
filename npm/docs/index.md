@@ -24,6 +24,7 @@ docgen:
 * [Спеціалізовані поверхні](architecture/surfaces.md) - surface-профілі, MCP-тули, звʼязка з sandbox, референсні designer/writer/cli
 * [Люди, пристрої, доступ](architecture/access.md) - relay, membership і ролі, три approval-гейти з Ed25519-підписами, push
 * [Багатомовність (i18n)](architecture/i18n.md) - base-канон і derived-переклади, worktree-матеріалізація, contract-aware перекладач
+* [Мета-цикл (retro)](architecture/retro.md) - аналіз audit trail, приватні opt-in пропозиції виконавцю
 * [Експлуатація](architecture/operations.md) - CLI, конфігурація, security model, відмовостійкість, наскрізні сценарії
 * [Референсний стек](architecture/stack.md) - технологічні рішення реалізації (Rust device-шар, Bun relay/`@7n/mt`)
 

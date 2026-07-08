@@ -11,11 +11,14 @@
  * }} [deps] ін'єкції
  * @returns {Promise<number>} exit code (0=clean, 1=attention)
  */
-export default function scan(args: string[], deps?: {
-    cwd?: string;
-    log?: (m: string) => void;
-    readFile?: (p: string, enc: string) => string;
-    readdir?: (d: string) => string[];
-    exists?: (p: string) => boolean;
-    execSync?: (cmd: string, opts?: object) => string;
-}): Promise<number>;
+export default function scan(
+  args: string[],
+  deps?: {
+    cwd?: string
+    log?: (m: string) => void
+    readFile?: (p: string, enc: string) => string
+    readdir?: (d: string) => string[]
+    exists?: (p: string) => boolean
+    execSync?: (cmd: string, opts?: object) => string
+  }
+): Promise<number>
