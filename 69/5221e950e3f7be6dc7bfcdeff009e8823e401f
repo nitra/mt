@@ -1,0 +1,189 @@
+crates/mt-core/src/docs/lib.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-44
+npm/types/lib/core/nnn.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 6,13,20,27,34,41
+npm/types/lib/core/task-command.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 9-12,19-24
+crates/mt-core/src/docs/ledger.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-32
+crates/mt-napi/package.json
+  s_7e5f9d7306be1a::t_d38667e7fcab92 3
+docs/нотатка-doc-files-беклог-fix-timeout.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-42
+crates/mt-core/src/docs/claims.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14,18-31,35-41
+npm/CHANGELOG.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 3-8
+npm/lib/core/docs/worktree.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-41
+npm/lib/commands/docs/status.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-32
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-6
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7-11,13-27
+npm/lib/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-9
+npm/types/lib/commands/failed.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7
+npm/lib/core/docs/scanner-bin.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-30
+npm/types/lib/core/frontmatter.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7,13,21,28
+npm/types/lib/commands/spawn.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7
+npm/docs/stryker.config.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-28
+crates/mt-core/src/docs/test_support.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-33
+npm/lib/core/docs/native.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-35
+npm/types/lib/commands/done.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7
+npm/types/lib/commands/scan.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14-21
+npm/lib/tests/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-9
+npm/types/lib/commands/init.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 9-12,26-33
+npm/lib/core/docs/task-command.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-31
+npm/types/lib/commands/invalidate.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 15-23
+npm/package.json
+  s_7e5f9d7306be1a::t_d38667e7fcab92 3
+npm/types/lib/core/state.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 11,22,24
+crates/mt-core/src/docs/signal.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-66
+crates/mt-core/src/docs/worktree.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-57
+npm/types/lib/commands/watch.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 16-22,24-27
+npm/types/lib/commands/kill.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 16-25
+npm/lib/commands/docs/setup.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-32
+npm/types/lib/core/scanner-bin.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14-20,25
+crates/mt-napi/src/docs/lib.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-49
+crates/mt-napi/docs/build.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-24
+crates/mt-core/src/docs/runner.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-54
+npm/types/lib/commands/verify.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 13-19
+npm/docs/vitest.config.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-28
+npm/lib/commands/docs/spawn.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-40
+crates/mt-napi/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-9
+crates/mt-cli/src/docs/main.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-43
+crates/mt-core/src/docs/lifecycle.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-38
+npm/lib/tests/docs/global-setup.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-25
+npm/lib/core/docs/nnn.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-31
+npm/lib/docs/cli.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-30
+crates/mt-core/src/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-23
+npm/lib/commands/docs/verify.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-44
+npm/types/lib/commands/worktree.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7,17-57
+npm/types/lib/commands/plan.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 6-11,26-34
+npm/types/lib/commands/run.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 18-29
+crates/mt-core/src/docs/nnn.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-34
+npm/types/lib/commands/status.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14-21
+npm/lib/commands/docs/kill.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-27
+npm/types/lib/core/config.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 11-14,21,28,35,37
+npm/lib/core/docs/frontmatter.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-41
+npm/lib/commands/docs/failed.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-39
+npm/lib/core/docs/config.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-58
+npm/lib/core/docs/state.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-33
+npm/types/lib/commands/setup.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 16-25
+crates/mt-napi/src/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-9
+.cspell.json
+  s_7e5f9d7306be1a::t_d38667e7fcab92 25,32,36,38,40,43,47-49,51,53,59-60,73,90-108,110,112-113,120,129,134,139,142,144,149,156-157,171-172,177,188-196,199,206,213,215,217,219,222,225,228,232,236,241-242,245,252,256,258-260,273,277,284,292,296-362
+crates/mt-core/src/docs/frontmatter.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 18-21,25-28
+npm/types/lib/core/scanner.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7-13,22-25,32,39,46-48,54,56-69
+crates/mt-core/src/docs/orchestrate.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-40
+npm/lib/commands/docs/scan.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-77
+crates/mt-core/src/docs/publish.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-41
+crates/mt-core/src/docs/config.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14,18-20,24-26
+npm/lib/commands/docs/invalidate.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-40
+npm/lib/core/docs/scanner.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-48
+npm/lib/commands/docs/done.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-42
+crates/mt-cli/src/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-9
+crates/mt-core/src/docs/spawn.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-82
+npm/lib/commands/docs/audit.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-40
+npm/lib/commands/docs/init.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-38
+npm/lib/commands/docs/worktree.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-56
+crates/mt-core/src/docs/artifacts.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-36
+npm/lib/commands/docs/plan.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-33
+crates/mt-napi/CHANGELOG.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 3-8
+npm/lib/commands/docs/run.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-83
+npm/lib/commands/docs/watch.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-33
+npm/types/lib/commands/audit.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7
+npm/types/lib/core/native.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 14-20,27-29
+npm/types/lib/core/worktree.d.mts
+  s_7e5f9d7306be1a::t_d38667e7fcab92 7,20-26,35-37,47-52,61-63,74-77
+npm/lib/core/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-17
+npm/lib/commands/docs/index.md
+  s_7e5f9d7306be1a::t_d38667e7fcab92 1-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "695221e950e3f7be6dc7bfcdeff009e8823e401f",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
