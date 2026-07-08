@@ -1,0 +1,65 @@
+npm/types/lib/commands/audit.d.mts
+  s_7d780c1b9906d1::t_a2feed960db22a 7
+npm/types/lib/commands/done.d.mts
+  s_7d780c1b9906d1::t_74c5ef6cdbadd2 7
+npm/types/lib/commands/failed.d.mts
+  s_7d780c1b9906d1::t_26f51a50d2d3c8 7
+npm/types/lib/commands/init.d.mts
+  s_7d780c1b9906d1::t_582a3522dbabbf 9-12,26-36
+npm/types/lib/commands/invalidate.d.mts
+  s_7d780c1b9906d1::t_af36fe92bc8980 15-26
+npm/types/lib/commands/kill.d.mts
+  s_7d780c1b9906d1::t_70f57f940fcc1b 16-28
+npm/types/lib/commands/plan.d.mts
+  s_7d780c1b9906d1::t_7b5240826809e3 6,21-32
+npm/types/lib/commands/run.d.mts
+  s_7d780c1b9906d1::t_ed66d9392dbff9 18-32
+npm/types/lib/commands/scan.d.mts
+  s_7d780c1b9906d1::t_5381ec3499fc72 14-24
+npm/types/lib/commands/setup.d.mts
+  s_7d780c1b9906d1::t_83a43d3e330082 16-28
+npm/types/lib/commands/spawn.d.mts
+  s_7d780c1b9906d1::t_21fd8f268063e8 7
+npm/types/lib/commands/status.d.mts
+  s_7d780c1b9906d1::t_5d591967060f33 14-24
+npm/types/lib/commands/verify.d.mts
+  s_7d780c1b9906d1::t_4ae9b55951877b 13-22
+npm/types/lib/commands/watch.d.mts
+  s_7d780c1b9906d1::t_b809ade05e74db 16-24,26-30
+npm/types/lib/commands/worktree.d.mts
+  s_7d780c1b9906d1::t_5238722d522c48 7,17-57
+npm/types/lib/core/config.d.mts
+  s_7d780c1b9906d1::t_b271f123ed62de 11-14,21,28,35,37
+npm/types/lib/core/frontmatter.d.mts
+  s_7d780c1b9906d1::t_cbf13597cb0ebe 7,13,21,28
+npm/types/lib/core/native.d.mts
+  s_7d780c1b9906d1::t_d9f7099a07337e 14-20,27-29
+npm/types/lib/core/nnn.d.mts
+  s_7d780c1b9906d1::t_4290c5d8632005 6,13,20,27,34,41
+npm/types/lib/core/scanner-bin.d.mts
+  s_7d780c1b9906d1::t_52c6d10533ca62 14-20,25
+npm/types/lib/core/scanner.d.mts
+  s_7d780c1b9906d1::t_d8e43439eaf220 7-16,25-32,39,46,53-58,64,66-83
+npm/types/lib/core/state.d.mts
+  s_7d780c1b9906d1::t_a77834296e0fe4 11,22,24-37
+npm/types/lib/core/task-command.d.mts
+  s_7d780c1b9906d1::t_0806eab3b4d7c5 9-18,25-33
+npm/types/lib/core/worktree.d.mts
+  s_7d780c1b9906d1::t_3daf4d0a23a26a 7,20-31,40-46,56-65,74-79,90-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "16f1ff813d84d132b728f83c9b2d931a43d43364",
+  "prompts": {},
+  "sessions": {
+    "s_7d780c1b9906d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f40bc272-a212-4f15-aea0-6ce5a6ea6e60",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
