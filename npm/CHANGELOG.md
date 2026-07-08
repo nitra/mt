@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.0] - 2026-07-08
+
+### Added
+
+- docs: глава retro.md (мета-цикл) + M5 у roadmap; M0 dogfood: mt/ ініціалізовано, перша задача m1-agent-protocol
+
 ## [0.11.1] - 2026-07-08
 
 ### Added
