@@ -28,3 +28,8 @@ packages/*/*.node
 
 # Test artifacts: coverage (test.mdc)
 **/coverage/
+
+# MT dogfood: .mt.json тимчасово поза git — v8r-схеми немає в каталозі @nitra/cursor
+# (після додавання схеми апстрімом — прибрати цей ignore і закомітити конфіг)
+.mt.json
+.mt/
