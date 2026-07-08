@@ -1,0 +1,88 @@
+npm/types/lib/commands/init.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 9-12,26-36
+npm/types/lib/commands/spawn.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7
+.cspell.json
+  s_7e5f9d7306be1a::t_f31ec07d751a14 25,49,51,56,73,83,90,100,102,104-105,108,111,113,115,125,129,136-137,147,151,156,158-159,168,177-178,187,189,197,201-203,215,222,241,249-256,258,260,263,268,277,283,293,295-297,306,310,322-323,331-347
+npm/types/lib/commands/failed.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7
+npm/types/lib/commands/status.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 14-24
+npm/types/lib/core/config.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 11-14,21,28,35,37
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_080dd557a50dd8 50
+npm/types/lib/commands/watch.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 16-24,26-30
+npm/types/lib/core/scanner.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7-16,25-32,39,46,53-58,64,66-83
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_f930788a3a561d 21
+npm/types/lib/commands/invalidate.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 15-26
+npm/types/lib/commands/plan.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 6,21-32
+npm/types/lib/core/task-command.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 9-18,25-33
+npm/.changes/260708-0732.md
+  s_7e5f9d7306be1a::t_09d28cc8c271d8 1-5
+npm/types/lib/commands/run.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 18-32
+npm/docs/architecture/retro.md
+  s_7e5f9d7306be1a::t_c6bc280329beb1 1-62
+npm/types/lib/commands/done.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7
+npm/docs/roadmap.md
+  s_7e5f9d7306be1a::t_89dc2e2cc07830 49-55
+npm/types/lib/commands/verify.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 13-22
+npm/docs/architecture/index.md
+  s_7e5f9d7306be1a::t_55ded76ab0d4c8 14
+npm/types/lib/commands/kill.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 16-28
+npm/types/lib/core/native.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 14-20,27-29
+npm/types/lib/core/scanner-bin.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 14-20,25
+npm/docs/log.md
+  s_7e5f9d7306be1a::t_830ab9dcf2b6ed 3-7
+npm/types/lib/core/nnn.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 6,13,20,27,34,41
+npm/types/lib/commands/scan.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 14-24
+npm/types/lib/core/frontmatter.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7,13,21,28
+npm/types/lib/commands/setup.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 16-28
+mt/m1-agent-protocol/a.md
+  s_7e5f9d7306be1a::t_101d85799f0f4d 1-8
+mt/m1-agent-protocol/task.md
+  s_7e5f9d7306be1a::t_0f96a7e022e4c3 10,14-19,23-25
+  s_7e5f9d7306be1a::t_101d85799f0f4d 1-9,11-13,20-22
+npm/types/lib/core/state.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 11,22,24-37
+npm/types/lib/commands/worktree.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7,17-57
+.gitignore
+  s_7e5f9d7306be1a::t_8ec97cba49e79b 31-35
+npm/types/lib/core/worktree.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7,20-31,40-46,56-65,74-79,90-97
+npm/types/lib/commands/audit.d.mts
+  s_7e5f9d7306be1a::t_f31ec07d751a14 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "45010f036563458619a0fe9c6f8910c308751c77",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
