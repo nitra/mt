@@ -1,0 +1,21 @@
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_6b67544f1f3ab2 7-14,16-30
+.cspell.json
+  s_7e5f9d7306be1a::t_2b8e116dff313b 22-88,92,103,105,107-108,111,114,117,119,129-130,134,141-142,156,161,163-164,173,182-183,193,195,203,207-209,221,229,249,258-266,268,270,274,280,287,289,296,308,310-312,325,337-338,348-366
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "65348db03cf49bc353a288215a6ae09305e6516c",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
