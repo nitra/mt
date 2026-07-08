@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
-    "@nitra/cursor": "^14.10.4",
+    "@nitra/cursor": "^14.12.1",
     "@nitra/eslint-config": "^3.10.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@vitest/coverage-v8": "^4.1.7",
