@@ -11,47 +11,34 @@ docgen:
 
 ## Огляд
 
-Файл надає інструменти для роботи з Remote execution claims, забезпечуючи механізми для визначення та керування правами володіння вузлами через git refs.
-
-Поведінка
-
-node_hash — генерує 20-символьний хеш SHA-256 з формули `<tasks-root>\0<node-path>`.
-discover_repo_root — визначає кореневий каталог репозиторію за допомогою `git rev-parse --show-toplevel`.
-tasks_root_relative — обчислює канонічний шлях `tasks_dir` відносно кореня репозиторію у POSIX форматі.
-RemoteClaimRef — структура для зберігання хешу вузла та SHA.
-parse_ls_remote — парсить вивід `git ls-remote` для вилучення claim refs.
-ClaimInfo — структура для відображення даних claim з YAML.
-lease_expired — перевіряє прострочення lease, враховуючи grace період.
-parse_claim — перетворює YAML-рядок, отриманий з `.mt-claim.yml`, на об'єкт `ClaimInfo`.
-ClaimFields — структура для зберігання полів, які контролюються runner.
-ClaimPush — структура для фіксації результату CAS-операції.
-acquire_claim — виконує створення claim, перевіряючи унікальність пушу.
-renew_or_takeover_claim — виконує оновлення або перехоплення claim, вимагаючи точного `old_claim_sha`.
-release_claim — видаляє claim ref з remote після fenced publish, вимагаючи точного `claim_sha`.
-fetch_remote_claims — зчитує remote claims, виконує fetch та парсинг кожного claim-коміту.
+Файл надає інструменти для роботи з remote execution claims, забезпечуючи механізми для визначення та керування правами володіння вузлами через git refs.
 
 ## Поведінка
 
-Поведінка
-
-node\_hash — генерує 20-символьний хеш SHA-256 з `<tasks-root>\0<node-path>`.
-discover\_repo\_root — знаходить кореневий каталог репозиторію через `git rev-parse --show-toplevel`.
-tasks\_root\_relative — обчислює канонічний шлях `tasks_dir` відносно `repo_root` у POSIX форматі.
-RemoteClaimRef — структура для зберігання хешу вузла та SHA.
-parse\_ls\_remote — парсить вивід `git ls-remote` для вилучення claim refs.
-ClaimInfo — структура для відображення даних claim з YAML.
-lease\_expired — перевіряє, чи прострочений lease з урахуванням grace періоду.
-parse\_claim — перетворює YAML-рядок з `.mt-claim.yml` на `ClaimInfo`.
-ClaimFields — структура для зберігання полів, контрольованих runner.
-ClaimPush — структура для фіксації результату CAS-операції.
-acquire\_claim — виконує створення claim, перевіряючи унікальність пушу.
-renew\_or\_takeover\_claim — виконує оновлення або перехоплення claim, вимагаючи точного `old_claim_sha`.
-release\_claim — видаляє claim ref з remote після fenced publish, вимагаючи точного `claim_sha`.
-fetch\_remote\_claims — зчитує remote claims, виконує fetch та парсинг кожного claim-коміту.
+node_hash: генерує 20-символьний хеш SHA-256 з поєднання `tasks_root` та `node_path`.
+discover_repo_root: знаходить кореневий каталог репозиторію за допомогою `git rev-parse --show-toplevel`.
+tasks_root_relative: обчислює канонічний шлях `tasks_dir` відносно `repo_root`, нормалізуючи POSIX-роздільники.
+RemoteClaimRef: структура для зберігання хешу вузла та SHA.
+parse_ls_remote: парсить вивід `git ls-remote` для вилучення `RemoteClaimRef`.
+ClaimInfo: структура для зберігання розпарсених даних з `.mt-claim.yml` включаючи стан прострочення.
+lease_expired: перевіряє, чи прострочений термін дії ліцензії з урахуванням простроки (grace period).
+parse_claim: будує `ClaimInfo` з YAML-вмісту `.mt-claim.yml`.
+ClaimFields: структура для зберігання полів, які контролює runner, включаючи бейз-хеш та посилання на першу коміт.
+ClaimPush: структура для збереження результату CAS-push, включаючи статус прийняття.
+acquire_claim: створює новий claim-коміт і намагається опублікувати його через `git push`.
+renew_or_takeover_claim: створює новий claim-коміт на основі попереднього, використовуючи `old_claim_sha` для авторизації.
+release_claim: намагається видалити (delete) claim-референс, якщо він належить поточному власнику.
+fetch_remote_claims: зчитує remote claims через `git ls-remote`, виконує `fetch` та парсить YAML для генерації `ClaimInfo`.
 
 ## Публічний API
 
-Будь ласка, надайте код, який потрібно переписати у поведінковій документації.
+**node_hash** — 20-символьний хеш SHA-256 з `<tasks-root>\0<node-path>`.
+**discover_repo_root** — кореневий каталог репозиторію через `git rev-parse --show-toplevel`.
+**RemoteClaimRef**, **ClaimInfo**, **ClaimFields**, **ClaimPush** — структури для представлення claim-даних.
+**parse_ls_remote**, **parse_claim** — парсинг `git ls-remote` і `.mt-claim.yml` у `ClaimInfo`.
+**lease_expired** — прострочення lease з урахуванням grace period.
+**acquire_claim**, **renew_or_takeover_claim**, **release_claim** — CAS-цикл claim-коміту: створення, поновлення/перехоплення за `old_claim_sha`, видалення за `claim_sha`.
+**fetch_remote_claims** — читає всі remote claims (`fetch` + парсинг кожного claim-коміту).
 
 ## Гарантії поведінки
 
