@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.11.1] - 2026-07-08
+
+### Added
+
+- docs: файлові поведінкові доки (`<dir>/docs/<stem>.md`) для 47 кодових файлів — згенеровано локальним docgen-конвеєром; нотатка про upstream-баг rollback-у lint doc-files (nitra/cursor#16)
+
 ## [0.11.0] - 2026-07-08
 
 ### Changed
