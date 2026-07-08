@@ -1,0 +1,23 @@
+docs/adr/260606-1358-схема-outputs-md.md
+  s_7e5f9d7306be1a::t_f59d7477b88a81 2-4,7-8,12,16-17,21,23,25-28,30,32,34,36,38-41,43,45-46,48-50,52,54-58
+docs/adr/260606-1406-файловий-формат-вузлів-llm-first-markdown-з-yaml-фронтматером.md
+  s_7e5f9d7306be1a::t_01105124557547 2-4,7-8,12,16-17,21,24-28,32,34,36-42,44,46-49
+docs/adr/260606-1522-уніфікований-run-nnn-для-всіх-типів-виконавців.md
+  s_7e5f9d7306be1a::t_28484071ee4698 2-4,7-8,12,16-17,21,25-29,33,35-40,42,44,46-49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8d16dc39aa77314c994dba07ef14bb1d5a29ca6e",
+  "prompts": {},
+  "sessions": {
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
