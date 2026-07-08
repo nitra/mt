@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.11.0] - 2026-07-08
+
+### Changed
+
+- docs: пакет рішень по 12 відкритих питаннях — нові surfaces.md і roadmap.md, протокол v4 (lang), гібридний live-i18n, checkpoint-handoff, життєвий цикл ключів, design envelope
+- docs: курування — видалено review-response.md і mt-impl.md (приклад перенесено у graph.md + 0.3.0-продовження), mt.md заморожено; додано глосарій, конфіг-довідник, trust-матрицю, протокольні помилкові гілки, схему mcp_servers, розділ «Ніша»
+
+### Fixed
+
+- CI: n-cursor lint ga/text (новий синтаксис CLI), eslint-помилки unicorn у lib, стабілізація rmSync у тестах, лічильник ADR 175
+
 ## [0.10.0] - 2026-07-07
 
 ### Changed

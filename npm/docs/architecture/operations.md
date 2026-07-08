@@ -64,6 +64,23 @@ mt members <root-node>
 
 Per-node override: `mt/<node>/.mt-override.json`. `schema_version` — перше поле; невідома/відсутня → fail closed.
 
+### Довідник ключів (де що описано)
+
+| Група ключів | Ключі | Глава |
+| --- | --- | --- |
+| Розташування | `mt_dir` (`MT_DIR` env) | тут |
+| Бюджети/watchdog | `budget_sec`, `budget_hard_sec(_multiplier)`, `budget_total_sec`, `progress_timeout_sec`, `deadline` | [graph.md](graph.md) |
+| Retry/ескалація | `agent_retry_max`, `engineer_retry_max`, `plan_reject_max`, `retry_ladder`, `run_summary_threshold` | [graph.md](graph.md) |
+| Аудит | `audit`, `audit_model`, `audit_retry_max`, `audit_schedule_days`, `audit_on_patch`, `clarification_timeout_sec` | [graph.md](graph.md) |
+| Claim/lease | `claim_grace_sec`, `claim_renew_sec`, `interactive_claim_lease_sec`, `interactive_claim_renew_sec` | [git.md](git.md), [runtime.md](runtime.md) |
+| Publish/refs | `publish_retry_base_ms`, `publish_retry_max`, `run_ref_ttl_days`, `session_archive`, `archive_ref_prefix`, `archive_ttl_days` | [git.md](git.md) |
+| Паралелізм | `agent_concurrency` | [git.md](git.md) |
+| Провайдери/моделі | `model_map` (MIM/AVG/MAX), `provider_profiles` | тут, [stack.md](stack.md) |
+| Поверхні/тули | `surface_profiles`, `mcp_servers` | [surfaces.md](surfaces.md) |
+| Безпека | `skill_profiles` (sandbox), `secrets` (у `a.md`), `require_signed_approvals`, `device_key_path` | тут, [access.md](access.md) |
+| Relay/хост | `relay_url`, `server_port_file` | тут, [runtime.md](runtime.md) |
+| i18n | `i18n.{base_lang, eager, publish_langs, include, exclude, model_tier, ttl_days}` | [i18n.md](i18n.md) |
+
 ## Монорепо: множинні `mt/`
 
 ```
@@ -92,6 +109,16 @@ monorepo/
 | Хост помер посеред сесії | claim спливає → stalled → takeover іншим хостом; журнал відновлюється з останнього запушеного run ref (втрата ≤ 1 незавершеного ходу) |
 | Git remote недоступний | інтерактивна сесія продовжується локально (коміти накопичуються), push ретраїться; done/handoff блокуються до відновлення |
 | Клієнт від'єднався | нічого: сесія живе на хості; реконект → реплей з `want_replay_from` |
+
+## Межі масштабу (design envelope)
+
+- **Цільовий масштаб — до ~5–10k вузлів на один `mt/`-корінь**: scan лінійний за кількістю файлів вузлів. Більший граф → ділити на кілька `mt/`-коренів/remote — механізм монорепо (вище) це вже підтримує; правило: окремий корінь на команду, продукт або тенанта.
+- **Ріст refs обмежений за побудовою:** claims видаляються при publish, run refs — при publish або за `run_ref_ttl_days`, archive/i18n — за TTL-GC (`mt cleanup`).
+- **Інкрементальний scan** (кеш за commit/mtime) — оптимізація-напрям; зобовʼязань 0.3.0 не бере, поки лінійний scan не стане вузьким місцем на реальному графі.
+
+## Хостинг relay: self-hosted-first
+
+0.3.0 розраховано на **власний relay** (Docker/k8s — у [stack.md](stack.md)); соло-локальний режим працює взагалі без relay (див. відмовостійкість). Багатотенантний hosted-relay як сервіс — свідомо поза scope архітектури; це продуктове рішення з білінгом та ізоляцією тенантів, окремий документ на пізніше.
 
 ## Bootstrap
 

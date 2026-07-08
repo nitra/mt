@@ -2,6 +2,24 @@
 
 ## 2026-07-07
 
+* **Update**: курування корпусу — мінус половина legacy, плюс точкові розкриття:
+  * видалено [review-response.md] (історичний артефакт: усі зауваження «Вирішено» і вшиті в mt.md) та [mt-impl.md] (реалізаційні деталі 0.2.x дублюються кодом і главами; наскрізний приклад перенесено);
+  * [mt.md](mt.md) — 🧊 frozen: не редагується, канон розвитку — architecture/; видалення — на M1;
+  * [architecture/graph.md](architecture/graph.md) — «Наскрізний приклад» у двох частинах: автономний граф (перенесено з mt-impl) + продовження в цільовій картині (attach failed-вузла, матеріалізація мовою, handoff, підпис із телефона);
+  * [architecture/overview.md](architecture/overview.md) — глосарій (13 термінів → глави);
+  * [architecture/operations.md](architecture/operations.md) — довідник ключів конфігурації (група → ключі → глава);
+  * [architecture/access.md](architecture/access.md) — trust-матриця (хто що бачить/перевіряє; чесна межа: без E2E у 0.3.0);
+  * [architecture/runtime.md](architecture/runtime.md) — помилкові гілки протоколу: reconnect за seq, backpressure (скидаються лише ефемерні), байти PreviewScreenshot поза стрічкою, ігнорування невідомих Event-варіантів;
+  * [architecture/surfaces.md](architecture/surfaces.md) — схема `mcp_servers` (secret:-резолв через брокер, idle_ttl);
+  * [vision.md](vision.md) — розділ «Ніша»: відбудова від Jira/Trello, Linear/Agent HQ, LangGraph/CrewAI.
+* **Update**: пакет рішень по відкритих питаннях архітектури (12 пунктів, brainstorm-цикл):
+  * [architecture/surfaces.md](architecture/surfaces.md) (нова глава) — крос-програмковий вимір: surface-профіль як обʼєкт конфігурації (provider/prompt/skills/tools/context_kinds), MCP — нормативний механізм зовнішніх тулів, ефективний набір = перетин профілю і sandbox-стелі вузла; референсні designer/writer/cli;
+  * [roadmap.md](roadmap.md) (новий) — M0 dogfood ядра → M1 agent-server локально → M2 mission control (relay + телефон-approver) → M3 dashboard/поверхні → M4 файловий i18n; milestone = demo-критерій; критерій готовності i18n живе тут (у DoD не додається — рішення);
+  * [architecture/runtime.md](architecture/runtime.md) — протокол v4: обовʼязкове `lang` (BCP-47) у ClientHello, capability `self-translate`;
+  * [architecture/i18n.md](architecture/i18n.md) — live-шар став гібридом за capability (default — хост, `self-translate` — клієнт сам; relay не бере участі); правило запису `refs/mt/i18n` лише разом із fenced publish (без окремого «пера»); триступенева класифікація файлів (default `**/*.md` → include/exclude → frontmatter opt-out); фонова регенерація — системна черга agent-server поза графом задач, вартість поза ledger (замінює auto-spawn MT-вузлів);
+  * [architecture/git.md](architecture/git.md) — handover-TODO закрито дизайном checkpoint-handoff (свіжий run ref зі станом + summary, журнал лишається в archive автора);
+  * [architecture/access.md](architecture/access.md) — життєвий цикл ключів: rotation з історією pubkey, recovery через email-flow, succession через co-owner + адмін-процедуру (без кворумної криптографії);
+  * [architecture/operations.md](architecture/operations.md) — design envelope (~5–10k вузлів на `mt/`-корінь, ріст refs обмежений GC) і self-hosted-first хостинг relay.
 * **Creation**: [architecture/i18n.md](architecture/i18n.md) — глава багатомовності (закриває прогалину крос-мовного виміру [vision.md](vision.md)): base-мова — єдиний канон (scanner/`## Check` читають лише base), переклади — derived-дані у `refs/mt/i18n/<lang>` зі staleness за `source_hash`; read path — overlay мови учасника при матеріалізації worktree; write path — contract-aware компіляція правки в base перед fenced publish, authored-захист від round-trip churn; eager-переклад лише для мов учасників, lazy для решти; фонова регенерація — auto-spawn MT-вузлів-перекладачів; live-шар (чат) — переклад на поверхні.
 * **Creation**: [vision.md](vision.md) — мета проєкту зафіксована як нормативний документ: платформа задач, де виконавці — і люди, і ШІ (здебільшого ШІ); пʼять крос-вимірів (виконавці, девайси, спеціалізовані тули, люди, мови) з мапінгом на глави архітектури 0.3.0-draft; крос-мовність позначена відкритою прогалиною; git — субстрат, не інтерфейс.
 * **Update**: документацію реструктуризовано — архітектуру 0.3.0-draft розбито на глави в [architecture/](architecture/index.md), додано індекси та цей журнал.
