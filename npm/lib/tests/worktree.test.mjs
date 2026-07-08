@@ -22,9 +22,10 @@ function createGitRepo() {
 }
 
 afterEach(() => {
-  for (const dir of createdDirs.splice(0)) {
-    rmSync(dir, { recursive: true, force: true })
+  for (const dir of createdDirs) {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
+  createdDirs.length = 0
 })
 
 describe('createWorktree', () => {

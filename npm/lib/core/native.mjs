@@ -89,10 +89,9 @@ export function resolveNativeAddon(deps = {}) {
   }
 
   // 3. Dev-fallback: cargo-збірка (сирий cdylib) або вивід napi build.
-  const candidates = []
-  for (const profile of ['release', 'debug']) {
-    candidates.push(join(repoRoot, 'target', profile, cdylibName(platform)))
-  }
+  const candidates = Array.from(['release', 'debug'], profile =>
+    join(repoRoot, 'target', profile, cdylibName(platform))
+  )
   if (suffix) {
     candidates.push(join(repoRoot, 'crates', 'mt-napi', `mt.${suffix}.node`))
   }

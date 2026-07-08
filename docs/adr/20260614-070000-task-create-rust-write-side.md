@@ -76,3 +76,14 @@ Chosen: **створення задачі — у крейті `mt-scanner`**, с
 ### chrono для ISO-8601 у created_at
 
 Поле `created_at` у frontmatter `task.md` генерується через `chrono::Utc::now().to_rfc3339()`. Залежність: `chrono = { version = "0.4", features = ["serde"] }` у `scanner/Cargo.toml`.
+
+## Update 2026-06-14
+
+Драфт уточнює вже прийняте рішення про write-side створення task з JS CLI, Rust API і Tauri bridge.
+
+- CLI контракт: `mt init <name> [--mode agent|human] [--model-tier AVG|MAX] [--budget-sec 3600] [--hint "..."] [--dep upstream]`.
+- Exit codes CLI: `0` = created/exists, `1` = usage-помилка, `2` = validate/FS-помилка.
+- Rust crate `mt_scanner` відкриває API `create_task(tasks_dir, name, CreateOpts)` і повертає `CreateOutcome::Created` або `CreateOutcome::Exists`.
+- Defaults у Rust API: `mode` з `.mt.json`, `model_tier` з `.mt.json`, `budget_sec` default `1800`, `hint` default `"atomic"`, `deps` default `[]`, `skills` default `["bash", "write-files"]`.
+- Tauri command `create_task` повертає `{ created, name, task_path, flag?, deps? }`, де `flag` дорівнює `"a.md"` або `"h.md"`.
+- `validate_name` дозволяє тільки сегменти `[a-z0-9-]` через `/`; заборонені `..`, uppercase, пробіли та `_`.

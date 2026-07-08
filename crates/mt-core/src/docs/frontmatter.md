@@ -5,25 +5,27 @@ resource: crates/mt-core/src/frontmatter.rs
 docgen:
   crc: 0cc51d2c
   model: omlx/gemma-4-e2b-it-4bit
+  tier: local-min
   score: 100
 ---
 
 ## Огляд
 
-Файл надає інструменти для роботи з YAML front-matter у task-файлах. Він забезпечує ідентичність вихідного байта між парсером та серіалізатором, зберігаючи порядок ключів.
+Файл відповідає за парсинг та серіалізацію YAML front-matter для task-файлів. Мета — гарантувати 1:1 ідентичність вихідного байта між JS-версією та функцією `serialize_yaml`, зберігаючи порядок вставки ключів.
 
 ## Поведінка
 
-Поведінка
-parse_front_matter: Парсить YAML front-matter з markdown-тексту
-parse_yaml: Парсить чистий YAML-блок
-get_body: Повертає тіло документа без front-matter з обрізаним лівим whitespace
-serialize_yaml: Серіалізує об'єкт у YAML-рядок
-build_markdown: Будує markdown-файл із front-matter та тілом
+parse_front_matter: парсить YAML front-matter з markdown-тексту.
+parse_yaml: парсить чистий YAML-блок (без `---`-маркерів).
+get_body: повертає тіло документа (без front-matter, з обрізаним лівим whitespace).
+build_markdown: будує markdown-файл із front-matter і тілом: `---\n<yaml>\n---\n\n<body>`.
 
 ## Публічний API
 
-Я готовий переписати список функцій відповідно до ваших вимог. Будь ласка, надайте список, який потрібно переписати.
+**parse_front_matter** — YAML front-matter з markdown-тексту.
+**parse_yaml** — чистий YAML-блок без `---`-маркерів.
+**get_body** — тіло документа без front-matter.
+**build_markdown** — складання markdown-файлу з front-matter і тілом.
 
 ## Гарантії поведінки
 
