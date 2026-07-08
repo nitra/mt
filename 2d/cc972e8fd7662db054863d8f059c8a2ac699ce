@@ -1,0 +1,43 @@
+npm/lib/core/docs/worktree.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/scan.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/core/docs/scanner.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/invalidate.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/status.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/docs/cli.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/worktree.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/run.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/done.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/audit.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/core/docs/native.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/watch.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+npm/lib/commands/docs/kill.md
+  s_fdee6198be9d22::t_a200e879996a34 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2dcc972e8fd7662db054863d8f059c8a2ac699ce",
+  "prompts": {},
+  "sessions": {
+    "s_fdee6198be9d22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "43854abd-01bf-43d1-a273-752895f85b3d",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
