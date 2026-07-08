@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.14.0] - 2026-07-08
+
+### Changed
+
+- chore: .mt.json закомічено (схема в @nitra/cursor 14.12.1), бамп @nitra/cursor, oxfmt у hk-ланцюжку npm-tsc-types
+
 ## [0.13.0] - 2026-07-08
 
 ### Changed
