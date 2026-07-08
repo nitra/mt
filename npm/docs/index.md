@@ -5,6 +5,7 @@
 ## Мета
 
 * [Мета: платформа задач для людей і ШІ](vision.md) - навіщо все це: пʼять крос-вимірів, git як субстрат (не інтерфейс), наслідки для фокусу
+* [Roadmap реалізації](roadmap.md) - M0 dogfood ядра → M1 agent-server → M2 mission control → M3 dashboard → M4 i18n; milestone = demo-критерій
 
 ## Цільова архітектура (0.3.0-draft)
 
@@ -13,7 +14,8 @@
 * [Огляд](architecture/overview.md) - нормативні рішення злиття і чотиришарова загальна картина
 * [Ядро: граф задач](architecture/graph.md) - вузли й ОАГ, файловий контракт, derived-стани, retry ladder, аудит
 * [Координація через git](architecture/git.md) - CAS claim як єдине «перо», run ref із журналом сесії, fenced publish
-* [Runtime](architecture/runtime.md) - agent-server, протокол подій v3, інтерактивні сесії, міграція між хостами, preview
+* [Runtime](architecture/runtime.md) - agent-server, протокол подій v4, інтерактивні сесії, міграція між хостами, preview
+* [Спеціалізовані поверхні](architecture/surfaces.md) - surface-профілі, MCP-тули, звʼязка з sandbox, референсні designer/writer/cli
 * [Люди, пристрої, доступ](architecture/access.md) - relay, membership і ролі, три approval-гейти з Ed25519-підписами, push
 * [Багатомовність (i18n)](architecture/i18n.md) - base-канон і derived-переклади, worktree-матеріалізація, contract-aware перекладач
 * [Експлуатація](architecture/operations.md) - CLI, конфігурація, security model, відмовостійкість, наскрізні сценарії
@@ -21,9 +23,7 @@
 
 ## Чинний контракт `@7n/mt` 0.2.x
 
-* [Контракт 0.2.0](mt.md) - повна специфікація графа задач, яку реалізує поточний `@7n/mt` (deprecated як цільова картина)
-* [Посібник з реалізації](mt-impl.md) - наскрізний приклад, wrapper покроково, protected main, контракт моніторингу, SWOT
-* [Відповідь на рецензію](review-response.md) - розбір зауважень рецензії mt.md і внесені зміни
+* [Контракт 0.2.0](mt.md) - 🧊 frozen: специфікація, яку реалізує поточний `@7n/mt`; не редагується, буде видалена на M1
 
 ## Історія
 

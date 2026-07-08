@@ -322,3 +322,25 @@ watch → mt run --actor auditor:
 ```
 
 Аудитором може бути агент (`audit_model`) **або людина з роллю `approver+`** — тоді вердикт їде підписаним через relay (див. [access.md](access.md)), а хост матеріалізує `audit-result_NNN.md` з блоком підпису.
+
+## Наскрізний приклад
+
+Соло-розробник + аналітик. Задача: дослідити аномалії платежів Q4.
+
+### Частина 1 — автономний граф
+
+1. **Ініціалізація.** `mt init quarterly-anomalies --task "Дослідити аномалії платежів Q4" --mode agent --budget-sec 3600` → `task.md` + `a.md`; людина доповнює `## Done when` і `## Check`.
+2. **Inline-план → composite.** Orchestrator бачить `waiting` → runner: CAS claim → worktree → агент пише `plan_001.md` (decision: composite) з трьома дітьми: `collect-data` (agent), `analyze` (agent, `audit: required`, deps: collect-data), `review-findings` (human, deps: analyze). Run завершується `result: decomposed` → вузол у `plan-review`.
+3. **Approve.** `mt spawn --approve` валідує `## Children` → матеріалізує дітей + `plan-approved_001.md` одним fenced commit. Батько → `spawned`.
+4. **collect-data — щасливий шлях.** claim → inline `plan_001` (atomic) → `fact_001.md` → `mt done` → `## Check` pass → `run_001` (success) → fenced publish → `resolved`.
+5. **analyze — retry ladder + аудит.** Спроба 1 падає (`run_001` failed, `failed_streak = 1`) → retry `MT_ATTEMPT=2` (diagnose-first) → успіх: `fact_002.md`; `audit: required` → `pending-audit_002.md`. Аудитор сумнівається → `clarification_002.md` → агент `--amend` → `amended_002.md` → повторний аудит → `audit-result_002.md` (success) → `resolved`. Весь цей час review-findings **заблокований** (dep не resolved — блокуючий гейт).
+6. **Людський вузол.** review-findings → `pending` + push assignee → людина перевіряє → `fact_001.md` → `mt done` → `resolved`.
+7. **Composite-агрегація.** Всі діти resolved → wrapper пише синтетичну пару `run_001`/`fact_001` (actor: wrapper) із `## children`-refs → батько `resolved`.
+
+### Частина 2 — те саме у цільовій картині (сесії, пристрої, мови)
+
+8. **Failed-вузол підхоплюється в чат.** Уявімо, що на кроці 5 обидві спроби analyze впали. Аналітик на ноутбуці робить `mt attach mt/quarterly-anomalies/analyze/` — це **новий run того самого вузла** ([runtime.md](runtime.md)): CAS claim (`interactive: true`), worktree, реплей. Контракт незмінний — граф бачить звичайний run.
+9. **Матеріалізація мовою учасника.** У аналітика `lang: uk` — README і task-контент у його worktree матеріалізовані українською ([i18n.md](i18n.md)); його правка нотаток компілюється в base перед publish.
+10. **Handoff.** Обробка даних заважка для ноутбука — «перенести сюди» на сервері: тримач завершує хід, пише `run_NNN (result: handoff)`, CAS-delete; сервер створює claim (generation+1), успадковує журнал ([git.md](git.md)). Клієнт-ноутбук лишається підключеним до тієї самої кімнати.
+11. **Підписаний approve з телефона.** Агент хоче виконати деструктивний крок (запис у прод-БД) → `ApprovalRequest` → телефон другого учасника (роль `approver`, **без git-доступу**) показує диф → Ed25519-підпис → рядок у `## Approvals` run-файлу ([access.md](access.md)).
+12. **Завершення.** `mt done` → `## Check` → fenced publish; далі — кроки 5–7 як у частині 1. Стан графа в `main` не відрізняється від автономного проходження — сесійність і мови не лишають слідів у канонічному стані.

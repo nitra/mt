@@ -40,6 +40,7 @@ afterEach(() => {
 })
 
 describe('mt run', () => {
+  // Реальні git init/worktree/merge у tmp — під навантаженою машиною не влазить у default 5s
   test('виконує agent у mt/<task> worktree та мерджить artifacts у main', () => {
     const root = createTaskRepo()
 
@@ -47,5 +48,5 @@ describe('mt run', () => {
     expect(existsSync(join(root, 'mt', 'demo', 'fact_001.md'))).toBe(true)
     expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: success')
     expect(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' })).toBe('')
-  })
+  }, 30_000)
 })
