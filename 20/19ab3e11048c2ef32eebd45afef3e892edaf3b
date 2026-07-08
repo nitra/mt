@@ -1,0 +1,274 @@
+npm/lib/commands/watch.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 42
+.markdownlint-cli2.jsonc
+  s_7e5f9d7306be1a::t_1451c2a332db0c 10,12-13
+npm/lib/commands/worktree.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 363
+npm/lib/commands/done.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 29
+npm/lib/commands/invalidate.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 40
+.github/workflows/lint-text.yml
+  s_7e5f9d7306be1a::t_047dd0a770094e 63
+  s_7e5f9d7306be1a::t_24da755aa506f4 61-62
+npm/lib/cli.mjs
+  s_7e5f9d7306be1a::t_1fe6792187ecd6 21-35
+  s_7e5f9d7306be1a::t_d597b8f849cd19 45-46
+knip.json
+  s_7e5f9d7306be1a::t_1ffc43b6daff9d 37-40
+  s_7e5f9d7306be1a::t_1e69b5839b13a5 5
+npm/lib/core/scanner.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 134-135,137-139,203-204,206-208
+  s_274671db6c3891::t_1a53ef28d1066a 209
+npm/lib/tests/run.test.mjs
+  s_7e5f9d7306be1a::t_394baf70a4a56c 37
+  s_7e5f9d7306be1a::t_03f51cc0cff200 36,39
+  s_7e5f9d7306be1a::t_c699120ec53c54 43,51
+npm/lib/commands/tests/worktree.test.mjs
+  s_7e5f9d7306be1a::t_b4ad183db37726 2
+  s_7e5f9d7306be1a::t_44bcafc1f9581c 12-14
+crates/mt-napi/.changes/260707-0940.md
+  s_7e5f9d7306be1a::t_3054ff920e58a0 1-5
+npm/lib/commands/scan.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 37
+.github/workflows/lint-ga.yml
+  s_7e5f9d7306be1a::t_277da0fffdde52 43
+  s_7e5f9d7306be1a::t_17b4ec26fc6718 41-42
+npm/.changes/260707-0919.md
+  s_7e5f9d7306be1a::t_d7c587e6ae4c5d 1-5
+npm/lib/commands/kill.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 74
+npm/lib/commands/run.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 111,269
+npm/lib/commands/status.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 65
+npm/lib/tests/worktree.test.mjs
+  s_7e5f9d7306be1a::t_1ba9ec8dcf35dd 26
+  s_7e5f9d7306be1a::t_36fee82406c462 25,28
+.github/workflows/npm-publish.yml
+  s_7e5f9d7306be1a::t_9b3bacd145537e 107
+  s_7e5f9d7306be1a::t_afed4562fb7de5 52-53
+  s_7e5f9d7306be1a::t_976aca7726a671 97
+  s_7e5f9d7306be1a::t_85412cde4bd892 148
+  s_7e5f9d7306be1a::t_c0be8c39fea408 108-110,114
+  s_7e5f9d7306be1a::t_534b039ace398e 122
+.oxlintrc.json
+  s_7e5f9d7306be1a::t_c439cac5bcd244 15
+npm/lib/core/worktree.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 167-168,170-173
+npm/lib/commands/audit.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 30
+npm/lib/core/native.mjs
+  s_7e5f9d7306be1a::t_1f1eae0cf3b56a 92
+  s_274671db6c3891::t_4971f97a950bce 93-94
+crates/mt-napi/package.json
+  s_7e5f9d7306be1a::t_601745ae22b767 13-18
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3,5
+.cspell.json
+  s_7e5f9d7306be1a::t_f00bb18cd77020 129-130
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 4-6,34,49,51,73,83,90,100-101,103,107,112,114,132,135,138,167,178,186,198,200,202-203,210,214,234,246,258,262,271,275,280,284,305,308
+  s_7e5f9d7306be1a::t_3054ff920e58a0 86,251
+  s_7e5f9d7306be1a::t_ca60eaebf97928 252
+  s_7e5f9d7306be1a::t_a4bc10fd66daa8 119
+  s_7e5f9d7306be1a::t_c078a736621019 288
+  s_7e5f9d7306be1a::t_8e813c99ff823a 168-172
+  s_7e5f9d7306be1a::t_3d5e6cd6efbaeb 230
+  s_7e5f9d7306be1a::t_2d94748550081d 315-316
+  s_7e5f9d7306be1a::t_830dc7b5aeca45 157
+  s_7e5f9d7306be1a::t_3f7005e35c5c7b 97
+  s_7e5f9d7306be1a::t_fd00559af18a27 302
+  s_7e5f9d7306be1a::t_bef125359c0f9f 286
+  s_7e5f9d7306be1a::t_f0fa6cc8ea2cac 104
+  s_7e5f9d7306be1a::t_a335afc6fdde6f 144-145
+  s_7e5f9d7306be1a::t_0ea25647916fb0 339
+  s_7e5f9d7306be1a::t_8fbf046c227343 317
+  s_7e5f9d7306be1a::t_3171f0119cf001 24-25
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 131,215,259,299,325
+  s_7e5f9d7306be1a::t_e0beb49eab64ad 187
+npm/types/lib/cli.d.mts
+  s_7e5f9d7306be1a::t_3ec12902cd99e2 7-14
+  s_7e5f9d7306be1a::t_ef0a1e79684258 7-14,16-30
+  s_7e5f9d7306be1a::t_55304c217a846f 7-14,16-30
+.cursor/rules/n-bun.mdc
+  s_274671db6c3891::t_56f01516083456 18
+.cursor/rules/n-ga.mdc
+  s_274671db6c3891::t_4cbddebc1911eb 15,50,81,127,137,179,185
+.cursor/rules/n-js-run.mdc
+  s_274671db6c3891::t_337ff2d92016b1 28,37
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 80,87,113,136,145,152
+.cursor/rules/n-js.mdc
+  s_274671db6c3891::t_74138896cd5056 60,72,80
+.cursor/rules/n-npm-module.mdc
+  s_274671db6c3891::t_9c194ae345ade2 26,80,86
+.cursor/rules/n-security.mdc
+  s_274671db6c3891::t_7035c35825863e 49
+.cursor/rules/n-text.mdc
+  s_274671db6c3891::t_735ddc9159e34c 26,39,55,73,83,91,99,165
+CLAUDE.md
+  s_274671db6c3891::t_844006d07f3377 6
+bun.lock
+  s_7e5f9d7306be1a::t_50a7b01f4e02a8 21,26,872,1454,2142-2143,2242-2243
+crates/mt-napi/jsconfig.json
+  s_274671db6c3891::t_4d6122b9645683 1-10
+crates/mt-napi/stryker.config.mjs
+  s_274671db6c3891::t_b3ffd3a389fa8f 1-18
+crates/mt-napi/vitest.config.mjs
+  s_274671db6c3891::t_c673cae1a1a425 1-22
+npm/types/lib/commands/verify.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 13-19
+npm/types/lib/commands/plan.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 6-11,26-34
+npm/types/lib/core/task-command.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 9-12,19-24
+npm/types/lib/commands/kill.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-25
+npm/types/lib/commands/spawn.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/commands/worktree.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,17-57
+npm/types/lib/core/frontmatter.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,13,21,28
+npm/types/lib/commands/status.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-21
+npm/types/lib/commands/failed.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/nnn.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 6,13,20,27,34,41
+npm/types/lib/commands/done.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/config.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 11-14,21,28,35,37
+npm/types/lib/core/native.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-20,27-29
+npm/types/lib/commands/init.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 9-12,26-33
+npm/types/lib/commands/audit.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7
+npm/types/lib/core/state.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 11,22,24
+npm/types/lib/core/scanner-bin.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-20,25
+npm/types/lib/commands/watch.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-22,24-27
+npm/types/lib/commands/invalidate.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 15-23
+npm/types/lib/commands/scan.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 14-21
+npm/types/lib/commands/run.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 18-29
+npm/types/lib/core/worktree.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7,20-26,35-37,47-52,61-63,74-77
+npm/types/lib/commands/setup.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 16-25
+npm/types/lib/core/scanner.d.mts
+  s_7e5f9d7306be1a::t_b7c92f990a8311 7-13,22-25,32,39,46-48,54,56-69
+npm/docs/architecture/i18n.md
+  s_7e5f9d7306be1a::t_8b347e9ebdd671 32
+  s_7e5f9d7306be1a::t_7268cca94ef05b 80-81
+  s_7e5f9d7306be1a::t_19b9ea71eb4adc 34-35
+  s_7e5f9d7306be1a::t_2b6e391ba88038 63-65
+  s_7e5f9d7306be1a::t_b3a9fbca913f89 117-119
+  s_7e5f9d7306be1a::t_2406e3a6788767 99-104,106
+npm/docs/architecture/surfaces.md
+  s_7e5f9d7306be1a::t_300bb8a850a963 1-62,81-97
+  s_7e5f9d7306be1a::t_8dad4f9d528b07 63-80
+npm/docs/roadmap.md
+  s_7e5f9d7306be1a::t_4b8aaf81fbdd4c 1-53
+npm/docs/vision.md
+  s_7e5f9d7306be1a::t_315c1449b3405e 54
+  s_7e5f9d7306be1a::t_d8fcc834b5b490 47
+  s_7e5f9d7306be1a::t_93b6ee7fb8d6eb 28-34
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 35-40,50
+npm/docs/architecture/git.md
+  s_7e5f9d7306be1a::t_d5e6da7c210b17 60-62
+npm/docs/index.md
+  s_7e5f9d7306be1a::t_7a18c3be0f5074 8
+  s_7e5f9d7306be1a::t_2ef9ec42b96667 17-18
+  s_7e5f9d7306be1a::t_fb949dfd7cbb7a 26
+npm/docs/architecture/runtime.md
+  s_7e5f9d7306be1a::t_312866da3fa991 40
+  s_7e5f9d7306be1a::t_bf34a52627ecd2 99-100,106
+  s_7e5f9d7306be1a::t_42f2826e7542f2 108-114
+npm/docs/architecture/index.md
+  s_7e5f9d7306be1a::t_479bd4280182fe 10-12
+npm/docs/log.md
+  s_7e5f9d7306be1a::t_f5c0d47e4733c1 15-22
+  s_7e5f9d7306be1a::t_c2ccdf3b98308e 5-14
+npm/docs/architecture/access.md
+  s_7e5f9d7306be1a::t_a90aaaa95a17f7 86-92
+  s_7e5f9d7306be1a::t_5e1870d6365cce 73-85
+npm/.changes/260707-2129.md
+  s_7e5f9d7306be1a::t_008202375c8457 1-5
+npm/docs/architecture/operations.md
+  s_7e5f9d7306be1a::t_3c4e1d1964a72c 113-122
+  s_7e5f9d7306be1a::t_cc33d89c1f79c5 67-83
+npm/docs/architecture/overview.md
+  s_7e5f9d7306be1a::t_9b3f6678ef4341 58-75
+npm/.changes/260707-2153.md
+  s_7e5f9d7306be1a::t_43f564e099af61 1-5
+npm/docs/architecture/graph.md
+  s_7e5f9d7306be1a::t_97c2b4f1cceb78 346
+  s_7e5f9d7306be1a::t_a8f9e4d62e6464 325-345
+npm/docs/mt.md
+  s_7e5f9d7306be1a::t_05b2f0871e3b99 12
+docs/adr/260606-1323-task-md-як-єдиний-файл-вузла.md
+  s_7e5f9d7306be1a::t_99d83535ad4962 1-45
+crates/mt-napi/docs/vitest.config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-22
+docs/adr/260606-1323-один-файл-task-md-для-місії-та-inputs.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 2-4,7-8,12,16-17,21,25-27,32,34,36,38-42
+crates/mt-napi/CHANGELOG.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3-9
+.cursor/rules/n-ci4.mdc
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 371-373,407-411
+crates/mt-core/src/docs/config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-47
+crates/mt-core/src/docs/frontmatter.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-39
+crates/mt-core/src/docs/claims.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-59
+crates/mt-napi/docs/stryker.config.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 1-23
+npm/package.json
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3
+npm/CHANGELOG.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 3-12
+docs/adr/20260614-070000-task-create-rust-write-side.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 79-89
+.cursor/rules/n-test.mdc
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 150,167
+docs/adr/20260615-202339-plan-reject-max-ескалація-на-людину.md
+  s_7e5f9d7306be1a::t_268c7a86c5b7ae 2-4,7-8,11-12,15-17,20-21,24-28,31-32
+npm/lib/tests/docs.test.mjs
+  s_7e5f9d7306be1a::t_afc39d5da0ddea 21-23,26
+docs/adr/260606-1358-схема-outputs-md.md
+  s_7e5f9d7306be1a::t_f59d7477b88a81 2-4,7-8,12,16-17,21,23,25-28,30,32,34,36,38-41,43,45-46,48-50,52,54-58
+docs/adr/260606-1406-файловий-формат-вузлів-llm-first-markdown-з-yaml-фронтматером.md
+  s_7e5f9d7306be1a::t_01105124557547 2-4,7-8,12,16-17,21,24-28,32,34,36-42,44,46-49
+docs/adr/260606-1522-уніфікований-run-nnn-для-всіх-типів-виконавців.md
+  s_7e5f9d7306be1a::t_28484071ee4698 2-4,7-8,12,16-17,21,25-29,33,35-40,42,44,46-49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2019ab3e11048c2ef32eebd45afef3e892edaf3b",
+  "prompts": {},
+  "sessions": {
+    "s_274671db6c3891": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58f21d78-b127-4c7d-898d-d4c0f17f9668",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_7e5f9d7306be1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7adc3c-e391-459a-858c-cbd5e4f9d809",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
