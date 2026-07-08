@@ -1,0 +1,130 @@
+.cursor/rules/n-text.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 26,39,55,73,83,91,99,165
+CLAUDE.md
+  s_fdee6198be9d22::t_7392ef354267f4 6
+crates/mt-napi/docs/stryker.config.md
+  s_fdee6198be9d22::t_7392ef354267f4 1-23
+npm/docs/vision.md
+  s_fdee6198be9d22::t_7392ef354267f4 28-33,43
+.cursor/rules/n-js.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 60,72,80
+crates/mt-core/src/docs/config.md
+  s_fdee6198be9d22::t_8ba5511e103985 18-20,24-26
+  s_fdee6198be9d22::t_7392ef354267f4 8-9
+.cursor/rules/n-npm-module.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 26,80,86
+.cursor/rules/n-ci4.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 371-373,407-411
+npm/lib/commands/done.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 29
+npm/lib/commands/kill.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 74
+crates/mt-napi/vitest.config.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 1-22
+.github/workflows/lint-ga.yml
+  s_fdee6198be9d22::t_7392ef354267f4 41-43
+crates/mt-core/src/docs/frontmatter.md
+  s_fdee6198be9d22::t_c65ccbdefffb69 18-21,25-28
+  s_fdee6198be9d22::t_7392ef354267f4 8,14
+npm/lib/commands/run.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 111,269
+npm/lib/commands/scan.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 37
+npm/lib/commands/tests/worktree.test.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 2,12-14
+npm/CHANGELOG.md
+  s_fdee6198be9d22::t_7392ef354267f4 3-12
+.cursor/rules/n-ga.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 15,50,81,127,137,179,185
+npm/lib/core/native.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 92-94
+npm/lib/tests/docs.test.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 21,24
+crates/mt-napi/docs/vitest.config.md
+  s_fdee6198be9d22::t_7392ef354267f4 1-22
+npm/lib/commands/worktree.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 363
+npm/package.json
+  s_fdee6198be9d22::t_7392ef354267f4 3
+crates/mt-napi/stryker.config.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 1-18
+crates/mt-napi/CHANGELOG.md
+  s_fdee6198be9d22::t_7392ef354267f4 3-9
+.cursor/rules/n-bun.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 18
+.markdownlint-cli2.jsonc
+  s_fdee6198be9d22::t_7392ef354267f4 10,12-13
+.oxlintrc.json
+  s_fdee6198be9d22::t_7392ef354267f4 15
+npm/lib/core/scanner.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 134-135,137-139,203-204,206-209
+docs/adr/20260615-202339-plan-reject-max-ескалація-на-людину.md
+  s_fdee6198be9d22::t_7392ef354267f4 2-4,7-8,11-12,15-17,20-21,24-28,31-32
+npm/lib/core/worktree.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 167-168,170-173
+.cursor/rules/n-test.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 150,167
+npm/lib/cli.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 21-35,45-46
+npm/types/lib/cli.d.mts
+  s_fdee6198be9d22::t_7392ef354267f4 13-27
+.github/workflows/npm-publish.yml
+  s_fdee6198be9d22::t_7392ef354267f4 52-53,97,107-110,114,122,148
+docs/adr/20260614-070000-task-create-rust-write-side.md
+  s_fdee6198be9d22::t_7392ef354267f4 79-89
+crates/mt-napi/jsconfig.json
+  s_fdee6198be9d22::t_7392ef354267f4 1-10
+crates/mt-core/src/docs/claims.md
+  s_fdee6198be9d22::t_7392ef354267f4 8
+  s_fdee6198be9d22::t_dd190b687a41b3 14,26,35-41
+npm/lib/commands/audit.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 30
+docs/adr/260606-1323-один-файл-task-md-для-місії-та-inputs.md
+  s_fdee6198be9d22::t_7392ef354267f4 2-4,7-8,12,16-17,21,25-27,32,34,36,38-42
+npm/lib/commands/invalidate.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 40
+knip.json
+  s_fdee6198be9d22::t_7392ef354267f4 5,37-39
+  s_fdee6198be9d22::t_5742e3ed24a5ec 40
+npm/lib/commands/status.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 65
+.cursor/rules/n-security.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 49
+.cursor/rules/n-js-run.mdc
+  s_fdee6198be9d22::t_7392ef354267f4 28,37,80,87,113,136,145,152
+npm/lib/commands/watch.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 42
+crates/mt-napi/package.json
+  s_fdee6198be9d22::t_7392ef354267f4 3,5,13-18
+npm/lib/tests/run.test.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 36-37,39
+npm/lib/tests/worktree.test.mjs
+  s_fdee6198be9d22::t_7392ef354267f4 25-26,28
+.github/workflows/lint-text.yml
+  s_fdee6198be9d22::t_7392ef354267f4 61-63
+.cspell.json
+  s_fdee6198be9d22::t_db5adbac7d73b1 276-341
+  s_fdee6198be9d22::t_7392ef354267f4 54,65-66,146,184,191-192,235,258
+hk.pkl
+  s_fdee6198be9d22::t_7392ef354267f4 15-16
+npm/docs/architecture/i18n.md
+  s_fdee6198be9d22::t_7392ef354267f4 32
+bun.lock
+  s_fdee6198be9d22::t_befa79dd3091c7 21,26,872,1454,2142-2143,2242-2243
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "85c1f1f5e6f4fedbfdc4b326054be47148cbc374",
+  "prompts": {},
+  "sessions": {
+    "s_fdee6198be9d22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "43854abd-01bf-43d1-a273-752895f85b3d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
