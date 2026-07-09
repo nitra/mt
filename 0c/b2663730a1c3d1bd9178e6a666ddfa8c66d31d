@@ -1,0 +1,23 @@
+docs/adr/engineer-agent-мета-рівень-repair-та-ескалація.md
+  s_fd8bc1431e6f6a::t_b3cd5a0c0b3114 60-67
+docs/adr/260607-0905-бюджет-вузла-soft-hard-progress-env-vars.md
+  s_fd8bc1431e6f6a::t_b3cd5a0c0b3114 60-65
+docs/adr/260607-0900-аудитор-worktree-новий-з-main-агент-мержить-при-graph-audit.md
+  s_fd8bc1431e6f6a::t_b3cd5a0c0b3114 37-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0cb2663730a1c3d1bd9178e6a666ddfa8c66d31d",
+  "prompts": {},
+  "sessions": {
+    "s_fd8bc1431e6f6a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f148853-61a9-4d78-a327-5b44485719af",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
