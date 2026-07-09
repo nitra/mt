@@ -1,0 +1,25 @@
+docs/adr/260606-1323-task-md-як-єдиний-файл-вузла.md
+  s_5850511ff7be99::t_c960a9714e91a9 46-51
+docs/adr/260607-0900-аудитор-worktree-новий-з-main-агент-мержить-при-graph-audit.md
+  s_5850511ff7be99::t_c960a9714e91a9 37-53
+docs/adr/engineer-agent-мета-рівень-repair-та-ескалація.md
+  s_5850511ff7be99::t_c960a9714e91a9 60-67
+docs/adr/260606-1943-фіксована-директорія-artifacts-вузла.md
+  s_5850511ff7be99::t_614b7a6ed9e150 2-4,7-8,12,15-17,20-21,25-28,30,32-42,45,47,49-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4a5af65ab2ecb89350d587d02d03572697a8928d",
+  "prompts": {},
+  "sessions": {
+    "s_5850511ff7be99": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbb9021c-ad21-49ba-8a7d-7a465048d580",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
