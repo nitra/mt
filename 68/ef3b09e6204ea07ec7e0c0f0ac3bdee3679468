@@ -1,0 +1,22 @@
+docs/spec-npm-three-packages.md
+  s_5850511ff7be99::t_b942ea0f9d92c8 65
+  s_5850511ff7be99::t_e7f174b44a3e1a 72
+  s_5850511ff7be99::t_1141e356b8ab0c 112
+  s_5850511ff7be99::t_7883b3caaba6c4 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "68ef3b09e6204ea07ec7e0c0f0ac3bdee3679468",
+  "prompts": {},
+  "sessions": {
+    "s_5850511ff7be99": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbb9021c-ad21-49ba-8a7d-7a465048d580",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
