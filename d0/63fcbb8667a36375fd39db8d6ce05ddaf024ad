@@ -1,0 +1,23 @@
+.cspell.json
+  s_fd8bc1431e6f6a::t_5f035595ca41d4 248
+  s_fd8bc1431e6f6a::t_f1d9465ff13228 103
+  s_fd8bc1431e6f6a::t_7d4bdd20e22fd6 143
+  s_fd8bc1431e6f6a::t_ff5aaad05fe341 113
+  s_fd8bc1431e6f6a::t_b97f7d8f696794 155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d063fcbb8667a36375fd39db8d6ce05ddaf024ad",
+  "prompts": {},
+  "sessions": {
+    "s_fd8bc1431e6f6a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f148853-61a9-4d78-a327-5b44485719af",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
