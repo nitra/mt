@@ -57,3 +57,9 @@ progress_timeout_sec: 600 # per-task override
 ```
 
 Зафіксовано у `npm/docs/mt.md` (схеми `task.md`, `plan_NNN.md`, «Wrapper-скрипт», «Конфіг»).
+
+## Update 2026-06-06
+
+- `budget_sec` розміщується у frontmatter `task.md`, а не в окремому `repair_context.md`.
+- Бюджет є атрибутом вузла загалом і застосовується до агента, інженера та інших акторів, а не лише до repair-сценарію.
+- Wrapper читає `budget_sec` з `task.md` і зупиняє виконання після вичерпання бюджету.
