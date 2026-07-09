@@ -34,3 +34,20 @@ mt watch: pending-audit_NNN.md без audit-result_NNN.md → mt run --actor aud
 - Лічильник failed-циклів: wrapper рахує `audit-result_*.md (result: failed)` у main (файли на диску, без shared state між процесами)
 - Після 3 failed → worktree залишається, `mt watch` ескалює через Telegram
 - Зафіксовано у `npm/docs/mt.md` (секції «Async Audit Queue» і «Wrapper-скрипт»)
+
+## Update 2026-06-06
+
+- `audit: true` у frontmatter `task.md` вмикає незалежну перевірку вузла.
+- Аудитор є окремим типом `actor: auditor` у `run_NNN.md`.
+- Wrapper запускає аудитора після успішного агента.
+- Аудитор не змінює граф і не редагує `task.md`; його право запису — лише власний `run_NNN.md` з результатом перевірки.
+- `result: failed` від аудитора означає, що вузол не проходить перевірку і має оброблятися тим самим механізмом відновлення, що й інші failed-спроби.
+- У transcript згадано можливість окремого `audit_model` у конфігурації.
+
+## Update 2026-06-06
+
+- `audit: false` є поведінкою за замовчуванням.
+- Людина явно вмикає аудит для конкретного вузла через `audit: true` у `task.md`.
+- Аудитор читає `task.md#Done when` і `outputs_NNN.md`, після чого пише власний `run_NNN.md` з `actor: auditor` та `result: success | failed`.
+- Аудитор не змінює граф; єдиний дозволений запис аудитора — його власний `run_NNN.md`.
+- Провал аудиту переводить вузол у failed-сценарій і передається інженеру тим самим механізмом, що й провал агента.
