@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-07-09-vision-inverted-delegation.md
+  s_fd8bc1431e6f6a::t_2922714b8d3cc5 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1f7eb0a8f8b96ebc60847be85083561d11b50f17",
+  "prompts": {},
+  "sessions": {
+    "s_fd8bc1431e6f6a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f148853-61a9-4d78-a327-5b44485719af",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
