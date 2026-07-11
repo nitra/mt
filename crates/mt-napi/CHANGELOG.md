@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4] - 2026-07-11
+
+### Changed
+
+- ⬆️ chore: @nitra/cursor ^14.25.1 (авто-оновлення pre-commit hook)
+- 📝 chore: mt-napi changelog entry
+
 ## [0.1.3] - 2026-07-08
 
 ### Changed
