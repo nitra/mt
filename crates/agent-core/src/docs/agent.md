@@ -3,9 +3,8 @@ type: Rust Module
 title: agent.rs
 resource: crates/agent-core/src/agent.rs
 docgen:
-  crc: 6c4b2d71
+  crc: 7a49f741
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini

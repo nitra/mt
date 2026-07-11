@@ -3,9 +3,8 @@ type: Rust Module
 title: provider.rs
 resource: crates/agent-core/src/provider.rs
 docgen:
-  crc: 35adb3b2
+  crc: 36d5815c
   model: openai-codex/gpt-5.5
-  tier: cloud-avg
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini
