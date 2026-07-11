@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.14.3] - 2026-07-11
+
+### Changed
+
+- ✨ feat(agent-server): graph-міст — інтерактивний run вузла поверх mt-core (M1) (#28)
+
 ## [0.14.2] - 2026-07-11
 
 ### Changed
