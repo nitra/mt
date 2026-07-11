@@ -1,0 +1,212 @@
+//! Тонкий клієнт agent-server (M1-заділ `mt serve`/`mt attach`).
+//!
+//! `serve` — стартує хост-процес: WS на 127.0.0.1, discovery port-file +
+//! токен; runner — `OpenAiProvider` (якщо задано `--base-url`) або echo.
+//! `attach <node>` — читає discovery, хендшейк v4, REPL: stdin →
+//! `UserMessage`, стрічка подій → термінал. M1-заділ адресує кімнату
+//! рядком вузла; hash-адресація і graph-операції (claim/publish через
+//! `mt … --json`) — окрема задача інтеграції.
+
+use std::io::Write as _;
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use agent_core::{Agent, OpenAiProvider, ToolRegistry};
+use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
+use agent_server::{
+    serve, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, SessionHost, TurnRunner,
+};
+use clap::{Parser, Subcommand};
+use futures::{SinkExt, StreamExt};
+use tokio::io::AsyncBufReadExt;
+use tokio_tungstenite::tungstenite::Message;
+use uuid::Uuid;
+
+#[derive(Parser)]
+#[command(name = "agent-cli", about = "Тонкий клієнт agent-server (M1)")]
+struct Cli {
+    /// Директорія discovery/стану (дефолт — ~/.nitra).
+    #[arg(long, global = true)]
+    state_dir: Option<PathBuf>,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Запустити хост-процес (WS + discovery).
+    Serve {
+        /// Порт (0 — ефемерний).
+        #[arg(long, default_value_t = 0)]
+        port: u16,
+        /// base_url OpenAI-compatible провайдера (omlx/Ollama/LiteLLM);
+        /// без нього — echo-заглушка.
+        #[arg(long)]
+        base_url: Option<String>,
+        /// Модель провайдера.
+        #[arg(long, default_value = "default")]
+        model: String,
+        /// API-ключ (для локальних серверів — порожній).
+        #[arg(long, default_value = "")]
+        api_key: String,
+    },
+    /// Підключитись до вузла інтерактивною сесією.
+    Attach {
+        /// Вузол (шлях у tasks-директорії).
+        node: String,
+        /// BCP-47 мова учасника (обовʼязкове поле v4).
+        #[arg(long, default_value = "uk")]
+        lang: String,
+    },
+}
+
+fn state_dir(cli_dir: Option<PathBuf>) -> PathBuf {
+    cli_dir.unwrap_or_else(|| {
+        PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".nitra")
+    })
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
+    match cli.command {
+        Command::Serve {
+            port,
+            base_url,
+            model,
+            api_key,
+        } => run_serve(state_dir(cli.state_dir), port, base_url, model, api_key).await,
+        Command::Attach { node, lang } => run_attach(state_dir(cli.state_dir), node, lang).await,
+    }
+}
+
+async fn run_serve(
+    dir: PathBuf,
+    port: u16,
+    base_url: Option<String>,
+    model: String,
+    api_key: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let runner: Arc<dyn TurnRunner> = match base_url {
+        Some(base_url) => Arc::new(AgentTurnRunner::new(move || {
+            Agent::new(
+                OpenAiProvider::new(base_url.clone(), api_key.clone()),
+                ToolRegistry::new(),
+                model.clone(),
+                "Ти — виконавець вузла графа задач MT.",
+            )
+        })),
+        None => Arc::new(EchoTurnRunner),
+    };
+    let token = Uuid::new_v4().to_string();
+    let state = Arc::new(AppState {
+        sessions: SessionHost::new(dir.join("sessions"))?,
+        runner,
+        token: Some(token.clone()),
+    });
+    let (addr, handle) = serve(state, format!("127.0.0.1:{port}").parse()?).await?;
+    let discovery = Discovery::new(dir);
+    discovery.write(addr.port(), &token)?;
+    println!("agent-server: ws://{addr}/ws (protocol v{PROTOCOL_VERSION})");
+
+    tokio::signal::ctrl_c().await?;
+    discovery.remove()?;
+    handle.abort();
+    Ok(())
+}
+
+async fn run_attach(
+    dir: PathBuf,
+    node: String,
+    lang: String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (port_file, token) = Discovery::new(dir).read().map_err(|error| {
+        format!("discovery не знайдено ({error}); спершу запусти `agent-cli serve`")
+    })?;
+    let url = format!("ws://127.0.0.1:{}/ws", port_file.port);
+    let (mut stream, _) = tokio_tungstenite::connect_async(&url).await?;
+
+    let hello = ClientHello {
+        protocol_version: PROTOCOL_VERSION,
+        device_id: Uuid::new_v4(),
+        device_token: token,
+        client_kind: "cli".into(),
+        client_capabilities: vec!["approvals".into(), "diff_view".into()],
+        lang,
+        want_replay_from: Some(0),
+    };
+    stream
+        .send(Message::text(serde_json::to_string(&hello)?))
+        .await?;
+
+    let Some(Ok(Message::Text(first))) = stream.next().await else {
+        return Err("сервер закрив зʼєднання на хендшейку".into());
+    };
+    if let Ok(Event::Error { message }) = serde_json::from_str::<Event>(first.as_str()) {
+        return Err(message.into());
+    }
+    let server_hello: ServerHello = serde_json::from_str(first.as_str())?;
+    println!(
+        "підключено (v{}); сесій: {}. Пиши повідомлення, Ctrl-D — вихід.",
+        server_hello.protocol_version,
+        server_hello.session_list.len()
+    );
+
+    let mut stdin = tokio::io::BufReader::new(tokio::io::stdin()).lines();
+    loop {
+        tokio::select! {
+            incoming = stream.next() => match incoming {
+                Some(Ok(Message::Text(text))) => {
+                    if let Ok(envelope) = serde_json::from_str::<Envelope>(text.as_str()) {
+                        print_event(&node, &envelope);
+                    }
+                }
+                Some(Ok(_)) => {}
+                _ => break,
+            },
+            line = stdin.next_line() => match line? {
+                Some(text) if !text.trim().is_empty() => {
+                    let envelope = Envelope {
+                        seq: 0,
+                        ts: chrono_now(),
+                        node_hash: node.clone(),
+                        run_token: Uuid::nil(),
+                        device_id: Some(hello.device_id),
+                        account_id: None,
+                        event: Event::UserMessage { text, attachments: vec![], surface: Some("cli".into()) },
+                    };
+                    stream.send(Message::text(serde_json::to_string(&envelope)?)).await?;
+                }
+                Some(_) => {}
+                None => break,
+            },
+        }
+    }
+    Ok(())
+}
+
+/// `agent-cli` не залежить від chrono напряму — бере реекспорт типу з
+/// agent-protocol через Envelope; клієнтський ts сервер однаково ігнорує.
+fn chrono_now() -> chrono::DateTime<chrono::Utc> {
+    chrono::Utc::now()
+}
+
+fn print_event(node: &str, envelope: &Envelope) {
+    if envelope.node_hash != node {
+        return;
+    }
+    match &envelope.event {
+        Event::AgentTextDelta { text } => {
+            print!("{text}");
+            let _ = std::io::stdout().flush();
+        }
+        Event::AgentTextDone {} => println!(),
+        Event::UserMessage { text, .. } => println!("> {text}"),
+        Event::ToolCall { name, .. } => println!("⚙ {name} …"),
+        Event::ToolResult { ok, summary, .. } => {
+            println!("{} {summary}", if *ok { "✓" } else { "✗" })
+        }
+        Event::Error { message } => eprintln!("помилка: {message}"),
+        _ => {}
+    }
+}
