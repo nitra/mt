@@ -3,7 +3,7 @@ type: Rust Module
 title: graph.rs
 resource: crates/agent-server/src/graph.rs
 docgen:
-  crc: 1cd56153
+  crc: b95ecc91
   model: openai-codex/gpt-5.4-mini
   score: 100
   issues: judge:inaccurate:0.99
