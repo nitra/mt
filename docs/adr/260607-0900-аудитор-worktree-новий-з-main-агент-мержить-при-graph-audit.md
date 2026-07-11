@@ -37,15 +37,9 @@ mt watch: pending-audit_NNN.md без audit-result_NNN.md → mt run --actor aud
 
 ## Update 2026-06-06
 
-- `audit: true` у frontmatter `task.md` вмикає незалежну перевірку вузла; за замовчуванням аудит вимкнений і людина явно вмикає його на вузлі.
-- Після `result: success` від агента wrapper запускає аудитора як окремого актора `actor: auditor`.
-- Аудитор читає `task.md`, критерій `## Done when` і `outputs_NNN.md`, не змінює граф, але має право записати власний `run_NNN.md` з `actor: auditor` та `result: success | failed`.
-- Якщо аудитор пише `result: failed`, вузол вважається failed і передається інженеру тим самим механізмом, що й провал основного агента.
-- У конфігу може бути окреме поле `audit_model` для дешевшої моделі аудитора.
-
-## Update 2026-06-06
-
-- Аудитор є окремим типом `actor` у `run_NNN.md`, поряд з `agent`, `engineer` і `human`.
-- `audit: false` є поведінкою за замовчуванням; людина явно ставить `audit: true` у `task.md`, якщо вузол потребує незалежної перевірки.
-- Аудитор не змінює `task.md`, інші вузли чи граф, але записує власний `run_NNN.md` з результатом перевірки.
-- Провал аудиту переводить вузол у failed-стан і запускає той самий repair/engineer-механізм, що й провал основного агента.
+- `audit: true` у frontmatter `task.md` вмикає перевірку вузла.
+- Після `result: success` агента wrapper запускає аудитора без окремого worktree, у read-only режимі.
+- Аудитор пише наступний `run_(NNN+1).md` з `actor: auditor` і `result: success | failed`.
+- Якщо аудитор повертає `result: failed`, вузол не мержиться, а агент перезапускається з feedback.
+- Конфіг може містити `audit_model` для дешевшої моделі аудитора.
+- У тому ж transcript повторно зафіксовано вже прийняті рішення про `run_NNN.md`, англійські імена файлів, злиття `inputs.md` у `task.md`, межу immutability по worktree та post-merge hook; окремого нового ADR для них не потрібно.
