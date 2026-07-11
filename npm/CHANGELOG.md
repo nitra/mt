@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.0] - 2026-07-11
+
+### Changed
+
+- docs(runtime.md): протокол v4 — мінорне розширення Event: `DoneSession {}` (завершити run — fenced publish fact) і `ReleaseSession {}` (пауза — CAS-delete claim, журнал лишається в run ref)
+
 ## [0.15.0] - 2026-07-11
 
 ### Added
