@@ -8,6 +8,7 @@
   * [architecture/operations.md](architecture/operations.md) — канон baseline-дефолтів `.mt.json` явно закріплено за кодом (`CONFIG_DEFAULTS` у `mt-core`), глави лишаються довідником семантики.
   * Після цього видалення mt.md на M1 — механічне: прибрати файл і посилання (index.md, architecture/index.md, overview.md, `npm/lib/tests/docs.test.mjs`).
 * **Update**: започатковано **M1** — перший Rust-крейт [`crates/agent-protocol`](architecture/stack.md): типи `Envelope`/`Event` протоколу v4 (serde, forward-compat `Unknown`-варіант), хендшейк `ClientHello` (обовʼязкове `lang`) з перевіркою версії, Ed25519-підписи approvals (`ed25519-dalek`, доменний префікс + NUL-роздільник); без tokio/tauri (фізична межа зі stack.md).
+* **Update**: M1, другий крейт — `crates/agent-core` (задача `mt/m1-agent-core`): нейтральний provider-контракт (`CompletionRequest`/`Completion`, стрімінгові дельти; типи SDK не протікають у публічний API) з `MockProvider` для CI без мережі; реєстр tools зі schemars-derive схемами і заділом `register_external(...)` для MCP; agent loop `run_turn` — історія, ітерація tool calls зі стелею, емісія `AgentTextDelta`/`ToolCall`/`ToolResult`/`AgentTextDone` через callback (Envelope збиратиме agent-server). Транспорт `async-openai` і preview — наступні задачі.
 
 ## 2026-07-08
 
