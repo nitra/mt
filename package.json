@@ -11,7 +11,7 @@
     "start": "bun ./npm/bin/mt.js",
     "test": "vitest run",
     "oxfmt": "oxfmt .",
-    "coverage": "n-cursor coverage"
+    "coverage": "npx @7n/test coverage"
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
