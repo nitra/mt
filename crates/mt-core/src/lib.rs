@@ -959,7 +959,7 @@ fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
     fs::rename(&tmp, path).map_err(|e| e.to_string())
 }
 
-const TASK_BODY: &str = "\n## Mission\n\n<!-- Опишіть завдання тут -->\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Context\n\n<!-- Додатковий контекст для виконавця -->\n";
+const TASK_BODY: &str = "\n## Task\n\n<!-- Опишіть завдання тут -->\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Check\n\n<!-- кожен непорожній рядок — shell-команда (exit 0) -->\n\n## Inputs\n\n<!-- Вхідні дані / контекст для виконавця -->\n";
 
 /// Створює вузол задачі з шаблонного контракту (§4 spec): `<name>/task.md`,
 /// прапор виконавця (`a.md`/`h.md`), опційні `deps/<id>.md`.
@@ -1010,7 +1010,7 @@ pub fn create_task(
         );
         let body = match &opts.task {
             Some(text) => format!(
-                "\n## Mission\n\n{}\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Context\n\n<!-- Додатковий контекст для виконавця -->\n",
+                "\n## Task\n\n{}\n\n## Done when\n\n<!-- Критерії успіху -->\n\n## Check\n\n<!-- кожен непорожній рядок — shell-команда (exit 0) -->\n\n## Inputs\n\n<!-- Вхідні дані / контекст для виконавця -->\n",
                 text.trim_end()
             ),
             None => TASK_BODY.to_string(),
@@ -1541,8 +1541,13 @@ mod tests {
         assert!(!task_md.contains("mode:"));
         assert!(!task_md.contains("executor"));
         assert!(!task_md.contains("\ndeps:"));
-        assert!(task_md.contains("## Mission"));
-        // h.md created, a.md not.
+        // Секції task.md — контракт graph.md (## Task / ## Done when / ## Check / ## Inputs).
+        assert!(task_md.contains("## Task"));
+        assert!(task_md.contains("## Done when"));
+        assert!(task_md.contains("## Check")); // машинний done/audit-гейт (signal.rs)
+        assert!(task_md.contains("## Inputs"));
+        assert!(!task_md.contains("## Mission")); // старий канон docs/mt.md більше не пишемо
+                                                  // h.md created, a.md not.
         assert!(root.path().join("mt/demo/h.md").exists());
         assert!(!root.path().join("mt/demo/a.md").exists());
     }
