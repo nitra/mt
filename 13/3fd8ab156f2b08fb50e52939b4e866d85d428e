@@ -1,0 +1,19 @@
+.cspell.json
+  s_5850511ff7be99::t_4f1ecac45a42b2 312-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.11",
+  "base_commit_sha": "133fd8ab156f2b08fb50e52939b4e866d85d428e",
+  "prompts": {},
+  "sessions": {
+    "s_5850511ff7be99": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbb9021c-ad21-49ba-8a7d-7a465048d580",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
