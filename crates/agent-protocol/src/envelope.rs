@@ -79,6 +79,12 @@ pub enum Event {
         signature: Vec<u8>,
     },
     CancelTurn {},
+    /// Завершити run вузла: хост виконує `mt done`-семантику — fenced
+    /// publish fact у main (мінорне розширення v4).
+    DoneSession {},
+    /// Пауза/відпустити: хост CAS-delete claim; журнал лишається в run ref
+    /// базою відновлення (мінорне розширення v4).
+    ReleaseSession {},
 
     // ── хост → клієнти ─────────────────────────────────────────────────────
     /// ЕФЕМЕРНА: не журналиться — журналиться `AgentTextDone`-агрегат.
@@ -212,6 +218,8 @@ mod tests {
                 signature: vec![0xAB; 64],
             },
             Event::CancelTurn {},
+            Event::DoneSession {},
+            Event::ReleaseSession {},
             Event::AgentTextDelta {
                 text: "част".into(),
             },

@@ -6,6 +6,7 @@
 //! [`EchoTurnRunner`] — заглушка для demo/CLI без налаштованого провайдера.
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
 
 use agent_core::provider::Provider;
@@ -13,13 +14,15 @@ use agent_core::{Agent, AgentError};
 use agent_protocol::Event;
 use async_trait::async_trait;
 
-/// Виконавець одного ходу кімнати.
+/// Виконавець одного ходу кімнати. `workdir` — робоча директорія ходу
+/// (worktree інтерактивного run-а); runner-и без файлових тулів її ігнорують.
 #[async_trait]
 pub trait TurnRunner: Send + Sync {
     async fn run_turn(
         &self,
         node_hash: &str,
         user_text: &str,
+        workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
     ) -> Result<String, AgentError>;
 }
@@ -55,6 +58,7 @@ impl<P: Provider> TurnRunner for AgentTurnRunner<P> {
         &self,
         node_hash: &str,
         user_text: &str,
+        _workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
     ) -> Result<String, AgentError> {
         let agent = self.agent_for(node_hash).await;
@@ -73,6 +77,7 @@ impl TurnRunner for EchoTurnRunner {
         &self,
         _node_hash: &str,
         user_text: &str,
+        _workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
     ) -> Result<String, AgentError> {
         let text = format!("echo: {user_text}");
@@ -115,8 +120,8 @@ mod tests {
         let events = Mutex::new(Vec::new());
         let emit = |event: Event| events.lock().unwrap().push(event);
 
-        let first = runner.run_turn("room-1", "раз", &emit).await.unwrap();
-        let second = runner.run_turn("room-1", "два", &emit).await.unwrap();
+        let first = runner.run_turn("room-1", "раз", None, &emit).await.unwrap();
+        let second = runner.run_turn("room-1", "два", None, &emit).await.unwrap();
 
         assert_eq!((first.as_str(), second.as_str()), ("перший", "другий"));
         assert_eq!(

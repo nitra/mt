@@ -22,6 +22,7 @@ use mt_core::worktree::{create_run_worktree, push_run_ref, remove_run_worktree};
 use uuid::Uuid;
 
 /// Конфігурація моста.
+#[derive(Debug, Clone)]
 pub struct GraphConfig {
     /// tasks-директорія проєкту (напр. `<repo>/mt`).
     pub tasks_dir: PathBuf,
@@ -131,6 +132,11 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
 }
 
 impl InteractiveRun {
+    /// Поточна генерація claim-а (fencing token для side effects).
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
     /// Коміт ходу: журнал сесії (`.nitra/session.jsonl`) + правки файлів →
     /// push run ref (recovery/handoff, спека git.md: «кожен хід = коміт +
     /// негайний push run ref»). Порожній хід (нічого не змінилось) — no-op.

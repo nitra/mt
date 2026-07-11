@@ -3,9 +3,8 @@ type: Rust Module
 title: runner.rs
 resource: crates/agent-server/src/runner.rs
 docgen:
-  crc: dc72664f
+  crc: b4646181
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini
