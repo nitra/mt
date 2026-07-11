@@ -28,3 +28,7 @@ packages/*/*.node
 
 # Test artifacts: coverage (test.mdc)
 **/coverage/
+
+# Python bytecode (випадкові артефакти, джерел .py у репо немає)
+__pycache__/
+*.pyc

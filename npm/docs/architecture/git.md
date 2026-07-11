@@ -61,6 +61,12 @@ Run ref: `refs/mt/runs/<node-hash>/<token>` — гілка робочого ст
 
 **Checkpoint-handoff (приватність передачі).** Звичайний handoff передає run ref разом із повним `session.jsonl` — всі чорнові репліки. Для передачі стороннім є режим «з checkpoint»: тримач пише `run_NNN (result: handoff)` і **свіжий run ref**, що містить лише стан worktree + дистильований summary останніх ходів, без журналу розмови; повний `session.jsonl` іде в archive ref, видимий лише авторові. Приймач продовжує з чистого контексту (run N+1). Вибір режиму — параметр `mt handoff --checkpoint` / політика per-node.
 
+## Wrapper: запуск агента
+
+**Wrapper** (`mt run`; у цільовій картині — роль Runner всередині agent-server): перевіряє deps resolved + відсутність pending-audit → CAS claim → detached worktree від `base_sha` → run ref → запускає агента → watchdog → пише `run_NNN.md` → publish.
+
+**ENV-контракт wrapper → агент:** `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, `MT_RUN_NNN`, `MT_ATTEMPT`, `MT_CLAIM_TOKEN`, `MT_CLAIM_GENERATION`. `MT_CLAIM_GENERATION` — fencing token для non-idempotent side effects: single publish owner гарантує лише один запис результату в `main`, не mutual exclusion виконання.
+
 ## Fenced publish
 
 Публікація результату (агент, аудитор, lifecycle-операції) — один атомарний push:
