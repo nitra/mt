@@ -9,11 +9,13 @@
 //! інтеграція — окрема задача.
 
 pub mod discovery;
+pub mod graph;
 pub mod runner;
 pub mod session;
 pub mod ws;
 
 pub use discovery::{token_hash, Discovery, PortFile};
+pub use graph::{attach, GraphConfig, InteractiveRun};
 pub use runner::{AgentTurnRunner, EchoTurnRunner, TurnRunner};
 pub use session::{is_ephemeral, Session, SessionHost};
 pub use ws::{serve, AppState};

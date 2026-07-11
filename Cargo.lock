@@ -54,6 +54,7 @@ dependencies = [
  "axum",
  "chrono",
  "futures",
+ "mt-core",
  "serde",
  "serde_json",
  "sha2",

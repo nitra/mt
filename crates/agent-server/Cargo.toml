@@ -13,6 +13,7 @@ name = "agent_server"
 agent-core = { path = "../agent-core" }
 agent-protocol = { path = "../agent-protocol" }
 async-trait.workspace = true
+mt-core = { path = "../mt-core" }
 axum.workspace = true
 chrono = { workspace = true, features = ["serde"] }
 futures.workspace = true
