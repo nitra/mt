@@ -445,6 +445,61 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
 }
 
 /**
+ * Розбирає argv `mt run`: перший non-flag токен — шлях задачі.
+ * @param {string[]} args аргументи після `run`
+ * @returns {{ taskPath: string | null, actor: string | null, autoMode: boolean }} розібрані параметри
+ */
+function parseRunArgs(args) {
+  let taskPath = null
+  let actor = null
+  let autoMode = false
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--actor' && args[i + 1]) {
+      actor = args[i + 1]
+      i++
+    } else if (args[i] === '--auto') {
+      autoMode = true
+    } else if (!args[i].startsWith('-')) {
+      taskPath = args[i]
+    }
+  }
+  return { taskPath, actor, autoMode }
+}
+
+/**
+ * `--auto`: знаходить ready-задачі (waiting + deps resolved) і запускає кожну.
+ * @param {{ mtDir: string, activeWorktrees: Map<string, object>, config: object, root: string, actor: string | null }} ctx контекст прогону
+ * @param {{ log: (m: string) => void, readFile: (p: string, enc: string) => string, readdir: (d: string) => string[], exists: (p: string) => boolean }} io файлові/лог ін'єкції
+ * @param {object} taskDeps ін'єкції, що прокидаються у runTask
+ * @returns {number} exit code
+ */
+function runAutoMode(ctx, io, taskDeps) {
+  const allNodes = scanTasks(ctx.mtDir, ctx.activeWorktrees, {
+    readdirSync: io.readdir,
+    existsSync: io.exists,
+    readFileSync: io.readFile
+  })
+  const nodeMap = new Map(allNodes.map(n => [n.id, n]))
+  const readyNodes = topoSort(allNodes).filter(n => n.state === 'waiting' && areDepsResolved(n, nodeMap))
+
+  if (readyNodes.length === 0) {
+    io.log('run --auto: немає готових задач для запуску')
+    return 0
+  }
+
+  io.log(`run --auto: знайдено ${readyNodes.length} готових задач`)
+  let anyFailed = false
+
+  for (const node of readyNodes) {
+    const result = runTask(node.path, node.dir, ctx.config, ctx.root, { actor: ctx.actor ?? undefined }, taskDeps)
+    if (!result.ok && result.code !== 2) anyFailed = true
+  }
+
+  return anyFailed ? 1 : 0
+}
+
+/**
  * `mt run [<path>] [--actor a] [--auto]` command handler.
  * @param {string[]} args аргументи
  * @param {{
@@ -470,21 +525,7 @@ export default function run(args, deps = {}) {
 
   const execSyncFn = deps.execSync ?? ((cmd, o) => execSync(cmd, { ...o, encoding: 'utf8' }))
 
-  // Парсимо аргументи
-  let taskPath = null
-  let actor = null
-  let autoMode = false
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--actor' && args[i + 1]) {
-      actor = args[i + 1]
-      i++
-    } else if (args[i] === '--auto') {
-      autoMode = true
-    } else if (!args[i].startsWith('-')) {
-      taskPath = args[i]
-    }
-  }
+  const { taskPath, actor, autoMode } = parseRunArgs(args)
 
   const config = loadConfig({ root, readFile, exists })
   const mtDir = resolveMtDir(config, root)
@@ -502,40 +543,11 @@ export default function run(args, deps = {}) {
   }
 
   if (autoMode) {
-    // Знаходимо всі ready задачі і запускаємо їх
-    const allNodes = scanTasks(mtDir, activeWorktrees, {
-      readdirSync: readdir,
-      existsSync: exists,
-      readFileSync: readFile
-    })
-    const nodeMap = new Map(allNodes.map(n => [n.id, n]))
-    const readyNodes = topoSort(allNodes).filter(n => n.state === 'waiting' && areDepsResolved(n, nodeMap))
-
-    if (readyNodes.length === 0) {
-      log('run --auto: немає готових задач для запуску')
-      return 0
-    }
-
-    log(`run --auto: знайдено ${readyNodes.length} готових задач`)
-    let anyFailed = false
-
-    for (const node of readyNodes) {
-      const result = runTask(
-        node.path,
-        node.dir,
-        config,
-        root,
-        { actor: actor ?? undefined },
-        {
-          ...deps,
-          log,
-          execSync: execSyncFn
-        }
-      )
-      if (!result.ok && result.code !== 2) anyFailed = true
-    }
-
-    return anyFailed ? 1 : 0
+    return runAutoMode(
+      { mtDir, activeWorktrees, config, root, actor },
+      { log, readFile, readdir, exists },
+      { ...deps, log, execSync: execSyncFn }
+    )
   }
 
   // Запускаємо конкретну задачу
