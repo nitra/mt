@@ -3,7 +3,7 @@ type: Rust Module
 title: lib.rs
 resource: crates/mt-core/src/lib.rs
 docgen:
-  crc: 389e863b
+  crc: feec0784
   model: omlx/gemma-4-e2b-it-4bit
   score: 85
 ---
