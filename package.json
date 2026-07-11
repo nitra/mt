@@ -4,6 +4,7 @@
   "private": true,
   "workspaces": [
     "npm",
+    "relay",
     "crates/mt-napi"
   ],
   "type": "module",
