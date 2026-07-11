@@ -60,8 +60,7 @@ on node.state = failed:
 
 ## Update 2026-06-06
 
-- Інженер запускається лише після `actor: agent` з `result: failed`, а не після кожного failed-запису будь-якого актора.
-- Для уникнення нескінченних циклів передбачена одна інженерна спроба перед ескалацією до людини.
-- `auto_engineer: true` у `.n-cursor.json` вмикає автоматичне залучення інженера.
-- `budget_sec` у `task.md` трактується як загальний бюджет вузла для всіх спроб і акторів.
-- При `actor: engineer` з `result: failed` або вичерпанні `budget_sec` виконується `graph notify <path>`.
+- Інженерський repair-flow тригериться лише після `actor: agent` з `result: failed`, якщо `auto_engineer: true` у `.n-cursor.json`.
+- Для запобігання нескінченним петлям transcript фіксує одну інженерську спробу перед ескалацією до людини.
+- `budget_sec` у `task.md` є спільним бюджетом вузла для всіх акторів; при вичерпанні budget wrapper зупиняє виконання і викликає notify-flow.
+- Після `actor: engineer result: failed` система має виконати `graph notify <path>`; transcript не містить підтвердження додаткових retry-циклів.

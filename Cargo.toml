@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/mt-core", "crates/mt-cli", "crates/mt-napi"]
+members = ["crates/agent-protocol", "crates/mt-core", "crates/mt-cli", "crates/mt-napi"]
 resolver = "2"
 
 [workspace.package]
@@ -14,3 +14,6 @@ serde_json = { version = "1", features = ["preserve_order"] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 tempfile = "3"
 sha2 = "0.10"
+uuid = { version = "1", features = ["serde"] }
+ed25519-dalek = "2"
+base64 = "0.22"

@@ -284,6 +284,17 @@ ref: fact_001.md   ← при success
 - **Deps satisfaction:** dep має бути `resolved`; dep з відкритим аудитом → `blocked`; dep без fact → `blocked-invalid-dep` (warning).
 - **Composite:** стан визначається як в атомарного; коли всі діти resolved, wrapper пише синтетичну пару `run`/`fact` (actor: wrapper) — рекурсивно вгору.
 
+## Контекст агента
+
+Кожен run вузла — запуск агента: протокол поведінки — `.mt/system-prompt.md`, файли вузла — місія та дані:
+
+```
+context = [task.md] + [a.md|h.md] + [deps/] + [plan_*.md] +
+          [Prior attempts резюме] + [run-summary.md якщо є] + [audit-result_*.md]
+```
+
+**Prior attempts резюме** — два шари стискання невдач: wrapper компактує всі failure-рани у резюме (Completed/Blockers/Next Attempt); після `run_summary_threshold` failure-ранів — додатково `run-summary.md` (LLM-резюме, другий шар). Протягом роботи агент веде `run-draft.md`; при завершенні wrapper переносить секції у `run_NNN.md`.
+
 ## Два етапи виконання
 
 **Етап 1 — Планування.** Агент: inline-фаза `mt run` (пише `plan_NNN.md` першою фазою). Людина або форсоване перепланування: явний `mt plan`. Вихід: **atomic** → Етап 2 одразу (той самий run/claim/worktree); **composite** → `plan-review` → `mt spawn --approve` → діти.
