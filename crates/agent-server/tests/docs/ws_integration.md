@@ -3,9 +3,8 @@ type: Rust Module
 title: ws_integration.rs
 resource: crates/agent-server/tests/ws_integration.rs
 docgen:
-  crc: 4ef844ac
+  crc: 7c04ba91
   model: openai-codex/gpt-5.5
-  tier: cloud-avg
   score: 100
   issues: judge:inaccurate:0.99
   judgeModel: openai-codex/gpt-5.4-mini

@@ -3,9 +3,8 @@ type: Rust Module
 title: main.rs
 resource: crates/agent-cli/src/main.rs
 docgen:
-  crc: d354eccc
+  crc: cce14a87
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
-  tier: local-min
   score: 100
   issues: judge:inaccurate:0.99
   judgeModel: openai-codex/gpt-5.4-mini

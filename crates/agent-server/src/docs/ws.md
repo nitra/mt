@@ -3,9 +3,8 @@ type: Rust Module
 title: ws.rs
 resource: crates/agent-server/src/ws.rs
 docgen:
-  crc: 0f206ce1
+  crc: 89972db8
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini
