@@ -56,6 +56,7 @@ pub struct InteractiveRun {
     pub base_sha: String,
     pub worktree: PathBuf,
     repo_root: PathBuf,
+    tasks_root_rel: String,
     generation: u64,
     lease_sec: i64,
     actor: String,
@@ -125,6 +126,7 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
         base_sha,
         worktree,
         repo_root,
+        tasks_root_rel,
         generation: 1,
         lease_sec: config.lease_sec,
         actor: config.actor.clone(),
@@ -178,10 +180,16 @@ impl InteractiveRun {
         Ok(push.accepted)
     }
 
-    /// `mt done`: стрип `.nitra/` з індексу (інваріант git.md) → fenced
-    /// publish (rebase на origin/main + atomic push main / видалення
-    /// claim+run ref). Успіх → worktree прибирається.
-    pub fn done(self, retry_max: u32, base_ms: u64) -> Result<PublishOutcome, String> {
+    /// `mt done`: гейт `## Check` (контракт graph.md — fail → відмова
+    /// сигналу, run лишається живим) → стрип `.nitra/` з індексу (інваріант
+    /// git.md) → fenced publish (rebase на origin/main + atomic push main /
+    /// видалення claim+run ref). Успіх → worktree прибирається.
+    pub fn done(&self, retry_max: u32, base_ms: u64) -> Result<PublishOutcome, String> {
+        // ## Check вузла ганяється у worktree (cwd = корінь worktree —
+        // батько tasks-директорії, як у автономного wrapper-а).
+        let wt_tasks_dir = self.worktree.join(&self.tasks_root_rel);
+        mt_core::signal::run_check(&wt_tasks_dir.to_string_lossy(), &self.node)?;
+
         // Remote run ref стоїть на останньому запушеному ході (HEAD ДО
         // strip-коміту) — саме його очікує force-with-lease publish-у.
         let run_ref_sha = git(&self.worktree, &["rev-parse", "HEAD"])?;
@@ -353,6 +361,38 @@ mod tests {
             "{refs}"
         );
         assert!(!refs.contains("refs/mt/runs/"), "{refs}");
+    }
+
+    /// `## Check`-гейт: падаюча перевірка → відмова done (claim/worktree
+    /// живі); після виправлення той самий run публікується.
+    #[test]
+    fn failing_check_blocks_done_until_fixed() {
+        let fixture = Fixture::new();
+        // Вузол із Check: вимагає файл ready у директорії вузла.
+        std::fs::write(
+            fixture.work.path().join("mt/demo/task.md"),
+            "## Task\n\n## Check\n\ntest -f mt/demo/ready\n",
+        )
+        .unwrap();
+        sh(fixture.work.path(), &["add", "."]);
+        sh(fixture.work.path(), &["commit", "-q", "-m", "check"]);
+        sh(fixture.work.path(), &["push", "-q", "origin", "main"]);
+
+        let run = attach(&fixture.config(), "demo").unwrap();
+        run.commit_turn("{}\n", "mt: хід").unwrap();
+
+        let error = run.done(3, 10).unwrap_err();
+        assert!(error.contains("## Check failed"), "{error}");
+        assert!(
+            fixture.remote_refs().contains("refs/mt/claims/"),
+            "claim живий після відмови Check"
+        );
+
+        // Виправлення у worktree → done проходить.
+        std::fs::write(run.worktree.join("mt/demo/ready"), "ok").unwrap();
+        run.commit_turn("{}\n", "mt: виправлення").unwrap();
+        let outcome = run.done(3, 10).unwrap();
+        assert!(outcome.published, "{outcome:?}");
     }
 
     /// renew просуває claim SHA і лишає ownership за нами.

@@ -79,7 +79,7 @@ impl Fixture {
         sh(work.path(), &["push", "-q", "origin", "main"]);
 
         let responses: Vec<String> = responses.into_iter().map(String::from).collect();
-        let runner = AgentTurnRunner::new(move || {
+        let runner = AgentTurnRunner::new(move |_workdir| {
             Agent::new(
                 MockProvider::scripted(responses.iter().map(|text| Completion {
                     text: text.clone(),

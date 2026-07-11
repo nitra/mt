@@ -27,27 +27,37 @@ pub trait TurnRunner: Send + Sync {
     ) -> Result<String, AgentError>;
 }
 
+/// Фабрика агента кімнати: отримує workdir run-а (worktree run-а).
+type AgentFactory<P> = Box<dyn Fn(Option<&Path>) -> Agent<P> + Send + Sync>;
+
 /// Референсний runner: окремий `Agent` (своя історія) на кожну кімнату.
+/// Фабрика отримує workdir run-а (worktree) — агент кімнати будується з
+/// тулами, піскованими до нього.
 pub struct AgentTurnRunner<P: Provider> {
     agents: tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<Agent<P>>>>>,
-    factory: Box<dyn Fn() -> Agent<P> + Send + Sync>,
+    factory: AgentFactory<P>,
 }
 
 impl<P: Provider> AgentTurnRunner<P> {
-    /// `factory` створює агента кімнати (system prompt, tools, модель).
-    pub fn new(factory: impl Fn() -> Agent<P> + Send + Sync + 'static) -> Self {
+    /// `factory` створює агента кімнати (system prompt, tools за workdir,
+    /// модель).
+    pub fn new(factory: impl Fn(Option<&Path>) -> Agent<P> + Send + Sync + 'static) -> Self {
         Self {
             agents: tokio::sync::Mutex::new(HashMap::new()),
             factory: Box::new(factory),
         }
     }
 
-    async fn agent_for(&self, node_hash: &str) -> Arc<tokio::sync::Mutex<Agent<P>>> {
+    async fn agent_for(
+        &self,
+        node_hash: &str,
+        workdir: Option<&Path>,
+    ) -> Arc<tokio::sync::Mutex<Agent<P>>> {
         let mut agents = self.agents.lock().await;
         Arc::clone(
             agents
                 .entry(node_hash.to_string())
-                .or_insert_with(|| Arc::new(tokio::sync::Mutex::new((self.factory)()))),
+                .or_insert_with(|| Arc::new(tokio::sync::Mutex::new((self.factory)(workdir)))),
         )
     }
 }
@@ -58,10 +68,10 @@ impl<P: Provider> TurnRunner for AgentTurnRunner<P> {
         &self,
         node_hash: &str,
         user_text: &str,
-        _workdir: Option<&Path>,
+        workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
     ) -> Result<String, AgentError> {
-        let agent = self.agent_for(node_hash).await;
+        let agent = self.agent_for(node_hash, workdir).await;
         let mut agent = agent.lock().await;
         agent.run_turn(user_text, emit).await
     }
@@ -100,7 +110,7 @@ mod tests {
     /// AgentTurnRunner дає події ходу; історія кімнати зберігається між ходами.
     #[tokio::test]
     async fn agent_turn_runner_keeps_per_room_history() {
-        let runner = AgentTurnRunner::new(|| {
+        let runner = AgentTurnRunner::new(|_workdir| {
             Agent::new(
                 MockProvider::scripted([
                     Completion {
@@ -137,5 +147,52 @@ mod tests {
                 Event::AgentTextDone {},
             ]
         );
+    }
+
+    /// Фабрика з workdir: скриптований tool call `write_file` через
+    /// AgentTurnRunner реально створює файл у workdir (worktree run-а).
+    #[tokio::test]
+    async fn workdir_factory_gives_agent_sandboxed_file_tools() {
+        use agent_core::provider::ToolCallRequest;
+        use agent_core::register_workspace_tools;
+
+        let workdir = tempfile::tempdir().unwrap();
+        let runner = AgentTurnRunner::new(|workdir: Option<&Path>| {
+            let mut tools = ToolRegistry::new();
+            if let Some(root) = workdir {
+                register_workspace_tools(&mut tools, root.to_path_buf());
+            }
+            Agent::new(
+                MockProvider::scripted([
+                    Completion {
+                        text: String::new(),
+                        tool_calls: vec![ToolCallRequest {
+                            call_id: "c1".into(),
+                            name: "write_file".into(),
+                            args: serde_json::json!({
+                                "path": "mt/demo/fact_001.md",
+                                "content": "## Summary\nok\n"
+                            }),
+                        }],
+                    },
+                    Completion {
+                        text: "записав".into(),
+                        tool_calls: vec![],
+                    },
+                ]),
+                tools,
+                "mock",
+                "system",
+            )
+        });
+
+        let text = runner
+            .run_turn("room-1", "запиши fact", Some(workdir.path()), &|_| {})
+            .await
+            .unwrap();
+
+        assert_eq!(text, "записав");
+        let written = std::fs::read_to_string(workdir.path().join("mt/demo/fact_001.md")).unwrap();
+        assert_eq!(written, "## Summary\nok\n");
     }
 }

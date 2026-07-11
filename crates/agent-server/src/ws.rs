@@ -286,9 +286,13 @@ async fn handle_user_message(
     }
 }
 
-/// `mt done`-семантика: strip `.nitra/` → fenced publish → `Committed`.
+/// `mt done`-семантика: `## Check` → strip `.nitra/` → fenced publish →
+/// `Committed`. Відмова Check чи системна помилка НЕ знімає run — можна
+/// виправити й повторити done; run знімається при published (успіх) або
+/// fenced (claim втрачено — retry марний).
 async fn handle_done(state: &Arc<AppState>, session: &Arc<Session>, node: &str) {
-    let Some(run) = state.runs.lock().await.remove(node) else {
+    let mut runs = state.runs.lock().await;
+    let Some(run) = runs.get(node) else {
         publish_error(
             state,
             session,
@@ -298,6 +302,7 @@ async fn handle_done(state: &Arc<AppState>, session: &Arc<Session>, node: &str) 
     };
     match run.done(8, 250) {
         Ok(outcome) if outcome.published => {
+            runs.remove(node);
             state.sessions.publish(
                 session,
                 Event::Committed {
@@ -308,15 +313,20 @@ async fn handle_done(state: &Arc<AppState>, session: &Arc<Session>, node: &str) 
                 None,
             );
         }
-        Ok(outcome) => publish_error(
-            state,
-            session,
+        Ok(outcome) => {
             if outcome.fenced {
-                "done: claim втрачено під час publish — worktree лишився для debug".into()
-            } else {
-                "done: конкурентний publish виграв гонку — спробуйте пізніше".into()
-            },
-        ),
+                runs.remove(node);
+            }
+            publish_error(
+                state,
+                session,
+                if outcome.fenced {
+                    "done: claim втрачено під час publish — worktree лишився для debug".into()
+                } else {
+                    "done: конкурентний publish виграв гонку — спробуйте пізніше".into()
+                },
+            );
+        }
         Err(error) => publish_error(state, session, format!("done: {error}")),
     }
 }
