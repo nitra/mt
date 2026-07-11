@@ -2,12 +2,16 @@
 
 ## 2026-07-11
 
-* **Update**: підготовка до видалення frozen-контракту [mt.md](mt.md) (аудит покриття: майже все поглинуто главами) — останній унікальний нормативний зміст перенесено в канон:
+* **Deletion**: 🧊 frozen-контракт **`mt.md` (0.2.0) видалено** (задача `mt/m1-remove-frozen-contract`) — гейт із банера виконано: runtime-шар реалізує протокол v4 (`agent-protocol` + `agent-server`), унікальний зміст перенесено в глави (запис нижче). Канон — [architecture/](architecture/index.md); повний текст контракту — у git-історії. Посилання оновлено (index.md, architecture/index.md, overview.md); тест канонічної специфікації (`npm/lib/tests/docs.test.mjs`) переорієнтовано на всі md-файли npm/docs.
+* **Update**: M1, session host — `crates/agent-server` + `crates/agent-cli` (задача `mt/m1-agent-server`): збірка `Envelope` (seq призначає хост, ефемерні події поза журналом), `session.jsonl` із відновленням після рестарту (реплей, продовження seq/run_token), WS-хендшейк v4 (несумісна версія/токен → `Error` + Close), capability-фільтр (`PreviewScreenshot` → лише «preview»), реплей за `want_replay_from`, `TurnRunner`-міст до agent-core, port-file discovery (port + pid + sha256-хеш токена, token-файл 0600); CLI: `serve` (echo або OpenAI-compatible провайдер) і `attach <node>` (REPL). Поза скоупом заділу: relay, handoff, підписи у потоці, інтеграція graph-операцій через `mt … --json`.
+* **Update**: підготовка до видалення frozen-контракту `mt.md` (аудит покриття: майже все поглинуто главами) — останній унікальний нормативний зміст перенесено в канон:
   * [architecture/git.md](architecture/git.md) — розділ «Wrapper: запуск агента»: pipeline wrapper-а та ENV-контракт wrapper → агент (`MT_BUDGET_SEC` … `MT_CLAIM_GENERATION`, generation як fencing token);
   * [architecture/graph.md](architecture/graph.md) — розділ «Контекст агента»: композиція контексту run-а і дворівневе «Prior attempts резюме» (compact + `run-summary.md`);
   * [architecture/operations.md](architecture/operations.md) — канон baseline-дефолтів `.mt.json` явно закріплено за кодом (`CONFIG_DEFAULTS` у `mt-core`), глави лишаються довідником семантики.
   * Після цього видалення mt.md на M1 — механічне: прибрати файл і посилання (index.md, architecture/index.md, overview.md, `npm/lib/tests/docs.test.mjs`).
 * **Update**: започатковано **M1** — перший Rust-крейт [`crates/agent-protocol`](architecture/stack.md): типи `Envelope`/`Event` протоколу v4 (serde, forward-compat `Unknown`-варіант), хендшейк `ClientHello` (обовʼязкове `lang`) з перевіркою версії, Ed25519-підписи approvals (`ed25519-dalek`, доменний префікс + NUL-роздільник); без tokio/tauri (фізична межа зі stack.md).
+* **Update**: M1, другий крейт — `crates/agent-core` (задача `mt/m1-agent-core`): нейтральний provider-контракт (`CompletionRequest`/`Completion`, стрімінгові дельти; типи SDK не протікають у публічний API) з `MockProvider` для CI без мережі; реєстр tools зі schemars-derive схемами і заділом `register_external(...)` для MCP; agent loop `run_turn` — історія, ітерація tool calls зі стелею, емісія `AgentTextDelta`/`ToolCall`/`ToolResult`/`AgentTextDone` через callback (Envelope збиратиме agent-server). Транспорт `async-openai` і preview — наступні задачі.
+* **Update**: M1, транспорт провайдера (задача `mt/m1-provider-openai`) — модуль `provider_openai` в `agent-core`: `OpenAiProvider` через `async-openai` (features `chat-completion`+`rustls`), OpenAI-compatible Chat Completions зі стрімінгом (`base_url` конфігурується — omlx/Ollama/LM Studio/LiteLLM); SSE-парсинг — SDK, руками лише агрегація фрагментів tool calls за `index`; типи SDK не покидають модуль. Нейтральна історія розширена: assistant-хід із `tool_calls` зберігається перед tool-результатами (вимога OpenAI-протоколу).
 
 ## 2026-07-08
 
@@ -19,7 +23,7 @@
 
 * **Update**: курування корпусу — мінус половина legacy, плюс точкові розкриття:
   * видалено [review-response.md] (історичний артефакт: усі зауваження «Вирішено» і вшиті в mt.md) та [mt-impl.md] (реалізаційні деталі 0.2.x дублюються кодом і главами; наскрізний приклад перенесено);
-  * [mt.md](mt.md) — 🧊 frozen: не редагується, канон розвитку — architecture/; видалення — на M1;
+  * `mt.md` — 🧊 frozen: не редагується, канон розвитку — architecture/; видалення — на M1;
   * [architecture/graph.md](architecture/graph.md) — «Наскрізний приклад» у двох частинах: автономний граф (перенесено з mt-impl) + продовження в цільовій картині (attach failed-вузла, матеріалізація мовою, handoff, підпис із телефона);
   * [architecture/overview.md](architecture/overview.md) — глосарій (13 термінів → глави);
   * [architecture/operations.md](architecture/operations.md) — довідник ключів конфігурації (група → ключі → глава);
@@ -54,4 +58,4 @@
 
 ## 2026-06-11
 
-* **Creation**: початкова версійована редакція контракту **0.2.0** — [mt.md](mt.md): файловий контракт, derived-стани, CLI, fenced publish + CAS claims, retry ladder, аудит, security model.
+* **Creation**: початкова версійована редакція контракту **0.2.0** — `mt.md`: файловий контракт, derived-стани, CLI, fenced publish + CAS claims, retry ladder, аудит, security model.

@@ -1,0 +1,20 @@
+[package]
+name = "agent-core"
+description = "Ядро агента: agent loop, реєстр tools зі schemars-схемами, нейтральний provider-контракт"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "agent_core"
+
+[dependencies]
+agent-protocol = { path = "../agent-protocol" }
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+schemars.workspace = true
+tokio = { workspace = true, features = ["macros", "rt", "sync"] }
+async-openai = { version = "0.41", default-features = false, features = ["chat-completion", "rustls"] }
+futures = "0.3.32"
