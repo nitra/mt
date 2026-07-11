@@ -1,0 +1,79 @@
+crates/agent-protocol/src/docs/envelope.md
+  s_5850511ff7be99::t_4151ec56b2621d 1-40
+npm/docs/architecture/graph.md
+  s_5850511ff7be99::t_4151ec56b2621d 287-297
+package.json
+  s_5850511ff7be99::t_4151ec56b2621d 14,18
+.github/workflows/lint-text.yml
+  s_5850511ff7be99::t_4151ec56b2621d 63
+crates/agent-protocol/src/docs/index.md
+  s_5850511ff7be99::t_4151ec56b2621d 1-12
+Cargo.toml
+  s_5850511ff7be99::t_4151ec56b2621d 2,17-19
+npm/CHANGELOG.md
+  s_5850511ff7be99::t_4151ec56b2621d 3-8
+npm/package.json
+  s_5850511ff7be99::t_4151ec56b2621d 3
+crates/agent-protocol/src/approvals.rs
+  s_5850511ff7be99::t_4151ec56b2621d 1-183
+.github/workflows/lint-ga.yml
+  s_5850511ff7be99::t_4151ec56b2621d 43
+crates/agent-protocol/src/handshake.rs
+  s_5850511ff7be99::t_4151ec56b2621d 1-156
+docs/adr/engineer-agent-мета-рівень-repair-та-ескалація.md
+  s_5850511ff7be99::t_4151ec56b2621d 63-66
+crates/mt-napi/package.json
+  s_5850511ff7be99::t_4151ec56b2621d 3
+crates/agent-protocol/src/docs/lib.md
+  s_5850511ff7be99::t_4151ec56b2621d 1-30
+npm/docs/architecture/operations.md
+  s_5850511ff7be99::t_4151ec56b2621d 67-68
+crates/agent-protocol/src/docs/handshake.md
+  s_5850511ff7be99::t_4151ec56b2621d 1-41
+crates/mt-napi/.cargo/mutants.toml
+  s_5850511ff7be99::t_4151ec56b2621d 1-7
+.gitignore
+  s_5850511ff7be99::t_4151ec56b2621d 31-34
+crates/agent-protocol/src/docs/approvals.md
+  s_5850511ff7be99::t_4151ec56b2621d 1-38
+.cargo/mutants.toml
+  s_5850511ff7be99::t_4151ec56b2621d 1-7
+deny.toml
+  s_5850511ff7be99::t_4151ec56b2621d 1-31
+npm/docs/architecture/git.md
+  s_5850511ff7be99::t_4151ec56b2621d 64-69
+npm/docs/log.md
+  s_5850511ff7be99::t_4151ec56b2621d 3-11
+crates/agent-protocol/Cargo.toml
+  s_5850511ff7be99::t_4151ec56b2621d 1-18
+crates/agent-protocol/src/lib.rs
+  s_5850511ff7be99::t_4151ec56b2621d 1-23
+crates/mt-napi/CHANGELOG.md
+  s_5850511ff7be99::t_4151ec56b2621d 3-9
+docs/adr/260606-1358-фінальна-схема-outputs-md-2.md
+  s_5850511ff7be99::t_4151ec56b2621d 53-58
+crates/agent-protocol/src/envelope.rs
+  s_5850511ff7be99::t_4151ec56b2621d 1-303
+.cspell.json
+  s_5850511ff7be99::t_4151ec56b2621d 24,26,52,54,59,66,77,87,97,108,110,112,115,120-121,123,125,131-132,146,166-185,187,189-190,197,200,207,212,220,222,227,235-236,250,256,268-276,286,295,297,302,308,312,316,321,336,338-340,353,357,364,375-377
+Cargo.lock
+  s_5850511ff7be99::t_6764119ebf80ce 5-16,38-49,95,99-104,145-181,192-215,238-243,354-364,614-623,658-666,673-681,768-776,783-798,817,847-857,864-869,1129-1134
+bun.lock
+  s_5850511ff7be99::t_0f9aa100ec25cf 9,26,500
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.11",
+  "base_commit_sha": "1e67b30d1968754b983ef2a8cf3a0552b655591e",
+  "prompts": {},
+  "sessions": {
+    "s_5850511ff7be99": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbb9021c-ad21-49ba-8a7d-7a465048d580",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
