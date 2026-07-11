@@ -3,9 +3,8 @@ type: Rust Module
 title: graph_wiring.rs
 resource: crates/agent-server/tests/graph_wiring.rs
 docgen:
-  crc: 716d977c
+  crc: ab48c1f8
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   judgeModel: openai-codex/gpt-5.4-mini
 ---

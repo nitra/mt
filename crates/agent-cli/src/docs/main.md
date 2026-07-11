@@ -3,7 +3,7 @@ type: Rust Module
 title: main.rs
 resource: crates/agent-cli/src/main.rs
 docgen:
-  crc: cce14a87
+  crc: 0a00fdcf
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
   score: 100
   issues: judge:inaccurate:0.99

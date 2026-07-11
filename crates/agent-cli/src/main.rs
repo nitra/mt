@@ -11,7 +11,7 @@ use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use agent_core::{Agent, OpenAiProvider, ToolRegistry};
+use agent_core::{register_workspace_tools, Agent, OpenAiProvider, ToolRegistry};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
 use agent_server::{
     serve, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, GraphConfig, SessionHost,
@@ -89,10 +89,16 @@ async fn run_serve(
     api_key: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let runner: Arc<dyn TurnRunner> = match base_url {
-        Some(base_url) => Arc::new(AgentTurnRunner::new(move || {
+        Some(base_url) => Arc::new(AgentTurnRunner::new(move |workdir| {
+            // Файлові тули пісковані до worktree run-а (workdir є лише
+            // з graph-мостом).
+            let mut tools = ToolRegistry::new();
+            if let Some(root) = workdir {
+                register_workspace_tools(&mut tools, root.to_path_buf());
+            }
             Agent::new(
                 OpenAiProvider::new(base_url.clone(), api_key.clone()),
-                ToolRegistry::new(),
+                tools,
                 model.clone(),
                 "Ти — виконавець вузла графа задач MT.",
             )
