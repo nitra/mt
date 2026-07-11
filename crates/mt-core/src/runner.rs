@@ -293,6 +293,7 @@ pub fn run_node(tasks_dir: &str, node_path: &str) -> Result<RunOutcome, String> 
         generation: 1,
         base_sha: &base_sha,
         run_ref: &run_ref,
+        interactive: false,
     };
     let claim = acquire_claim(&repo_root, &hash, &fields)?;
     if !claim.accepted {
@@ -592,6 +593,7 @@ mod tests {
             generation: 1,
             base_sha: &base,
             run_ref: "refs/mt/runs/x/already-there",
+            interactive: false,
         };
         acquire_claim(repo.work.path(), &hash, &fields).unwrap();
 

@@ -230,6 +230,7 @@ mod tests {
             generation: 1,
             base_sha: &base,
             run_ref: "refs/mt/runs/x/tok1",
+            interactive: false,
         };
         let claim = acquire_claim(repo.work.path(), &hash, &fields).unwrap();
         assert!(claim.accepted);
@@ -301,6 +302,7 @@ mod tests {
             generation: 2,
             base_sha: &base,
             run_ref: "refs/mt/runs/x/tok2",
+            interactive: false,
         };
         crate::claims::renew_or_takeover_claim(
             repo.work.path(),

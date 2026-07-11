@@ -106,6 +106,7 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
         generation: 1,
         base_sha: &base_sha,
         run_ref: &run_ref,
+        interactive: true,
     };
     let claim = acquire_claim(&repo_root, &hash, &fields)?;
     if !claim.accepted {
@@ -171,6 +172,7 @@ impl InteractiveRun {
             generation: self.generation,
             base_sha: &self.base_sha.clone(),
             run_ref: &run_ref,
+            interactive: true,
         };
         let push =
             renew_or_takeover_claim(&self.repo_root, &self.node_hash, &self.claim_sha, &fields)?;
@@ -301,6 +303,17 @@ mod tests {
         );
         let head = super::git(&run.worktree, &["rev-parse", "HEAD"]).unwrap();
         assert_eq!(head, run.base_sha, "worktree від base_sha (origin/main)");
+
+        // Claim позначений інтерактивним (0.3.0, ADR 260711-2100).
+        let claim_yaml = super::git(
+            Path::new(fixture.origin.path()),
+            &[
+                "show",
+                &format!("refs/mt/claims/{}:.mt-claim.yml", run.node_hash),
+            ],
+        )
+        .unwrap();
+        assert!(claim_yaml.contains("interactive: true"), "{claim_yaml}");
     }
 
     /// Другий attach того самого вузла — claim-lost, не системна помилка.

@@ -99,6 +99,9 @@ pub struct ClaimInfo {
     pub lease_until: Option<String>,
     /// Lease прострочений (з урахуванням grace) → derived-стан `stalled`.
     pub expired: bool,
+    /// Інтерактивна сесія тримає claim; відсутнє поле (старі claim-и 0.2.x)
+    /// → `false` (ADR 260711-2100).
+    pub interactive: bool,
 }
 
 fn yaml_str(v: &Value, key: &str) -> Option<String> {
@@ -125,6 +128,10 @@ pub fn parse_claim(node_hash: &str, yaml: &str, grace_sec: i64, now: DateTime<Ut
         runner_id: yaml_str(&v, "runner_id"),
         expired: lease_expired(lease_until.as_deref(), grace_sec, now),
         lease_until,
+        interactive: v
+            .get("interactive")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     }
 }
 
@@ -158,12 +165,16 @@ pub struct ClaimFields<'a> {
     /// незалежно від наступних renewal/takeover (parent першого коміту).
     pub base_sha: &'a str,
     pub run_ref: &'a str,
+    /// Інтерактивна сесія (attach) замість автономного run-а (0.3.0,
+    /// git.md «Claim»: `token = session_id`, коротший lease; політики
+    /// watchdog/бюджетів мʼякші). ADR 260711-2100.
+    pub interactive: bool,
 }
 
 fn claim_yaml(f: &ClaimFields) -> String {
     format!(
         "schema_version: 1\nnode: {}\nactor: {}\nrunner_id: {}\nclaimed_at: {}\n\
-         lease_until: {}\ntoken: {}\ngeneration: {}\nbase_sha: {}\nrun_ref: {}\n",
+         lease_until: {}\ntoken: {}\ngeneration: {}\nbase_sha: {}\nrun_ref: {}\ninteractive: {}\n",
         f.node,
         f.actor,
         f.runner_id,
@@ -172,7 +183,8 @@ fn claim_yaml(f: &ClaimFields) -> String {
         f.token,
         f.generation,
         f.base_sha,
-        f.run_ref
+        f.run_ref,
+        f.interactive
     )
 }
 
@@ -368,7 +380,24 @@ mod tests {
             generation: 1,
             base_sha,
             run_ref: "refs/mt/runs/deadbeef/tok",
+            interactive: false,
         }
+    }
+
+    /// `interactive:` пишеться у claim YAML і читається назад; відсутність
+    /// поля (старі claim-и 0.2.x) → false (ADR 260711-2100).
+    #[test]
+    fn interactive_field_roundtrips_and_defaults_to_false() {
+        let now = chrono::Utc.with_ymd_and_hms(2026, 7, 11, 12, 0, 0).unwrap();
+        let mut f = fields("research/analyze", "t1", "abc");
+        f.interactive = true;
+        let yaml = claim_yaml(&f);
+        assert!(yaml.contains("interactive: true"), "{yaml}");
+        assert!(parse_claim("h", &yaml, 0, now).interactive);
+
+        // Старий claim без поля — консервативний false.
+        let legacy = "schema_version: 1\nnode: x\nlease_until: 2030-01-01T00:00:00Z\n";
+        assert!(!parse_claim("h", legacy, 0, now).interactive);
     }
 
     #[test]
