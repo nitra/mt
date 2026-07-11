@@ -32,38 +32,50 @@ pub struct ChatMessage {
     /// Для `Role::Tool` — id виклику, на який відповідає результат.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
+    /// Для `Role::Assistant` — tool calls цього ходу: OpenAI-compatible
+    /// протокол вимагає, щоб tool-результат посилався на попереднє
+    /// assistant-повідомлення з відповідним викликом.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tool_calls: Vec<ToolCallRequest>,
 }
 
 impl ChatMessage {
-    pub fn system(content: impl Into<String>) -> Self {
+    fn message(role: Role, content: impl Into<String>) -> Self {
         Self {
-            role: Role::System,
+            role,
             content: content.into(),
             tool_call_id: None,
+            tool_calls: Vec::new(),
         }
+    }
+
+    pub fn system(content: impl Into<String>) -> Self {
+        Self::message(Role::System, content)
     }
 
     pub fn user(content: impl Into<String>) -> Self {
-        Self {
-            role: Role::User,
-            content: content.into(),
-            tool_call_id: None,
-        }
+        Self::message(Role::User, content)
     }
 
     pub fn assistant(content: impl Into<String>) -> Self {
+        Self::message(Role::Assistant, content)
+    }
+
+    /// Assistant-хід, що просить tool calls (текст може бути порожнім).
+    pub fn assistant_with_tool_calls(
+        content: impl Into<String>,
+        tool_calls: Vec<ToolCallRequest>,
+    ) -> Self {
         Self {
-            role: Role::Assistant,
-            content: content.into(),
-            tool_call_id: None,
+            tool_calls,
+            ..Self::message(Role::Assistant, content)
         }
     }
 
     pub fn tool_result(call_id: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
-            role: Role::Tool,
-            content: content.into(),
             tool_call_id: Some(call_id.into()),
+            ..Self::message(Role::Tool, content)
         }
     }
 }
@@ -86,7 +98,7 @@ pub struct CompletionRequest {
 }
 
 /// Запит tool call-а від моделі.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ToolCallRequest {
     pub call_id: String,
     pub name: String,

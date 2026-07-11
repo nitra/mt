@@ -86,14 +86,20 @@ impl<P: Provider> Agent<P> {
 
         for _ in 0..TOOL_ITERATION_LIMIT {
             let completion = self.complete_once(emit).await?;
-            if !completion.text.is_empty() {
-                self.history
-                    .push(ChatMessage::assistant(completion.text.clone()));
-            }
             if completion.tool_calls.is_empty() {
+                if !completion.text.is_empty() {
+                    self.history
+                        .push(ChatMessage::assistant(completion.text.clone()));
+                }
                 emit(Event::AgentTextDone {});
                 return Ok(completion.text);
             }
+            // Assistant-хід із tool calls мусить лишитись в історії ПЕРЕД
+            // tool-результатами — вимога OpenAI-compatible протоколу.
+            self.history.push(ChatMessage::assistant_with_tool_calls(
+                completion.text.clone(),
+                completion.tool_calls.clone(),
+            ));
             for call in completion.tool_calls {
                 emit(Event::ToolCall {
                     call_id: call.call_id.clone(),
@@ -250,10 +256,15 @@ mod tests {
                 Event::AgentTextDone {},
             ]
         );
-        // Історія: system, user, tool-результат, фінальний assistant.
+        // Історія: system, user, assistant із tool calls (вимога
+        // OpenAI-compatible протоколу), tool-результат, фінальний assistant.
         let history = agent.history();
-        assert_eq!(history[2], ChatMessage::tool_result("c1", "\"hi\""));
-        assert_eq!(history[3], ChatMessage::assistant("done"));
+        assert_eq!(
+            history[2],
+            ChatMessage::assistant_with_tool_calls("", tool_call_completion().tool_calls)
+        );
+        assert_eq!(history[3], ChatMessage::tool_result("c1", "\"hi\""));
+        assert_eq!(history[4], ChatMessage::assistant("done"));
     }
 
     /// Невідомий tool → `ToolResult { ok: false }`, хід продовжується.

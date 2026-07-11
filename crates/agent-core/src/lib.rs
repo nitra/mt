@@ -8,6 +8,7 @@
 
 pub mod agent;
 pub mod provider;
+pub mod provider_openai;
 pub mod tools;
 
 pub use agent::{Agent, AgentError};
@@ -15,4 +16,5 @@ pub use provider::{
     ChatMessage, Completion, CompletionRequest, MockProvider, Provider, ProviderError, Role,
     StreamEvent, ToolCallRequest, ToolSpec,
 };
+pub use provider_openai::OpenAiProvider;
 pub use tools::{Tool, ToolError, ToolOutput, ToolRegistry};

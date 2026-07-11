@@ -16,3 +16,5 @@ serde_json.workspace = true
 async-trait.workspace = true
 schemars.workspace = true
 tokio = { workspace = true, features = ["macros", "rt", "sync"] }
+async-openai = { version = "0.41", default-features = false, features = ["chat-completion", "rustls"] }
+futures = "0.3.32"
