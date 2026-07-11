@@ -3,7 +3,7 @@ type: Rust Module
 title: runner.rs
 resource: crates/mt-core/src/runner.rs
 docgen:
-  crc: 1c9dac42
+  crc: 00301ab4
   model: omlx/gemma-4-e2b-it-4bit
   score: 95
 ---

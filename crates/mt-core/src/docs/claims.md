@@ -3,9 +3,8 @@ type: Rust Module
 title: claims.rs
 resource: crates/mt-core/src/claims.rs
 docgen:
-  crc: de80c547
+  crc: e001c819
   model: omlx/gemma-4-e2b-it-4bit
-  tier: local-min-retry
   score: 95
 ---
 

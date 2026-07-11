@@ -3,7 +3,7 @@ type: Rust Module
 title: publish.rs
 resource: crates/mt-core/src/publish.rs
 docgen:
-  crc: 8c85f04d
+  crc: e621ff5a
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---
