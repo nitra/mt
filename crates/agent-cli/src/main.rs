@@ -14,7 +14,8 @@ use std::sync::Arc;
 use agent_core::{Agent, OpenAiProvider, ToolRegistry};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
 use agent_server::{
-    serve, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, SessionHost, TurnRunner,
+    serve, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, GraphConfig, SessionHost,
+    TurnRunner,
 };
 use clap::{Parser, Subcommand};
 use futures::{SinkExt, StreamExt};
@@ -99,11 +100,18 @@ async fn run_serve(
         None => Arc::new(EchoTurnRunner),
     };
     let token = Uuid::new_v4().to_string();
-    let state = Arc::new(AppState {
-        sessions: SessionHost::new(dir.join("sessions"))?,
+    let mut state = AppState::new(
+        SessionHost::new(dir.join("sessions"))?,
         runner,
-        token: Some(token.clone()),
-    });
+        Some(token.clone()),
+    );
+    // Кімната = вузол графа, якщо запущено з кореня MT-проєкту (tasks-дир
+    // `mt/` поряд): UserMessage веде claim/worktree, /done — fenced publish.
+    let tasks_dir = std::env::current_dir()?.join("mt");
+    if tasks_dir.is_dir() {
+        state = state.with_graph(GraphConfig::new(tasks_dir));
+    }
+    let state = Arc::new(state);
     let (addr, handle) = serve(state, format!("127.0.0.1:{port}").parse()?).await?;
     let discovery = Discovery::new(dir);
     discovery.write(addr.port(), &token)?;
@@ -166,6 +174,13 @@ async fn run_attach(
             },
             line = stdin.next_line() => match line? {
                 Some(text) if !text.trim().is_empty() => {
+                    // Команди сесії: /done — fenced publish fact у main,
+                    // /release — пауза (відпустити claim).
+                    let event = match text.trim() {
+                        "/done" => Event::DoneSession {},
+                        "/release" => Event::ReleaseSession {},
+                        _ => Event::UserMessage { text, attachments: vec![], surface: Some("cli".into()) },
+                    };
                     let envelope = Envelope {
                         seq: 0,
                         ts: chrono_now(),
@@ -173,7 +188,7 @@ async fn run_attach(
                         run_token: Uuid::nil(),
                         device_id: Some(hello.device_id),
                         account_id: None,
-                        event: Event::UserMessage { text, attachments: vec![], surface: Some("cli".into()) },
+                        event,
                     };
                     stream.send(Message::text(serde_json::to_string(&envelope)?)).await?;
                 }
@@ -206,6 +221,14 @@ fn print_event(node: &str, envelope: &Envelope) {
         Event::ToolResult { ok, summary, .. } => {
             println!("{} {summary}", if *ok { "✓" } else { "✗" })
         }
+        Event::Committed {
+            commit_hash,
+            message,
+        } => println!("✔ {message} ({commit_hash})"),
+        Event::ClaimChanged {
+            holder_device_id: None,
+            ..
+        } => println!("⏸ claim відпущено — вузол вільний, журнал у run ref"),
         Event::Error { message } => eprintln!("помилка: {message}"),
         _ => {}
     }

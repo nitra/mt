@@ -7,6 +7,7 @@
 //! призначає власні), від хоста — `Envelope` стрічки. Повільний клієнт,
 //! що випав із broadcast-буфера, повертається реплеєм за `want_replay_from`.
 
+use std::collections::HashMap;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,15 +23,41 @@ use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
+use crate::graph::{self, GraphConfig, InteractiveRun};
 use crate::runner::TurnRunner;
-use crate::session::SessionHost;
+use crate::session::{Session, SessionHost};
 
-/// Стан сервера: сесії + виконавець ходів + очікуваний токен discovery.
+/// Стан сервера: сесії + виконавець ходів + очікуваний токен discovery +
+/// опційний graph-міст (без нього — транспортний режим, кімнати не
+/// прив'язані до вузлів графа).
 pub struct AppState {
     pub sessions: SessionHost,
     pub runner: Arc<dyn TurnRunner>,
     /// `None` — без перевірки (embedded/in-process клієнт).
     pub token: Option<String>,
+    graph: Option<GraphConfig>,
+    /// Активні інтерактивні run-и за node-ключем кімнати. Git-операції
+    /// швидкі й локальні — виконуються під локом (spawn_blocking — TODO
+    /// разом із віддаленими remote).
+    runs: tokio::sync::Mutex<HashMap<String, InteractiveRun>>,
+}
+
+impl AppState {
+    pub fn new(sessions: SessionHost, runner: Arc<dyn TurnRunner>, token: Option<String>) -> Self {
+        Self {
+            sessions,
+            runner,
+            token,
+            graph: None,
+            runs: tokio::sync::Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Увімкнути graph-міст: кімната = вузол, UserMessage веде claim/worktree.
+    pub fn with_graph(mut self, config: GraphConfig) -> Self {
+        self.graph = Some(config);
+        self
+    }
 }
 
 /// Маршрути хоста: єдина точка `/ws`.
@@ -158,44 +185,211 @@ async fn client_connection(mut socket: WebSocket, state: Arc<AppState>) {
     }
 }
 
-/// Кадр клієнта: Envelope з подією. `UserMessage` запускає хід агента;
-/// невідомі/непідтримувані події ігноруються (forward-compatibility).
+/// Кадр клієнта: Envelope з подією. `UserMessage` запускає хід агента
+/// (з graph-мостом — попередньо attach вузла); `DoneSession`/
+/// `ReleaseSession` завершують run; невідомі події ігноруються
+/// (forward-compatibility).
 async fn handle_client_frame(state: &Arc<AppState>, frame: &str, device_id: Option<Uuid>) {
     let Ok(envelope) = serde_json::from_str::<Envelope>(frame) else {
         return;
     };
-    let Event::UserMessage { text, .. } = envelope.event else {
+    let node = envelope.node_hash.clone();
+    let Ok(session) = state.sessions.get_or_open(&node) else {
         return;
     };
-    let Ok(session) = state.sessions.get_or_open(&envelope.node_hash) else {
-        return;
-    };
+    match envelope.event {
+        Event::UserMessage { text, .. } => {
+            handle_user_message(
+                state,
+                &session,
+                &node,
+                &text,
+                device_id,
+                envelope.account_id,
+            )
+            .await;
+        }
+        Event::DoneSession {} => handle_done(state, &session, &node).await,
+        Event::ReleaseSession {} => handle_release(state, &session, &node).await,
+        _ => {}
+    }
+}
+
+fn publish_error(state: &AppState, session: &Session, message: String) {
+    state
+        .sessions
+        .publish(session, Event::Error { message }, None, None);
+}
+
+async fn handle_user_message(
+    state: &Arc<AppState>,
+    session: &Arc<Session>,
+    node: &str,
+    text: &str,
+    device_id: Option<Uuid>,
+    account_id: Option<Uuid>,
+) {
     state.sessions.publish(
-        &session,
+        session,
         Event::UserMessage {
-            text: text.clone(),
+            text: text.to_string(),
             attachments: vec![],
             surface: None,
         },
         device_id,
-        envelope.account_id,
+        account_id,
     );
+
+    // Graph-міст: перший хід вузла — attach (CAS claim + worktree + run ref).
+    let workdir = if let Some(config) = &state.graph {
+        let mut runs = state.runs.lock().await;
+        if !runs.contains_key(node) {
+            match graph::attach(config, node) {
+                Ok(run) => {
+                    runs.insert(node.to_string(), run);
+                    spawn_renewal(Arc::clone(state), node.to_string(), config.lease_sec);
+                }
+                Err(error) => {
+                    // Без claim хід не виконується — вузол зайнято/недоступно.
+                    publish_error(state, session, error);
+                    return;
+                }
+            }
+        }
+        runs.get(node).map(|run| run.worktree.clone())
+    } else {
+        None
+    };
+
     let sessions = &state.sessions;
     let emit = |event: Event| {
-        sessions.publish(&session, event, None, None);
+        sessions.publish(session, event, None, None);
     };
     if let Err(error) = state
         .runner
-        .run_turn(&envelope.node_hash, &text, &emit)
+        .run_turn(node, text, workdir.as_deref(), &emit)
         .await
     {
-        sessions.publish(
-            &session,
-            Event::Error {
-                message: error.to_string(),
-            },
-            None,
-            None,
-        );
+        publish_error(state, session, error.to_string());
     }
+
+    // Кожен хід — коміт (файли + журнал сесії) → push run ref (git.md).
+    if state.graph.is_some() {
+        let journal = journal_jsonl(session);
+        let runs = state.runs.lock().await;
+        if let Some(run) = runs.get(node) {
+            let message = format!("mt: {node} інтерактивний хід");
+            if let Err(error) = run.commit_turn(&journal, &message) {
+                publish_error(state, session, format!("run ref push: {error}"));
+            }
+        }
+    }
+}
+
+/// `mt done`-семантика: strip `.nitra/` → fenced publish → `Committed`.
+async fn handle_done(state: &Arc<AppState>, session: &Arc<Session>, node: &str) {
+    let Some(run) = state.runs.lock().await.remove(node) else {
+        publish_error(
+            state,
+            session,
+            format!("done: вузол {node} без активного run"),
+        );
+        return;
+    };
+    match run.done(8, 250) {
+        Ok(outcome) if outcome.published => {
+            state.sessions.publish(
+                session,
+                Event::Committed {
+                    commit_hash: outcome.result_sha.unwrap_or_default(),
+                    message: format!("mt: {node} done — fact опубліковано"),
+                },
+                None,
+                None,
+            );
+        }
+        Ok(outcome) => publish_error(
+            state,
+            session,
+            if outcome.fenced {
+                "done: claim втрачено під час publish — worktree лишився для debug".into()
+            } else {
+                "done: конкурентний publish виграв гонку — спробуйте пізніше".into()
+            },
+        ),
+        Err(error) => publish_error(state, session, format!("done: {error}")),
+    }
+}
+
+/// Пауза: CAS-delete claim; журнал лишається в run ref базою відновлення.
+async fn handle_release(state: &Arc<AppState>, session: &Arc<Session>, node: &str) {
+    let Some(run) = state.runs.lock().await.remove(node) else {
+        publish_error(
+            state,
+            session,
+            format!("release: вузол {node} без активного run"),
+        );
+        return;
+    };
+    let generation = run.generation();
+    match run.release() {
+        Ok(_) => {
+            state.sessions.publish(
+                session,
+                Event::ClaimChanged {
+                    node_hash: node.to_string(),
+                    holder_device_id: None,
+                    lease_until: None,
+                    generation,
+                },
+                None,
+                None,
+            );
+        }
+        Err(error) => publish_error(state, session, format!("release: {error}")),
+    }
+}
+
+/// Журнал сесії у форматі `session.jsonl` (по рядку на Envelope).
+fn journal_jsonl(session: &Session) -> String {
+    session
+        .replay_from(0)
+        .iter()
+        .map(|envelope| serde_json::to_string(envelope).unwrap())
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n"
+}
+
+/// Фоновий renewal lease (~кожну третину lease). Run зник із мапи
+/// (done/release) → задача завершується; невдалий renewal → Error у
+/// сесію, run прибирається (claim втрачено).
+fn spawn_renewal(state: Arc<AppState>, node: String, lease_sec: i64) {
+    let period = std::time::Duration::from_secs((lease_sec / 3).max(1) as u64);
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(period);
+        interval.tick().await; // перший tick — миттєвий, пропускаємо
+        loop {
+            interval.tick().await;
+            let mut runs = state.runs.lock().await;
+            let Some(run) = runs.get_mut(&node) else {
+                return;
+            };
+            match run.renew() {
+                Ok(true) => {}
+                Ok(false) | Err(_) => {
+                    runs.remove(&node);
+                    drop(runs);
+                    if let Ok(session) = state.sessions.get_or_open(&node) {
+                        publish_error(
+                            &state,
+                            &session,
+                            format!("claim-lost: lease вузла {node} не подовжено"),
+                        );
+                    }
+                    return;
+                }
+            }
+        }
+    });
 }

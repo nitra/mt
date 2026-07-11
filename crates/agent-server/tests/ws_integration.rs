@@ -29,11 +29,11 @@ async fn start_server(dir: &tempfile::TempDir, responses: Vec<&str>) -> String {
             "system",
         )
     });
-    let state = Arc::new(AppState {
-        sessions: SessionHost::new(dir.path().to_path_buf()).unwrap(),
-        runner: Arc::new(runner),
-        token: Some("test-token".into()),
-    });
+    let state = Arc::new(AppState::new(
+        SessionHost::new(dir.path().to_path_buf()).unwrap(),
+        Arc::new(runner),
+        Some("test-token".into()),
+    ));
     let (addr, _handle) = serve(state, "127.0.0.1:0".parse().unwrap()).await.unwrap();
     format!("ws://{addr}/ws")
 }

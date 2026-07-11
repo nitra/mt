@@ -69,6 +69,10 @@ ApprovalResponse { request_id, approved, signature: bytes }
                  // Ed25519-підпис пристрою над (request_id, approved, node_hash, run_token);
                  // пристрій може належати ІНШОМУ акаунту з роллю approver+
 CancelTurn       {}
+DoneSession      {}   // завершити run: хост виконує mt done-семантику —
+                      // fenced publish fact у main (v4-мінор)
+ReleaseSession   {}   // пауза/відпустити: CAS-delete claim; журнал лишається
+                      // в run ref базою відновлення (v4-мінор)
 
 // хост → клієнти
 AgentTextDelta   { text }
