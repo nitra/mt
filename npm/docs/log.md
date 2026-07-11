@@ -1,5 +1,14 @@
 # Журнал змін документації
 
+## 2026-07-11
+
+* **Update**: підготовка до видалення frozen-контракту [mt.md](mt.md) (аудит покриття: майже все поглинуто главами) — останній унікальний нормативний зміст перенесено в канон:
+  * [architecture/git.md](architecture/git.md) — розділ «Wrapper: запуск агента»: pipeline wrapper-а та ENV-контракт wrapper → агент (`MT_BUDGET_SEC` … `MT_CLAIM_GENERATION`, generation як fencing token);
+  * [architecture/graph.md](architecture/graph.md) — розділ «Контекст агента»: композиція контексту run-а і дворівневе «Prior attempts резюме» (compact + `run-summary.md`);
+  * [architecture/operations.md](architecture/operations.md) — канон baseline-дефолтів `.mt.json` явно закріплено за кодом (`CONFIG_DEFAULTS` у `mt-core`), глави лишаються довідником семантики.
+  * Після цього видалення mt.md на M1 — механічне: прибрати файл і посилання (index.md, architecture/index.md, overview.md, `npm/lib/tests/docs.test.mjs`).
+* **Update**: започатковано **M1** — перший Rust-крейт [`crates/agent-protocol`](architecture/stack.md): типи `Envelope`/`Event` протоколу v4 (serde, forward-compat `Unknown`-варіант), хендшейк `ClientHello` (обовʼязкове `lang`) з перевіркою версії, Ed25519-підписи approvals (`ed25519-dalek`, доменний префікс + NUL-роздільник); без tokio/tauri (фізична межа зі stack.md).
+
 ## 2026-07-08
 
 * **Update**: [architecture/retro.md](architecture/retro.md) — цикл замкнено третьою ланкою «застосування → вимірювання → визнання»: прийнята оптимізація матеріалізується immutable-файлом `innovation_NNN.md` із зафіксованим baseline (зріз ledger по скоупу на момент прийняття); impact-зрізи — другий режим retro-прогону (Δwall/Δcost/Δfailed_streak з порогом confidence `impact_min_runs`); заохочення: людям — видимий профіль вкладу з доказами (платформа дає вимірювання, не компенсацію), агентам — відбір (підтверджені патерни стають default і отримують більше задач свого класу); межа приватності — «пропозиції приватні, впровадження публічне»; anti-gaming: клас задач + поріг runs + штатний аудит. Roadmap M5 отримав другий demo-критерій (impact).

@@ -64,6 +64,8 @@ mt members <root-node>
 
 Per-node override: `mt/<node>/.mt-override.json`. `schema_version` — перше поле; невідома/відсутня → fail closed.
 
+Baseline-ключі 0.2.0 з конкретними дефолт-значеннями канонічно живуть у коді (`CONFIG_DEFAULTS` у `mt-core`, обгортка `npm/lib/core/config.mjs`; згенерований довідник — `npm/lib/core/docs/config.md`); глави документують семантику ключів — мапа нижче.
+
 ### Довідник ключів (де що описано)
 
 | Група ключів | Ключі | Глава |
