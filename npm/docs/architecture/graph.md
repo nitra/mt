@@ -133,6 +133,8 @@ retry_ladder:          # опціонально; per-node override
 interactive: false     # НОВЕ: true → вузол очікує інтерактивну сесію (див. runtime.md)
 ```
 
+`model_tier` — джерело істини виконавця. За вбудованого Claude-шляху runner мапить його через `.mt.json` `model_map` (MIM/AVG/MAX → Claude-модель). Якщо `.mt.json` задає `node_executor` (зовнішній екзекутор вузла, [runtime.md](runtime.md#зовнішній-екзекутор-вузла-node_executor)), той самий tier передається екзекутору як env `MT_MODEL_TIER` — консюмер мапить його на власний пул моделей (тир-канон обов'язковий і для fix-вузлів). Схема `a.md` при цьому не змінюється: делегування — глобальне рішення `.mt.json`, а не per-node прапор.
+
 #### `h.md`
 
 ```yaml
