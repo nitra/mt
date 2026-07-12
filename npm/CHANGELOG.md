@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.24.1] - 2026-07-12
+
+### Changed
+
+- feat(M2): ws-рівень кооперативного handoff — seed_journal + AppState API (#40)
+
 ## [0.24.0] - 2026-07-12
 
 ### Changed
