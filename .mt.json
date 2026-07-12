@@ -21,5 +21,6 @@
     "MAX": "claude-opus-4-8"
   },
   "stale_worktree_min": 30,
-  "system_prompt": ".mt/system-prompt.md"
+  "system_prompt": ".mt/system-prompt.md",
+  "node_executor": "npx @nitra/cursor mt-run-node"
 }
