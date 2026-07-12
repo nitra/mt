@@ -51,6 +51,9 @@ export class RelayCore {
    * Клієнтський Envelope у кімнату. Viewer НЕ шле клієнтські події
    * (access.md: «relay відхиляє клієнтські події viewer-а, включно з
    * CancelTurn»); host+ і approver шлють (approver — ApprovalResponse).
+   * Кадр отримує `from_host` за роллю ПРИСТРОЮ (не з кадру клієнта —
+   * спуфінг виключено): host-ехо несе seq, який призначає хост; тонкі
+   * клієнти рендерять лише host-кадри, а міст хоста ігнорує їх (анти-цикл).
    * @param {object} device запис пристрою
    * @param {string} root кореневий вузол задачі
    * @param {object} envelope конверт (opaque — далі роутінгових полів не парситься)
@@ -63,7 +66,7 @@ export class RelayCore {
     if (!roleAtLeast(role, 'approver')) {
       throw new Error('envelope відхилено: роль viewer не шле клієнтські події')
     }
-    this.rooms.publish(root, { kind: 'envelope', envelope })
+    this.rooms.publish(root, { kind: 'envelope', envelope, from_host: device.role === 'host' })
   }
 
   /**

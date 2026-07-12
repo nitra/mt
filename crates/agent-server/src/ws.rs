@@ -189,7 +189,11 @@ async fn client_connection(mut socket: WebSocket, state: Arc<AppState>) {
 /// (з graph-мостом — попередньо attach вузла); `DoneSession`/
 /// `ReleaseSession` завершують run; невідомі події ігноруються
 /// (forward-compatibility).
-async fn handle_client_frame(state: &Arc<AppState>, frame: &str, device_id: Option<Uuid>) {
+pub(crate) async fn handle_client_frame(
+    state: &Arc<AppState>,
+    frame: &str,
+    device_id: Option<Uuid>,
+) {
     let Ok(envelope) = serde_json::from_str::<Envelope>(frame) else {
         return;
     };

@@ -139,6 +139,25 @@ describe('буфер кімнати', () => {
   })
 })
 
+describe('from_host', () => {
+  test('ставиться relay-єм за роллю пристрою, не з кадру клієнта', () => {
+    const hostDevice = store.deviceByToken(
+      store.registerDevice(accounts.owner.account_id, {
+        name: 'host-mac',
+        role: 'host',
+        pubkey: 'pk-host'
+      }).device_token
+    )
+    const inbox = []
+    core.subscribe(devices.viewer, 'root-1', collectInto(inbox))
+
+    core.clientEnvelope(hostDevice, 'root-1', { seq: 1 })
+    core.clientEnvelope(devices.approver, 'root-1', { seq: 0 })
+
+    expect(inbox.map(f => f.from_host)).toEqual([true, false])
+  })
+})
+
 describe('pubkeys', () => {
   test('лише пристрої approver+; доступ лише учасникам', () => {
     const pubkeys = core.pubkeys(devices.viewer, 'root-1')

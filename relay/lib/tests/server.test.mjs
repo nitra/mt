@@ -88,7 +88,7 @@ test('hello → subscribe → envelope доходить підписнику; р
   publisher.send(JSON.stringify({ kind: 'envelope', root: 'root-1', envelope: { seq: 0, node_hash: 'demo' } }))
   const [raw] = await once(subscriber, 'message')
   const delivered = JSON.parse(String(raw))
-  expect(delivered).toEqual({ kind: 'envelope', envelope: { seq: 0, node_hash: 'demo' } })
+  expect(delivered).toEqual({ kind: 'envelope', envelope: { seq: 0, node_hash: 'demo' }, from_host: true })
   subscriber.close()
 
   // Реконект: буфер кімнати реплеїться одразу після subscribe.
@@ -98,7 +98,8 @@ test('hello → subscribe → envelope доходить підписнику; р
   const [replayRaw] = await once(reconnected, 'message')
   expect(JSON.parse(String(replayRaw))).toEqual({
     kind: 'envelope',
-    envelope: { seq: 0, node_hash: 'demo' }
+    envelope: { seq: 0, node_hash: 'demo' },
+    from_host: true
   })
   reconnected.close()
   publisher.close()
