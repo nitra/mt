@@ -31,6 +31,23 @@ timestamp: 2026-07-07
 - Мінус: залежність agent-server від Bun у PATH — фіксується в discovery/preflight (`mt doctor`-перевірка).
 - Перегляд рішення (перенесення контракту в Rust) — окремий ADR, лише після стабілізації протоколу.
 
+## Цільова пакетна межа npm: contract / napi / mt
+
+Поділ монорепи на три npm-пакети всередині `npm/` фіксує межі «контракт ↔ рушій ↔ клієнт» до того, як думати про окремі репозиторії. Принцип: контракт (файловий стан у git + канонічний JSON скану) — єдиний інтерфейс між шарами; Rust (`mt-core`) — єдина імплементація контракту, JS-шар — не друга імплементація, а тонкий клієнт/оркестратор поверх Rust-рушія.
+
+| Пакет | Тека | Роль |
+| --- | --- | --- |
+| `@7n/mt-contract` | `npm/contract/` | нормативний контракт: JSON Schema (frontmatter `task.md`, sentinel-файли, layout `deps/`; канонічний вихід скану `TaskNode[]`; плаский вихід адаптера `TaskInfo[]`) + `states.md` (нормативний зріз станів, ADR лишаються історією) + golden-fixtures + conformance-runner |
+| `@7n/mt-napi` | `npm/napi/` | npm-межа Rust-імплементації: build-обгортка napi-аддона (переїзд із `crates/mt-napi`) |
+| `@7n/mt` | `npm/mt/` | CLI/оркестратор: dlopen рушія, адаптація JSON, топосорт, UX (переїзд теперішнього `npm/*`) |
+
+`crates/mt-core`/`mt-cli` лишаються Cargo-бібліотеками в `crates/` — їхня npm-межа саме `npm/napi` + платформні підпакети. Обидва споживачі conformance-suite перевіряються незалежно: Rust-тести ганяють скан по `fixtures/cases/*/mt/` проти `expected/scan.json` («правильно сканую ФС»), JS-тести годують `scan.json` у flatten/kebab-адаптер проти `expected/flat.json` без запуску Rust («правильно адаптую») — спільна точка істини — fixtures.
+
+- **Міграція** — чотири окремі PR: add-only `npm/contract` → conformance у Rust CI → rename `npm/*` → `npm/mt/` → rename `crates/mt-napi` → `npm/napi/`; rename-PR без функціональних змін. Чеклист місць зі шляхами (`native.mjs` REPO_ROOT, `hk.pkl`, `knip.json`, `npm-publish.yml`, workspaces) — у git-історії spec-а (PR #22/#45).
+- **Не змінюється:** семантика станів і формат файлового контракту (лише фіксується), модель доставки платформних артефактів (`optionalDependencies` з точним pin), порядок пошуку аддона.
+- **Критерій виносу в окремі git-репо:** `@7n/mt-contract` без major/minor кілька релізів `@7n/mt` поспіль; до того — атомарні PR у монорепо.
+- **Відкриті питання:** назви тек (`mt`/`napi` vs `cli`/`engine`); чи включати схему агентського протоколу (`agent-protocol`) у contract одразу чи після стабілізації suite.
+
 ## Фізичні межі (перевіряються в CI)
 
 - `agent-core` НЕ залежить від `tauri` — фейл CI, якщо `cargo tree -p agent-core -e normal` містить `tauri`;
