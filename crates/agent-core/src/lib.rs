@@ -7,12 +7,14 @@
 //! типи конкретного SDK не протікають у публічний API.
 
 pub mod agent;
+pub mod approval_tool;
 pub mod fs_tools;
 pub mod provider;
 pub mod provider_openai;
 pub mod tools;
 
 pub use agent::{Agent, AgentError};
+pub use approval_tool::{gate_tools, ApprovalRequester};
 pub use fs_tools::register_workspace_tools;
 pub use provider::{
     ChatMessage, Completion, CompletionRequest, MockProvider, Provider, ProviderError, Role,

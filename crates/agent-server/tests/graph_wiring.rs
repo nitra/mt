@@ -6,10 +6,11 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use agent_core::provider::{Completion, MockProvider};
-use agent_core::{Agent, ToolRegistry};
+use agent_core::provider::{Completion, MockProvider, ToolCallRequest};
+use agent_core::{gate_tools, register_workspace_tools, Agent, ApprovalRequester, ToolRegistry};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::{serve, AgentTurnRunner, AppState, GraphConfig, SessionHost};
+use agent_server::approvals_gate::request_approval;
+use agent_server::{serve, AgentTurnRunner, AppState, ApprovalGate, GraphConfig, SessionHost};
 use chrono::Utc;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
@@ -64,6 +65,20 @@ impl Fixture {
     /// bare-origin + робочий клон із вузлом `mt/demo` + WS-сервер із
     /// graph-мостом і MockProvider-агентом (по одній відповіді на хід).
     async fn start(responses: Vec<&str>) -> Self {
+        let completions = responses
+            .into_iter()
+            .map(|text| Completion {
+                text: text.into(),
+                tool_calls: vec![],
+            })
+            .collect();
+        Self::start_with(completions, false).await
+    }
+
+    /// Як [`Fixture::start`], але зі скриптованими completion-ами і
+    /// (опційно) approval-гейтом на `write_file` (dev-політика: непідписаний
+    /// ApprovalResponse приймається — pubkey-кешу немає).
+    async fn start_with(completions: Vec<Completion>, gate_write: bool) -> Self {
         let origin = tempfile::tempdir().unwrap();
         sh(origin.path(), &["init", "--bare", "-q", "-b", "main"]);
         let work = tempfile::tempdir().unwrap();
@@ -78,26 +93,48 @@ impl Fixture {
         );
         sh(work.path(), &["push", "-q", "origin", "main"]);
 
-        let responses: Vec<String> = responses.into_iter().map(String::from).collect();
-        let runner = AgentTurnRunner::new(move |_workdir| {
+        let state_dir = tempfile::tempdir().unwrap();
+        let sessions = Arc::new(SessionHost::new(state_dir.path().to_path_buf()).unwrap());
+        let approvals = Arc::new(ApprovalGate::default());
+        let factory_sessions = Arc::clone(&sessions);
+        let factory_gate = Arc::clone(&approvals);
+        let runner = AgentTurnRunner::new(move |context| {
+            let mut tools = ToolRegistry::new();
+            if let Some(root) = &context.workdir {
+                register_workspace_tools(&mut tools, root.clone());
+            }
+            if gate_write {
+                let sessions = Arc::clone(&factory_sessions);
+                let gate = Arc::clone(&factory_gate);
+                let node = context.node.clone();
+                let requester: ApprovalRequester = Arc::new(move |action, diff| {
+                    let sessions = Arc::clone(&sessions);
+                    let gate = Arc::clone(&gate);
+                    let node = node.clone();
+                    Box::pin(async move {
+                        let Ok(receiver) = request_approval(&sessions, &gate, &node, action, diff)
+                        else {
+                            return false;
+                        };
+                        matches!(
+                            tokio::time::timeout(std::time::Duration::from_secs(10), receiver)
+                                .await,
+                            Ok(Ok(true))
+                        )
+                    })
+                });
+                gate_tools(&mut tools, &["write_file"], requester);
+            }
             Agent::new(
-                MockProvider::scripted(responses.iter().map(|text| Completion {
-                    text: text.clone(),
-                    tool_calls: vec![],
-                })),
-                ToolRegistry::new(),
+                MockProvider::scripted(completions.clone()),
+                tools,
                 "mock",
                 "system",
             )
         });
-        let state_dir = tempfile::tempdir().unwrap();
         let state = Arc::new(
-            AppState::new(
-                SessionHost::new(state_dir.path().to_path_buf()).unwrap(),
-                Arc::new(runner),
-                None,
-            )
-            .with_graph(GraphConfig::new(work.path().join("mt"))),
+            AppState::from_parts(sessions, approvals, Arc::new(runner), None)
+                .with_graph(GraphConfig::new(work.path().join("mt"))),
         );
         let (addr, _handle) = serve(state, "127.0.0.1:0".parse().unwrap()).await.unwrap();
         Self {
@@ -169,6 +206,110 @@ fn user_message(node: &str, text: &str) -> Message {
     )
 }
 
+/// Читає стрічку до першої події, що задовольняє предикат.
+async fn next_matching(stream: &mut WsStream, matches_event: impl Fn(&Event) -> bool) -> Envelope {
+    loop {
+        let envelope: Envelope = next_json(stream).await;
+        if matches_event(&envelope.event) {
+            return envelope;
+        }
+    }
+}
+
+/// Скрипт ходу: write_file → фінальний текст.
+fn write_file_completions(final_text: &str) -> Vec<Completion> {
+    vec![
+        Completion {
+            text: String::new(),
+            tool_calls: vec![ToolCallRequest {
+                call_id: "c1".into(),
+                name: "write_file".into(),
+                args: serde_json::json!({
+                    "path": "mt/demo/note.md",
+                    "content": "від агента"
+                }),
+            }],
+        },
+        Completion {
+            text: final_text.into(),
+            tool_calls: vec![],
+        },
+    ]
+}
+
+/// Mid-run approval-гейт (access.md): гейтований write_file чекає
+/// ApprovalRequest → approve (dev, непідписаний) → tool виконується.
+#[tokio::test(flavor = "multi_thread")]
+async fn gated_write_file_executes_after_approval() {
+    let fixture = Fixture::start_with(write_file_completions("записано"), true).await;
+    let mut stream = connect(&fixture.url).await;
+
+    stream.send(user_message("demo", "запиши")).await.unwrap();
+    let request = next_matching(&mut stream, |e| matches!(e, Event::ApprovalRequest { .. })).await;
+    let Event::ApprovalRequest {
+        request_id, action, ..
+    } = request.event
+    else {
+        unreachable!()
+    };
+    assert!(action.contains("write_file"), "{action}");
+
+    stream
+        .send(client_event(
+            "demo",
+            Event::ApprovalResponse {
+                request_id,
+                approved: true,
+                signature: vec![],
+            },
+        ))
+        .await
+        .unwrap();
+
+    let result = next_matching(&mut stream, |e| matches!(e, Event::ToolResult { .. })).await;
+    let Event::ToolResult { ok, summary, .. } = result.event else {
+        unreachable!()
+    };
+    assert!(ok, "{summary}");
+    assert!(summary.contains("write"), "{summary}");
+    let done = next_matching(&mut stream, |e| matches!(e, Event::AgentTextDone {})).await;
+    assert_eq!(done.event, Event::AgentTextDone {});
+}
+
+/// Deny → ToolResult { ok: false } із «відхилено», внутрішній tool не
+/// виконується; хід завершується штатно.
+#[tokio::test(flavor = "multi_thread")]
+async fn gated_write_file_denied_yields_failed_tool_result() {
+    let fixture = Fixture::start_with(write_file_completions("не судилось"), true).await;
+    let mut stream = connect(&fixture.url).await;
+
+    stream.send(user_message("demo", "запиши")).await.unwrap();
+    let request = next_matching(&mut stream, |e| matches!(e, Event::ApprovalRequest { .. })).await;
+    let Event::ApprovalRequest { request_id, .. } = request.event else {
+        unreachable!()
+    };
+
+    stream
+        .send(client_event(
+            "demo",
+            Event::ApprovalResponse {
+                request_id,
+                approved: false,
+                signature: vec![],
+            },
+        ))
+        .await
+        .unwrap();
+
+    let result = next_matching(&mut stream, |e| matches!(e, Event::ToolResult { .. })).await;
+    let Event::ToolResult { ok, summary, .. } = result.event else {
+        unreachable!()
+    };
+    assert!(!ok);
+    assert!(summary.contains("відхилено"), "{summary}");
+    next_matching(&mut stream, |e| matches!(e, Event::AgentTextDone {})).await;
+}
+
 /// Повний M1-цикл: UserMessage → attach (claim ref) → хід → журнал у run
 /// ref → DoneSession → fenced publish (main без .nitra/, refs прибрані).
 #[tokio::test(flavor = "multi_thread")]
@@ -183,21 +324,31 @@ async fn user_message_attaches_and_done_publishes() {
     assert_eq!(done_event.event, Event::AgentTextDone {});
 
     // Attach відбувся: claim ref і run ref на remote, журнал у run ref.
+    // Кадри обробляються у spawned-тасках — коміт журналу завершується
+    // ПІСЛЯ стріму подій ходу, тому чекаємо з ретраєм.
+    let mut journal = String::new();
+    for _ in 0..50 {
+        let refs = fixture.remote_refs();
+        if let Some(run_ref) = refs
+            .lines()
+            .find(|line| line.contains("refs/mt/runs/"))
+            .and_then(|line| line.split_whitespace().nth(1))
+        {
+            let out = Command::new("git")
+                .arg("-C")
+                .arg(fixture.origin.path())
+                .args(["show", &format!("{run_ref}:.nitra/session.jsonl")])
+                .output()
+                .unwrap();
+            if out.status.success() {
+                journal = String::from_utf8_lossy(&out.stdout).into_owned();
+                break;
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
     let refs = fixture.remote_refs();
     assert!(refs.contains("refs/mt/claims/"), "{refs}");
-    assert!(refs.contains("refs/mt/runs/"), "{refs}");
-    let run_ref = refs
-        .lines()
-        .find(|line| line.contains("refs/mt/runs/"))
-        .unwrap()
-        .split_whitespace()
-        .nth(1)
-        .unwrap()
-        .to_string();
-    let journal = sh_out(
-        fixture.origin.path(),
-        &["show", &format!("{run_ref}:.nitra/session.jsonl")],
-    );
     assert!(
         journal.contains("почни"),
         "журнал сесії у run ref: {journal}"

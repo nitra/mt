@@ -32,12 +32,12 @@ use crate::session::{Session, SessionHost};
 /// опційний graph-міст (без нього — транспортний режим, кімнати не
 /// прив'язані до вузлів графа).
 pub struct AppState {
-    pub sessions: SessionHost,
+    pub sessions: Arc<SessionHost>,
     pub runner: Arc<dyn TurnRunner>,
     /// `None` — без перевірки (embedded/in-process клієнт).
     pub token: Option<String>,
     /// Гейт підписаних approvals (access.md); pubkey-кеш наповнює relay-міст.
-    pub approvals: ApprovalGate,
+    pub approvals: Arc<ApprovalGate>,
     graph: Option<GraphConfig>,
     /// Активні інтерактивні run-и за node-ключем кімнати. Git-операції
     /// швидкі й локальні — виконуються під локом (spawn_blocking — TODO
@@ -47,11 +47,27 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(sessions: SessionHost, runner: Arc<dyn TurnRunner>, token: Option<String>) -> Self {
+        Self::from_parts(
+            Arc::new(sessions),
+            Arc::new(ApprovalGate::default()),
+            runner,
+            token,
+        )
+    }
+
+    /// Конструктор зі спільними частинами — коли sessions/gate потрібні
+    /// runner-фабриці ДО створення AppState (approval-гейт тулів).
+    pub fn from_parts(
+        sessions: Arc<SessionHost>,
+        approvals: Arc<ApprovalGate>,
+        runner: Arc<dyn TurnRunner>,
+        token: Option<String>,
+    ) -> Self {
         Self {
             sessions,
             runner,
             token,
-            approvals: ApprovalGate::default(),
+            approvals,
             graph: None,
             runs: tokio::sync::Mutex::new(HashMap::new()),
         }
@@ -65,22 +81,7 @@ impl AppState {
         action: String,
         diff: Option<String>,
     ) -> std::io::Result<tokio::sync::oneshot::Receiver<bool>> {
-        let session = self.sessions.get_or_open(node)?;
-        let request_id = Uuid::new_v4().to_string();
-        let receiver = self
-            .approvals
-            .register(&request_id, node, session.run_token);
-        self.sessions.publish(
-            &session,
-            Event::ApprovalRequest {
-                request_id,
-                action,
-                diff,
-            },
-            None,
-            None,
-        );
-        Ok(receiver)
+        crate::approvals_gate::request_approval(&self.sessions, &self.approvals, node, action, diff)
     }
 
     /// Увімкнути graph-міст: кімната = вузол, UserMessage веде claim/worktree.
@@ -193,7 +194,14 @@ async fn client_connection(mut socket: WebSocket, state: Arc<AppState>) {
         tokio::select! {
             incoming = socket.recv() => match incoming {
                 Some(Ok(Message::Text(text))) => {
-                    handle_client_frame(&state, text.as_str(), Some(hello.device_id)).await;
+                    // Кадр обробляється у окремій задачі: хід агента може
+                    // чекати ApprovalResponse із ЦЬОГО Ж зʼєднання —
+                    // інлайн-обробка дала б deadlock.
+                    let state = Arc::clone(&state);
+                    let device_id = hello.device_id;
+                    tokio::spawn(async move {
+                        handle_client_frame(&state, text.as_str(), Some(device_id)).await;
+                    });
                 }
                 Some(Ok(Message::Close(_))) | None => break,
                 Some(Ok(_)) => {}

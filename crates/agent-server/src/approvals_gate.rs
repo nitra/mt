@@ -106,6 +106,33 @@ impl ApprovalGate {
     }
 }
 
+/// Mid-run approval-запит (access.md, перший гейт): публікує
+/// `ApprovalRequest` у кімнату вузла і повертає one-shot із верифікованим
+/// вердиктом. Вільна функція — щоб runner-фабрика могла гейтити тули без
+/// циклу залежностей із AppState.
+pub fn request_approval(
+    sessions: &crate::session::SessionHost,
+    gate: &ApprovalGate,
+    node: &str,
+    action: String,
+    diff: Option<String>,
+) -> std::io::Result<oneshot::Receiver<bool>> {
+    let session = sessions.get_or_open(node)?;
+    let request_id = Uuid::new_v4().to_string();
+    let receiver = gate.register(&request_id, node, session.run_token);
+    sessions.publish(
+        &session,
+        agent_protocol::Event::ApprovalRequest {
+            request_id,
+            action,
+            diff,
+        },
+        None,
+        None,
+    );
+    Ok(receiver)
+}
+
 #[cfg(test)]
 mod tests {
     use agent_protocol::{sign_approval, SigningKey};

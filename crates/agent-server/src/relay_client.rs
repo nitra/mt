@@ -127,7 +127,13 @@ async fn handle_incoming(state: &Arc<AppState>, text: &str) {
         .get("device_id")
         .and_then(Value::as_str)
         .and_then(|raw| Uuid::parse_str(raw).ok());
-    handle_client_frame(state, &envelope.to_string(), device_id).await;
+    // Окрема задача: хід агента може чекати ApprovalResponse із relay —
+    // інлайн-обробка заблокувала б читання наступних кадрів (deadlock).
+    let state = Arc::clone(state);
+    let raw_envelope = envelope.to_string();
+    tokio::spawn(async move {
+        handle_client_frame(&state, &raw_envelope, device_id).await;
+    });
 }
 
 /// Кадр `pubkeys` від relay → оновлення pubkey-кешу гейту approvals.

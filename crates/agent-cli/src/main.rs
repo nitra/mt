@@ -11,11 +11,14 @@ use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use agent_core::{register_workspace_tools, Agent, OpenAiProvider, ToolRegistry};
+use agent_core::{
+    gate_tools, register_workspace_tools, Agent, ApprovalRequester, OpenAiProvider, ToolRegistry,
+};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
+use agent_server::approvals_gate::request_approval;
 use agent_server::{
-    serve, spawn_relay_bridge, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, GraphConfig,
-    RelayBridgeConfig, SessionHost, TurnRunner,
+    serve, spawn_relay_bridge, AgentTurnRunner, AppState, ApprovalGate, Discovery, EchoTurnRunner,
+    GraphConfig, RelayBridgeConfig, SessionHost, TurnRunner,
 };
 use clap::{Parser, Subcommand};
 use futures::{SinkExt, StreamExt};
@@ -116,29 +119,53 @@ async fn run_serve(
     api_key: String,
     relay: Option<RelayBridgeConfig>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let sessions = Arc::new(SessionHost::new(dir.join("sessions"))?);
+    let gate = Arc::new(ApprovalGate::default());
     let runner: Arc<dyn TurnRunner> = match base_url {
-        Some(base_url) => Arc::new(AgentTurnRunner::new(move |workdir| {
-            // Файлові тули пісковані до worktree run-а (workdir є лише
-            // з graph-мостом).
-            let mut tools = ToolRegistry::new();
-            if let Some(root) = workdir {
-                register_workspace_tools(&mut tools, root.to_path_buf());
-            }
-            Agent::new(
-                OpenAiProvider::new(base_url.clone(), api_key.clone()),
-                tools,
-                model.clone(),
-                "Ти — виконавець вузла графа задач MT.",
-            )
-        })),
+        Some(base_url) => {
+            let approval_sessions = Arc::clone(&sessions);
+            let approval_gate = Arc::clone(&gate);
+            Arc::new(AgentTurnRunner::new(move |context| {
+                // Файлові тули пісковані до worktree run-а (workdir є лише
+                // з graph-мостом); write_file — за approval-гейтом
+                // (access.md, mid-run tool approval; таймаут 120s → відмова).
+                let mut tools = ToolRegistry::new();
+                if let Some(root) = &context.workdir {
+                    register_workspace_tools(&mut tools, root.clone());
+                    let sessions = Arc::clone(&approval_sessions);
+                    let gate = Arc::clone(&approval_gate);
+                    let node = context.node.clone();
+                    let requester: ApprovalRequester = Arc::new(move |action, diff| {
+                        let sessions = Arc::clone(&sessions);
+                        let gate = Arc::clone(&gate);
+                        let node = node.clone();
+                        Box::pin(async move {
+                            let Ok(receiver) =
+                                request_approval(&sessions, &gate, &node, action, diff)
+                            else {
+                                return false;
+                            };
+                            matches!(
+                                tokio::time::timeout(std::time::Duration::from_secs(120), receiver)
+                                    .await,
+                                Ok(Ok(true))
+                            )
+                        })
+                    });
+                    gate_tools(&mut tools, &["write_file"], requester);
+                }
+                Agent::new(
+                    OpenAiProvider::new(base_url.clone(), api_key.clone()),
+                    tools,
+                    model.clone(),
+                    "Ти — виконавець вузла графа задач MT.",
+                )
+            }))
+        }
         None => Arc::new(EchoTurnRunner),
     };
     let token = Uuid::new_v4().to_string();
-    let mut state = AppState::new(
-        SessionHost::new(dir.join("sessions"))?,
-        runner,
-        Some(token.clone()),
-    );
+    let mut state = AppState::from_parts(sessions, gate, runner, Some(token.clone()));
     // Кімната = вузол графа, якщо запущено з кореня MT-проєкту (tasks-дир
     // `mt/` поряд): UserMessage веде claim/worktree, /done — fenced publish.
     let tasks_dir = std::env::current_dir()?.join("mt");
