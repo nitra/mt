@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0] - 2026-07-12
+
+### Changed
+
+- Додано RelayCore для управління кімнатами, ролями та membership API
+- Додано RelayCore, Rooms та Server для управління кімнатами та членством
+- Додано відстеження `from_host` для клієнтських envelope
+- Додано обробку pubkeys-кадру у server.mjs та його тест
+
 ## [0.6.0] - 2026-07-12
 
 ### Changed
