@@ -3,9 +3,8 @@ type: Rust Module
 title: relay_bridge.rs
 resource: crates/agent-server/tests/relay_bridge.rs
 docgen:
-  crc: c0f4b892
+  crc: b58a8d9c
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini
