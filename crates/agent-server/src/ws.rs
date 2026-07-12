@@ -254,8 +254,23 @@ pub(crate) async fn handle_client_frame(
                 .approvals
                 .resolve(&request_id, approved, &signature, device_id)
             {
-                // Верифікований вердикт журналюється у сесію (аудит-трейл).
-                Ok(_) => {
+                // Верифікований вердикт журналюється у сесію (аудит-трейл)
+                // і матеріалізується у run вузла (## Approvals при done).
+                Ok(verdict) => {
+                    let line = format!(
+                        "- {} device={} approved={verdict} request={request_id} signature={}",
+                        chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                        device_id
+                            .map(|id| id.to_string())
+                            .unwrap_or_else(|| "local".into()),
+                        signature
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>(),
+                    );
+                    if let Some(run) = state.runs.lock().await.get_mut(&node) {
+                        run.add_approval(line);
+                    }
                     state.sessions.publish(
                         &session,
                         Event::ApprovalResponse {

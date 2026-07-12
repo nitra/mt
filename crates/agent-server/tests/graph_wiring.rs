@@ -221,6 +221,9 @@ async fn user_message_attaches_and_done_publishes() {
         &["ls-tree", "-r", "--name-only", "main"],
     );
     assert!(!main_files.contains(".nitra"), "{main_files}");
+    // Контрактні артефакти спроби синтезовано (graph.md).
+    assert!(main_files.contains("mt/demo/run_001.md"), "{main_files}");
+    assert!(main_files.contains("mt/demo/fact_001.md"), "{main_files}");
 }
 
 /// ReleaseSession: пауза — claim знято (ClaimChanged без holder-а),

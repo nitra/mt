@@ -51,7 +51,7 @@ fn now_iso() -> String {
 }
 
 /// NNN наступної спроби: `count(run_*.md) + 1` (спека, «NNN source»).
-pub(crate) fn next_run_nnn(dir: &Path) -> u64 {
+pub fn next_run_nnn(dir: &Path) -> u64 {
     let count = fs::read_dir(dir)
         .map(|entries| {
             entries
@@ -165,7 +165,7 @@ pub(crate) fn write_run(
 }
 
 /// Як [`write_run`], але з додатковими frontmatter-рядками (wall_sec тощо).
-pub(crate) fn write_run_fm(
+pub fn write_run_fm(
     dir: &Path,
     nnn: &str,
     actor: &str,
