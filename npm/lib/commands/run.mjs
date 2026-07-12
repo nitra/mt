@@ -7,7 +7,7 @@
  * 3. Обчислює NNN = count(run_*.md) + 1
  * 4. git worktree add .worktrees/<task-epoch>/ (atomic mkdir lock — EEXIST = skip)
  * 5. ENV: MT_RUN_NNN, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT, MT_TASK_PATH,
- *    MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER
+ *    MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER, MT_ATTEMPT, MT_RETRY_STRATEGY
  * 6. Спавнить subprocess: вбудований Claude-agent-шлях АБО (якщо `.mt.json`
  *    `node_executor` заданий) — зовнішня команда-екзекутор (див. нижче)
  * 7. Після exit: fact_NNN.md є → result:success; else → result:failed
@@ -26,10 +26,26 @@
  * Контракт команди-екзекутора:
  * - argv: `<node_executor...> <node-dir>` — абсолютний шлях директорії вузла у worktree;
  * - env: MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER, MT_TASK_PATH,
- *   MT_RUN_NNN, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT;
+ *   MT_RUN_NNN, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT, MT_ATTEMPT, MT_RETRY_STRATEGY;
  * - stdout: остання непорожня лінія = JSON `{ applied: bool, touchedFiles: string[] }`;
  * - exit 0 → runner ганяє ## Check (якщо є) і за успіху синтезує `fact_NNN.md`
  *   (екзекутор його НЕ пише) → штатний merge/publish; ненульовий exit → failed-run штатно.
+ *
+ * ## Retry ladder (MT_ATTEMPT ескалація)
+ *
+ * `MT_ATTEMPT` = failed_streak + 1 (той самий підрахунок, що й Rust `failed_streak`
+ * у mt-core: max(run_NNN) - max(fact_NNN)). Дефолтна драбина (не per-node override —
+ * `retry_ladder` у a.md поки не реалізовано, YAML-схема graph.md розходиться з
+ * актуальним section-форматом a.md):
+ *   - attempt 1 — базова спроба, `MT_RETRY_STRATEGY=baseline`, тир вузла як є;
+ *   - attempt 2 — `MT_RETRY_STRATEGY=diagnose-first`, той самий тир (сигнал
+ *     екзекутору: спершу зʼясувати причину провалу, а не одразу правити);
+ *   - attempt 3+ — `MT_RETRY_STRATEGY=alternative-approach`, `MT_MODEL_TIER`
+ *     підвищується на один щабель (MIM→AVG→MAX, капується на MAX). Коротша
+ *     драбина повторює останній щабель (attempt>=3 завжди alternative-approach).
+ * `MT_ATTEMPT`/`MT_RETRY_STRATEGY`/ескальований `MT_MODEL_TIER` йдуть в обидва шляхи
+ * (зовнішній екзекутор і вбудований claude-шлях, де стратегія додатково потрапляє
+ * у сам prompt як коротка retry-підказка).
  *
  * Зворотна сумісність: `node_executor` відсутній → поточний Claude-шлях без змін.
  *
@@ -44,7 +60,7 @@ import { join, relative } from 'node:path'
 import { cwd as processCwd } from 'node:process'
 
 import { buildMarkdown, parseFrontMatter } from '../core/frontmatter.mjs'
-import { nextRunNNN } from '../core/nnn.mjs'
+import { latestFactNNN, nextRunNNN } from '../core/nnn.mjs'
 import { loadConfig, resolveModelByTier, resolveMtDir, resolveWorktreesDir } from '../core/config.mjs'
 import { scanTasks, topoSort, areDepsResolved } from '../core/scanner.mjs'
 import { createWorktree, listActiveWorktrees, mergeWorktree, makeWorktreeName } from '../core/worktree.mjs'
@@ -115,6 +131,112 @@ function resolveExecutor(taskDir, fm, config, io) {
   const tierFromFlag = readModelTierFromFlag(taskDir, io.readFile, io.exists)
   const modelTier = tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG'
   return { executorType, modelTier, model: resolveModelByTier(config, modelTier) }
+}
+
+/** Тир-драбина за зростанням (для ескалації на attempt 3, §graph.md retry ladder). */
+const TIER_ORDER = ['MIM', 'AVG', 'MAX']
+
+/**
+ * Кількість поспіль execution-failure ранів після останнього прийнятого fact
+ * (той самий підрахунок, що й Rust `failed_streak` у mt-core/src/lib.rs —
+ * max(run_NNN) - max(fact_NNN)). `nnn` — NNN рангу, що ЗАРАЗ запускається, тож
+ * `Number(nnn) - 1` = найвищий існуючий run до цього виклику.
+ * @param {string} nnn NNN рангу, що запускається (padded, напр. '003')
+ * @param {string | null} latestFact NNN останнього fact або null
+ * @returns {number} кількість поспіль провалів (>= 0)
+ */
+function failedStreakFor(nnn, latestFact) {
+  const priorRuns = Number(nnn) - 1
+  const factNNN = latestFact ? Number(latestFact) : 0
+  return Math.max(0, priorRuns - factNNN)
+}
+
+/**
+ * Номер спроби вузла (graph.md retry ladder: `MT_ATTEMPT = failed_streak + 1`).
+ * @param {string} nnn NNN рангу, що запускається
+ * @param {string | null} latestFact NNN останнього fact або null
+ * @returns {number} номер спроби (>= 1)
+ */
+function computeAttempt(nnn, latestFact) {
+  return failedStreakFor(nnn, latestFact) + 1
+}
+
+/**
+ * Дефолтна retry-драбина (graph.md): 1 — базова; 2 — diagnose-first (той самий тир,
+ * фідбек попереднього провалу через прапорець стратегії); 3+ — alternative-approach
+ * (тир підвищується на один щабель, капується на MAX). Коротша драбина за замовчуванням
+ * повторює останній щабель (attempt>=3 завжди alternative-approach).
+ * @param {number} attempt номер спроби (>= 1)
+ * @returns {'baseline' | 'diagnose-first' | 'alternative-approach'} стратегія рангу
+ */
+function retryStrategyFor(attempt) {
+  if (attempt <= 1) return 'baseline'
+  if (attempt === 2) return 'diagnose-first'
+  return 'alternative-approach'
+}
+
+/**
+ * Ефективний тир для рангу: на attempt>=3 підвищує тир на один щабель (капується на
+ * MAX); attempt 1-2 лишають тир незмінним (diagnose-first — це зміна фідбеку/промпту,
+ * не моделі). Невідомий тир (поза TIER_ORDER) не ескалюється.
+ * @param {string} baseTier базовий тир вузла ('MIM'|'AVG'|'MAX')
+ * @param {number} attempt номер спроби (>= 1)
+ * @returns {string} ефективний тир для цього рангу
+ */
+function escalateTier(baseTier, attempt) {
+  if (attempt < 3) return baseTier
+  const idx = TIER_ORDER.indexOf(baseTier)
+  if (idx === -1) return baseTier
+  return TIER_ORDER[Math.min(idx + 1, TIER_ORDER.length - 1)]
+}
+
+/**
+ * Резолвить повний retry-ladder стан рангу з NNN, який ось-ось запускається.
+ * @param {string} taskDir директорія задачі (main tree)
+ * @param {string} nnn NNN рангу, що запускається
+ * @param {string} baseTier базовий тир вузла (з a.md/frontmatter, до ескалації)
+ * @param {object} config конфігурація (для resolveModelByTier на ескальованому тирі)
+ * @param {(dir: string) => string[]} readdir ін'єктована функція readdir
+ * @returns {{ attempt: number, retryStrategy: 'baseline'|'diagnose-first'|'alternative-approach',
+ *   effectiveTier: string, effectiveModel: string }} повний retry-ladder стан
+ */
+function resolveRetryLadder(taskDir, nnn, baseTier, config, readdir) {
+  const attempt = computeAttempt(nnn, latestFactNNN(taskDir, readdir))
+  const retryStrategy = retryStrategyFor(attempt)
+  const effectiveTier = escalateTier(baseTier, attempt)
+  const effectiveModel = resolveModelByTier(config, effectiveTier)
+  return { attempt, retryStrategy, effectiveTier, effectiveModel }
+}
+
+/**
+ * Текст-підказка стратегії ранга для вбудованого claude-prompt-у (attempt 1 → порожньо,
+ * jsdoc-текст іде англійською — сам prompt для claude CLI англомовний).
+ * @param {number} attempt номер спроби (>= 1)
+ * @param {'baseline' | 'diagnose-first' | 'alternative-approach'} retryStrategy стратегія ранга
+ * @returns {string} рядок-підказка (порожній на attempt 1) для дописування у prompt
+ */
+function buildRetryHint(attempt, retryStrategy) {
+  if (attempt <= 1) return ''
+  const advice =
+    retryStrategy === 'diagnose-first'
+      ? 'First diagnose why the previous attempt failed before making changes.'
+      : 'Try a genuinely different approach than the previous attempt(s).'
+  return `\n\nAttempt ${attempt} (previous attempt(s) failed the ## Check gate). Strategy: ${retryStrategy}. ${advice}`
+}
+
+/**
+ * Повідомлення про старт рангу: на attempt 1 — базовий рядок; на attempt 2+ додає
+ * зведення retry-ladder стану (attempt/стратегія/ефективний тир).
+ * @param {string} taskPath відносний шлях задачі
+ * @param {string} nnn NNN рангу
+ * @param {string} actor 'agent' | 'human' | 'a'
+ * @param {{ attempt: number, retryStrategy: string, effectiveTier: string }} ladder retry-ladder стан
+ * @returns {string} готове повідомлення для log()
+ */
+function formatRunStartLog(taskPath, nnn, actor, ladder) {
+  const suffix =
+    ladder.attempt > 1 ? `, attempt=${ladder.attempt} (${ladder.retryStrategy}, tier=${ladder.effectiveTier})` : ''
+  return `run: запускаємо задачу "${taskPath}" (NNN=${nnn}, actor=${actor}${suffix})`
 }
 
 /**
@@ -298,7 +420,7 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const budgetSec = Number(fm.budget_sec) || config.default_budget_sec
   const budgetHardSec = Number(fm.budget_hard_sec) || budgetSec * config.budget_hard_sec_multiplier
 
-  const { executorType, modelTier, model } = resolveExecutor(taskDir, fm, config, { readFile, exists })
+  const { executorType, modelTier } = resolveExecutor(taskDir, fm, config, { readFile, exists })
 
   const actor = opts.actor ?? executorType
   // Точка розширення: зовнішній екзекутор замінює Claude-шлях лише для agent-actor.
@@ -308,13 +430,23 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   // 3. Обчислюємо NNN
   const nnn = nextRunNNN(taskDir, readdir)
 
+  // Retry ladder (graph.md): attempt = failed_streak + 1 (той самий підрахунок, що й
+  // Rust failed_streak у mt-core); attempt>=3 підвищує ефективний тир на один щабель.
+  const { attempt, retryStrategy, effectiveTier, effectiveModel } = resolveRetryLadder(
+    taskDir,
+    nnn,
+    modelTier,
+    config,
+    readdir
+  )
+
   // 4. Створюємо worktree (atomic mkdir lock)
   const worktreesDir = resolveWorktreesDir(config, root)
   const worktreeName = makeWorktreeName(taskPath)
   const worktreePath = join(worktreesDir, worktreeName)
   const worktreeTaskDir = join(worktreePath, relative(root, taskDir))
 
-  log(`run: запускаємо задачу "${taskPath}" (NNN=${nnn}, actor=${actor})`)
+  log(formatRunStartLog(taskPath, nnn, actor, { attempt, retryStrategy, effectiveTier }))
 
   if (opts.dryRun) {
     log(`run: --dry-run — пропускаємо фактичний запуск`)
@@ -347,7 +479,9 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
     MT_NODE_DIR: worktreeTaskDir,
     MT_WORKTREE: worktreePath,
     MT_RUN_TOKEN: runToken,
-    MT_MODEL_TIER: modelTier
+    MT_MODEL_TIER: effectiveTier,
+    MT_ATTEMPT: String(attempt),
+    MT_RETRY_STRATEGY: retryStrategy
   }
 
   // 6. Спавнимо subprocess (spawnSync — синхронно)
@@ -360,13 +494,16 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
     log(`run: делегуємо вузол зовнішньому екзекутору "${nodeExecutor}"`)
     executorOutcome = spawnNodeExecutor(nodeExecutor, worktreeTaskDir, env, timeoutMs, spawnSyncFn, log)
   } else if (actor === 'agent' || actor === 'a') {
-    // Запускаємо claude CLI у worktree
+    // Запускаємо claude CLI у worktree. На attempt 2+ додаємо коротку retry-підказку
+    // (diagnose-first / alternative-approach) — той самий сигнал, що йде зовнішньому
+    // екзекутору через MT_RETRY_STRATEGY, для симетрії вбудованого шляху.
+    const retryHint = buildRetryHint(attempt, retryStrategy)
     const claudeArgs = [
       '--model',
-      model,
+      effectiveModel,
       '--no-session',
       '-p',
-      `You are executing task: ${taskPath}\nWorking directory: ${worktreeTaskDir}\nRun NNN: ${nnn}\nBudget: ${budgetSec}s\n\nRead task.md and plan_*.md, execute the task, write fact_${nnn}.md with results.`
+      `You are executing task: ${taskPath}\nWorking directory: ${worktreeTaskDir}\nRun NNN: ${nnn}\nBudget: ${budgetSec}s${retryHint}\n\nRead task.md and plan_*.md, execute the task, write fact_${nnn}.md with results.`
     ]
     spawnSyncFn('claude', claudeArgs, {
       cwd: worktreeTaskDir,

@@ -3,7 +3,7 @@ type: JS Module
 title: run.mjs
 resource: npm/lib/commands/run.mjs
 docgen:
-  crc: 9dd0d011
+  crc: 074f6a8e
   model: omlx/gemma-4-e2b-it-4bit
   score: 95
 ---
@@ -22,7 +22,7 @@ docgen:
 
 Встановлює змінні середовища, включаючи `MT_RUN_NNN`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, та `MT_TASK_PATH`.
 
-Запускає `subprocess`, який використовує `claude` або `mt run --actor auditor`.
+Запускає `subprocess`: вбудований `claude` CLI (actor=agent за замовчуванням) АБО, якщо `.mt.json` задає `node_executor`, зовнішню команду-екзекутор, якій MT делегує застосування змін (claim/lease/worktree/budget/`## Check`/publish лишаються за MT).
 
 Після завершення `subprocess`, перевіряє наявність артефакту `fact_NNN.md` для визначення `result:success` або `result:failed`.
 
@@ -61,7 +61,7 @@ docgen:
 3. Обчислює `NNN` як кількість `run_*.md` плюс один.
 4. Створює `worktree` у директорії `.worktrees/<task-epoch>/` з атомарним блокуванням.
 5. Встановлює змінні середовища, включаючи `MT_RUN_NNN`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, `MT_TASK_PATH`.
-6. Запускає `subprocess`, який використовує `claude` або `mt run --actor auditor`.
+6. Запускає `subprocess`: вбудований `claude` CLI (actor=agent за замовчуванням) АБО, якщо `.mt.json` задає `node_executor`, зовнішню команду-екзекутор, якій MT делегує застосування змін (claim/lease/worktree/budget/`## Check`/publish лишаються за MT).
 7. Після завершення `subprocess`, перевіряє наявність `fact_NNN.md` для визначення `result:success` або `result:failed`.
 8. Записує артефакт `run_NNN.md` у відповідну директорію.
 9. Якщо `result` дорівнює `success`, виконує `git merge` та видаляє створений `worktree`.
@@ -76,6 +76,16 @@ docgen:
 18. У разі помилок під час створення `worktree` або виконання, повертає помилку.
 19. Якщо задача завершилася з помилкою, зберігає `worktree` для діагностики.
 20. Якщо `result` дорівнює `success`, виконує `git merge` та видаляє `worktree`.
+
+## Retry ladder (MT_ATTEMPT)
+
+Перед запуском `subprocess` рахує `attempt = failed_streak + 1`, де `failed_streak` — кількість `run_*.md` з `result: failed` після останнього прийнятого `fact_*.md` (та сама формула, що й у Rust `mt-core::failed_streak`). На основі `attempt` обирає стратегію та (з attempt 3) підвищує тир моделі на один щабель `MIM → AVG → MAX` відносно `executor.model_tier` з `task.md`:
+
+- `attempt = 1` → `MT_RETRY_STRATEGY=baseline`, тир без змін.
+- `attempt = 2` → `MT_RETRY_STRATEGY=diagnose-first`, тир без змін.
+- `attempt ≥ 3` → `MT_RETRY_STRATEGY=alternative-approach`, тир підвищено на один щабель (стеля — `MAX`).
+
+Результат (`MT_ATTEMPT`, `MT_RETRY_STRATEGY`, ескальований `MT_MODEL_TIER`) передається обома шляхами виконання: у `env` зовнішнього `node_executor` і у вбудований `claude` CLI шлях (де для attempt ≥ 2 додатково вставляється текстова підказка-ретрай у промпт).
 
 ## Гарантії поведінки
 
