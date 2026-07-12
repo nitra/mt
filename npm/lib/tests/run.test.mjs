@@ -72,6 +72,19 @@ function createExecutorRepo(opts = {}) {
   return root
 }
 
+/**
+ * Симулює `failed_streak` попередніх невдалих спроб — прописує run_NNN.md
+ * без відповідного fact_NNN.md (NNN-логіка рахує лише імена файлів).
+ * @param {string} root корінь тимчасового репо
+ * @param {number} count кількість попередніх failed-ранів
+ */
+function seedFailedStreak(root, count) {
+  for (let i = 1; i <= count; i++) {
+    const nnn = String(i).padStart(3, '0')
+    writeFileSync(join(root, 'mt', 'demo', `run_${nnn}.md`), '---\nresult: failed\n---\n', 'utf8')
+  }
+}
+
 afterEach(() => {
   for (const dir of createdDirs) {
     rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
@@ -113,6 +126,9 @@ describe('mt run — зовнішній екзекутор (node_executor)', () 
     expect(seen.env.MT_MODEL_TIER).toBe('AVG')
     expect(seen.env.MT_RUN_TOKEN).toBeTruthy()
     expect(seen.env.MT_NODE_DIR.endsWith('/mt/demo')).toBe(true)
+    // Перша спроба (немає прior run_NNN.md) — базовий щабель драбини, без ескалації.
+    expect(seen.env.MT_ATTEMPT).toBe('1')
+    expect(seen.env.MT_RETRY_STRATEGY).toBe('base')
 
     const fact = readFileSync(join(root, 'mt', 'demo', 'fact_001.md'), 'utf8')
     expect(fact).toContain('applied=true')
@@ -135,5 +151,62 @@ describe('mt run — зовнішній екзекутор (node_executor)', () 
     expect(run(['demo'], { cwd: root, spawnSync: spawnExecutorOk, log: vi.fn() })).toBe(1)
     expect(existsSync(join(root, 'mt', 'demo', 'fact_001.md'))).toBe(false)
     expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: failed')
+  }, 30_000)
+})
+
+describe('mt run — retry ladder (MT_ATTEMPT)', () => {
+  test('attempt=2 — щабель "diagnose-first" за дефолтною драбиною, tier без ескалації', () => {
+    const root = createExecutorRepo()
+    seedFailedStreak(root, 1)
+    const seen = {}
+    const spawnExecutor = (command, args, options) => {
+      seen.env = options.env
+      return { status: 0, stdout: '{"applied":true,"touchedFiles":[]}' }
+    }
+
+    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutor, log: vi.fn() })).toBe(0)
+
+    expect(seen.env.MT_ATTEMPT).toBe('2')
+    expect(seen.env.MT_RETRY_STRATEGY).toBe('diagnose-first')
+    expect(seen.env.MT_MODEL_TIER).toBe('AVG')
+  }, 30_000)
+
+  test('attempt=3 — щабель "alternative-approach" ескалює model_tier AVG → MAX', () => {
+    const root = createExecutorRepo()
+    seedFailedStreak(root, 2)
+    const seen = {}
+    const spawnExecutor = (command, args, options) => {
+      seen.env = options.env
+      return { status: 0, stdout: '{"applied":true,"touchedFiles":[]}' }
+    }
+
+    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutor, log: vi.fn() })).toBe(0)
+
+    expect(seen.env.MT_ATTEMPT).toBe('3')
+    expect(seen.env.MT_RETRY_STRATEGY).toBe('alternative-approach')
+    expect(seen.env.MT_MODEL_TIER).toBe('MAX')
+  }, 30_000)
+
+  test('retry_ladder-override у a.md (коротша драбина) — останній щабель повторюється, без ескалації', () => {
+    const root = createExecutorRepo()
+    writeFileSync(
+      join(root, 'mt', 'demo', 'a.md'),
+      '## Model tier\n\nAVG\n\n## Retry ladder\n\n- base\n- diagnose-first\n',
+      'utf8'
+    )
+    seedFailedStreak(root, 2)
+    const seen = {}
+    const spawnExecutor = (command, args, options) => {
+      seen.env = options.env
+      return { status: 0, stdout: '{"applied":true,"touchedFiles":[]}' }
+    }
+
+    // attempt=3, але override-драбина має довжину 2 → повторює останній щабель
+    // ("diagnose-first"), а не дефолтний "alternative-approach" → без ескалації tier.
+    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutor, log: vi.fn() })).toBe(0)
+
+    expect(seen.env.MT_ATTEMPT).toBe('3')
+    expect(seen.env.MT_RETRY_STRATEGY).toBe('diagnose-first')
+    expect(seen.env.MT_MODEL_TIER).toBe('AVG')
   }, 30_000)
 })

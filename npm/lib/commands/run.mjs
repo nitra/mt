@@ -4,10 +4,12 @@
  * Wrapper логіка:
  * 1. Читає task.md → budget_sec, budget_hard_sec, deps, mode, executor
  * 2. Перевіряє що всі deps resolved
- * 3. Обчислює NNN = count(run_*.md) + 1
+ * 3. Обчислює NNN = count(run_*.md) + 1; MT_ATTEMPT = NNN - NNN(останнього fact) (мін. 1) —
+ *    формула "failed_streak + 1" (graph.md); драбину (`## Retry ladder` у `a.md`, або дефолт
+ *    base/diagnose-first/alternative-approach) резолвить у стратегію + ескалацію model_tier
  * 4. git worktree add .worktrees/<task-epoch>/ (atomic mkdir lock — EEXIST = skip)
- * 5. ENV: MT_RUN_NNN, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT, MT_TASK_PATH,
- *    MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER
+ * 5. ENV: MT_RUN_NNN, MT_ATTEMPT, MT_RETRY_STRATEGY, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC,
+ *    MT_STARTED_AT, MT_TASK_PATH, MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER
  * 6. Спавнить subprocess: вбудований Claude-agent-шлях АБО (якщо `.mt.json`
  *    `node_executor` заданий) — зовнішня команда-екзекутор (див. нижче)
  * 7. Після exit: fact_NNN.md є → result:success; else → result:failed
@@ -26,7 +28,10 @@
  * Контракт команди-екзекутора:
  * - argv: `<node_executor...> <node-dir>` — абсолютний шлях директорії вузла у worktree;
  * - env: MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER, MT_TASK_PATH,
- *   MT_RUN_NNN, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT;
+ *   MT_RUN_NNN, MT_ATTEMPT, MT_RETRY_STRATEGY, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT;
+ *   MT_ATTEMPT (= failed_streak + 1) і MT_MODEL_TIER (вже ескальований щаблем драбини) —
+ *   екзекутор МОЖЕ сам врахувати ескалацію (diagnose-first/alternative-approach), а
+ *   МОЖЕ й просто довіритись переданому MT_MODEL_TIER — MT вже застосував драбину;
  * - stdout: остання непорожня лінія = JSON `{ applied: bool, touchedFiles: string[] }`;
  * - exit 0 → runner ганяє ## Check (якщо є) і за успіху синтезує `fact_NNN.md`
  *   (екзекутор його НЕ пише) → штатний merge/publish; ненульовий exit → failed-run штатно.
@@ -44,13 +49,30 @@ import { join, relative } from 'node:path'
 import { cwd as processCwd } from 'node:process'
 
 import { buildMarkdown, parseFrontMatter } from '../core/frontmatter.mjs'
-import { nextRunNNN } from '../core/nnn.mjs'
+import { latestFactNNN, nextRunNNN } from '../core/nnn.mjs'
 import { loadConfig, resolveModelByTier, resolveMtDir, resolveWorktreesDir } from '../core/config.mjs'
 import { scanTasks, topoSort, areDepsResolved } from '../core/scanner.mjs'
 import { createWorktree, listActiveWorktrees, mergeWorktree, makeWorktreeName } from '../core/worktree.mjs'
 
 /** Розділювач токенів у рядку команди `node_executor` (whitespace). */
 const EXECUTOR_SPEC_SPLIT = /\s+/
+
+/** Маркер буліта (`-`/`*`) на початку рядка щабля `## Retry ladder` у `a.md`. */
+const LADDER_BULLET_RE = /^[-*]\s*/
+
+/** Порядок model_tier для ескалації драбиною (позиційний зсув: MIM→AVG→MAX, cap на MAX). */
+const MODEL_TIER_ORDER = ['MIM', 'AVG', 'MAX']
+
+/**
+ * Драбина ретраїв за замовчуванням (graph.md "Retry ladder"): 1 — base;
+ * 2 — diagnose-first; 3 — alternative-approach (+1 model_tier). Коротша
+ * драбина (`retry_ladder`-override у `a.md`) — останній щабель повторюється.
+ */
+const DEFAULT_RETRY_LADDER = [
+  { strategy: 'base', model_tier_delta: 0 },
+  { strategy: 'diagnose-first', model_tier_delta: 0 },
+  { strategy: 'alternative-approach', model_tier_delta: 1 }
+]
 
 /**
  * Пише run_NNN.md артефакт.
@@ -100,21 +122,98 @@ function readModelTierFromFlag(taskDir, readFile, exists) {
 }
 
 /**
+ * Читає per-node override драбини ретраїв із `a.md` (секція "## Retry ladder",
+ * один рядок/буліт на щабель — той самий markdown-конвент, що й "## Model tier").
+ * Відсутність секції чи `a.md` → null (виконавець бере драбину за замовчуванням).
+ * Щабель "alternative-approach" завжди несе `model_tier_delta: 1` (graph.md);
+ * решта назв — 0 (сигнал стратегії без ескалації тиру).
+ * @param {string} taskDir директорія задачі
+ * @param {(p: string, enc: string) => string} readFile читання файлу
+ * @param {(p: string) => boolean} exists перевірка існування
+ * @returns {{ strategy: string, model_tier_delta: number }[] | null} драбина або null
+ */
+function readRetryLadderFromFlag(taskDir, readFile, exists) {
+  const flagPath = join(taskDir, 'a.md')
+  if (!exists(flagPath)) return null
+  let content
+  try {
+    content = readFile(flagPath, 'utf8')
+  } catch {
+    return null
+  }
+  const lines = content.split('\n')
+  const idx = lines.findIndex(l => l.trim().toLowerCase() === '## retry ladder')
+  if (idx === -1) return null
+  const steps = []
+  for (let i = idx + 1; i < lines.length; i++) {
+    const t = lines[i].trim()
+    if (t.startsWith('##')) break
+    const strategy = t.replace(LADDER_BULLET_RE, '').trim().toLowerCase()
+    if (strategy) steps.push({ strategy, model_tier_delta: strategy === 'alternative-approach' ? 1 : 0 })
+  }
+  return steps.length ? steps : null
+}
+
+/**
+ * Обчислює номер спроби: `MT_ATTEMPT = failed_streak + 1` (graph.md) — різниця
+ * між NNN наступного run і NNN останнього прийнятого fact (0, якщо fact ще
+ * немає), мінімум 1. Еквівалент count(execution-failure run після fact) + 1,
+ * бо у поточному (JS) шляху кожен run без fact — виконавча невдача.
+ * @param {string} nnn NNN наступного run (`nextRunNNN`)
+ * @param {string | null} lastFactNNN NNN останнього fact або null
+ * @returns {number} номер спроби (мінімум 1)
+ */
+function computeAttempt(nnn, lastFactNNN) {
+  return Math.max(1, Number(nnn) - Number(lastFactNNN ?? 0))
+}
+
+/**
+ * Резолвить щабель драбини для номера спроби; коротша драбина — останній
+ * щабель повторюється (graph.md: "Коротша драбина → останній щабель повторюється").
+ * @param {number} attempt номер спроби (1-based)
+ * @param {{ strategy: string, model_tier_delta: number }[]} ladder драбина
+ * @returns {{ strategy: string, model_tier_delta: number }} щабель
+ */
+function resolveRetryStep(attempt, ladder) {
+  return ladder[Math.min(Math.max(attempt - 1, 0), ladder.length - 1)]
+}
+
+/**
+ * Підвищує model_tier на `delta` позицій драбиною MIM→AVG→MAX (cap на MAX).
+ * Невідомий tier або delta=0 → без змін.
+ * @param {string} tier поточний tier
+ * @param {number} delta кількість позицій підвищення
+ * @returns {string} ефективний tier
+ */
+function bumpModelTier(tier, delta) {
+  if (!delta) return tier
+  const idx = MODEL_TIER_ORDER.indexOf(tier)
+  if (idx === -1) return tier
+  return MODEL_TIER_ORDER[Math.min(idx + delta, MODEL_TIER_ORDER.length - 1)]
+}
+
+/**
  * Резолвить виконавця задачі: тип і модель. Істина model_tier — прапор `a.md`
  * (секція "## Model tier", авторинг mt-scanner). Fallback на `executor` у frontmatter
- * (старі вузли) → `default_model_tier` із `.mt.json`.
+ * (старі вузли) → `default_model_tier` із `.mt.json`. На attempt 2+ (retry ladder)
+ * ескалює ефективний model_tier за щаблем драбини (`## Retry ladder` override у
+ * `a.md`, або дефолт) і повертає стратегію щабля для `MT_RETRY_STRATEGY`.
  * @param {string} taskDir директорія задачі
  * @param {Record<string, unknown>} fm frontmatter task.md
  * @param {object} config конфігурація
  * @param {{ readFile: (p: string, enc: string) => string, exists: (p: string) => boolean }} io ФС-ін'єкції
- * @returns {{ executorType: string, modelTier: string, model: string }} виконавець
+ * @param {number} attempt номер спроби (MT_ATTEMPT)
+ * @returns {{ executorType: string, modelTier: string, model: string, retryStrategy: string }} виконавець
  */
-function resolveExecutor(taskDir, fm, config, io) {
+function resolveExecutor(taskDir, fm, config, io, attempt) {
   const executor = fm.executor && typeof fm.executor === 'object' ? fm.executor : {}
   const executorType = executor.type ?? 'agent'
   const tierFromFlag = readModelTierFromFlag(taskDir, io.readFile, io.exists)
-  const modelTier = tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG'
-  return { executorType, modelTier, model: resolveModelByTier(config, modelTier) }
+  const baseModelTier = tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG'
+  const ladder = readRetryLadderFromFlag(taskDir, io.readFile, io.exists) ?? DEFAULT_RETRY_LADDER
+  const step = resolveRetryStep(attempt, ladder)
+  const modelTier = bumpModelTier(baseModelTier, step.model_tier_delta)
+  return { executorType, modelTier, model: resolveModelByTier(config, modelTier), retryStrategy: step.strategy }
 }
 
 /**
@@ -298,15 +397,23 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const budgetSec = Number(fm.budget_sec) || config.default_budget_sec
   const budgetHardSec = Number(fm.budget_hard_sec) || budgetSec * config.budget_hard_sec_multiplier
 
-  const { executorType, modelTier, model } = resolveExecutor(taskDir, fm, config, { readFile, exists })
+  // 3. Обчислюємо NNN і номер спроби (MT_ATTEMPT = failed_streak + 1, graph.md)
+  const nnn = nextRunNNN(taskDir, readdir)
+  const lastFactNNN = latestFactNNN(taskDir, readdir)
+  const attempt = computeAttempt(nnn, lastFactNNN)
+
+  const { executorType, modelTier, model, retryStrategy } = resolveExecutor(
+    taskDir,
+    fm,
+    config,
+    { readFile, exists },
+    attempt
+  )
 
   const actor = opts.actor ?? executorType
   // Точка розширення: зовнішній екзекутор замінює Claude-шлях лише для agent-actor.
   const nodeExecutor = config.node_executor || null
   const usedExecutor = Boolean(nodeExecutor) && (actor === 'agent' || actor === 'a')
-
-  // 3. Обчислюємо NNN
-  const nnn = nextRunNNN(taskDir, readdir)
 
   // 4. Створюємо worktree (atomic mkdir lock)
   const worktreesDir = resolveWorktreesDir(config, root)
@@ -314,7 +421,7 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const worktreePath = join(worktreesDir, worktreeName)
   const worktreeTaskDir = join(worktreePath, relative(root, taskDir))
 
-  log(`run: запускаємо задачу "${taskPath}" (NNN=${nnn}, actor=${actor})`)
+  log(`run: запускаємо задачу "${taskPath}" (NNN=${nnn}, actor=${actor}, attempt=${attempt}/${retryStrategy})`)
 
   if (opts.dryRun) {
     log(`run: --dry-run — пропускаємо фактичний запуск`)
@@ -340,6 +447,8 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const env = {
     ...process.env,
     MT_RUN_NNN: nnn,
+    MT_ATTEMPT: String(attempt),
+    MT_RETRY_STRATEGY: retryStrategy,
     MT_BUDGET_SEC: String(budgetSec),
     MT_HARD_BUDGET_SEC: String(budgetHardSec),
     MT_STARTED_AT: startedAt,
