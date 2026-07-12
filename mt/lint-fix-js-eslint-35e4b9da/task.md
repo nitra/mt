@@ -21,4 +21,5 @@ npx @nitra/cursor lint --no-fix --cwd ../.. js
 ## Inputs
 
 Target-файли:
+
 - `npm/lib/commands/run.mjs`
