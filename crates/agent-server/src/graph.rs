@@ -60,6 +60,9 @@ pub struct InteractiveRun {
     generation: u64,
     lease_sec: i64,
     actor: String,
+    /// Верифіковані approvals цього run-а — матеріалізуються у
+    /// `## Approvals` синтезованого `run_NNN.md` (access.md).
+    approvals: Vec<String>,
 }
 
 fn git(dir: &Path, args: &[&str]) -> Result<String, String> {
@@ -131,6 +134,7 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
         generation: 1,
         lease_sec: config.lease_sec,
         actor: config.actor.clone(),
+        approvals: Vec::new(),
     })
 }
 
@@ -138,6 +142,12 @@ impl InteractiveRun {
     /// Поточна генерація claim-а (fencing token для side effects).
     pub fn generation(&self) -> u64 {
         self.generation
+    }
+
+    /// Додає верифікований approval-рядок (пише ws-обробник після
+    /// успішної перевірки підпису гейтом).
+    pub fn add_approval(&mut self, line: String) {
+        self.approvals.push(line);
     }
 
     /// Коміт ходу: журнал сесії (`.nitra/session.jsonl`) + правки файлів →
@@ -182,10 +192,38 @@ impl InteractiveRun {
         Ok(push.accepted)
     }
 
+    /// Синтез контрактних артефактів спроби (graph.md): `run_NNN.md`
+    /// (actor, result success, `## Approvals` за наявності) і мінімальний
+    /// `fact_NNN.md`, якщо виконавець не створив власний — без fact вузол
+    /// після publish не стає resolved.
+    fn write_run_artifacts(&self) -> Result<(), String> {
+        let dir = self.worktree.join(&self.tasks_root_rel).join(&self.node);
+        let nnn = mt_core::nnn::pad_nnn(mt_core::signal::next_run_nnn(&dir));
+
+        let fact_path = dir.join(format!("fact_{nnn}.md"));
+        if !fact_path.exists() {
+            let fact = format!(
+                "---\nschema_version: 1\ncreated_at: {}\n---\n\n## Summary\n\n\
+                 Інтерактивний run завершено (mt done); журнал сесії — у run ref.\n",
+                iso(Utc::now())
+            );
+            std::fs::write(&fact_path, fact).map_err(|e| e.to_string())?;
+        }
+
+        let sections = if self.approvals.is_empty() {
+            "\n".to_string()
+        } else {
+            format!("\n## Approvals\n\n{}\n", self.approvals.join("\n"))
+        };
+        mt_core::signal::write_run_fm(&dir, &nnn, &self.actor, "success", &sections, "")?;
+        Ok(())
+    }
+
     /// `mt done`: гейт `## Check` (контракт graph.md — fail → відмова
-    /// сигналу, run лишається живим) → стрип `.nitra/` з індексу (інваріант
-    /// git.md) → fenced publish (rebase на origin/main + atomic push main /
-    /// видалення claim+run ref). Успіх → worktree прибирається.
+    /// сигналу, run лишається живим) → синтез `run_NNN.md`/`fact_NNN.md` →
+    /// стрип `.nitra/` з індексу (інваріант git.md) → fenced publish
+    /// (rebase на origin/main + atomic push main / видалення claim+run
+    /// ref). Успіх → worktree прибирається.
     pub fn done(&self, retry_max: u32, base_ms: u64) -> Result<PublishOutcome, String> {
         // ## Check вузла ганяється у worktree (cwd = корінь worktree —
         // батько tasks-директорії, як у автономного wrapper-а).
@@ -193,8 +231,23 @@ impl InteractiveRun {
         mt_core::signal::run_check(&wt_tasks_dir.to_string_lossy(), &self.node)?;
 
         // Remote run ref стоїть на останньому запушеному ході (HEAD ДО
-        // strip-коміту) — саме його очікує force-with-lease publish-у.
+        // артефакт/strip-комітів) — саме його очікує force-with-lease.
         let run_ref_sha = git(&self.worktree, &["rev-parse", "HEAD"])?;
+
+        self.write_run_artifacts()?;
+        git(&self.worktree, &["add", "-A"])?;
+        let staged = git(&self.worktree, &["status", "--porcelain"])?;
+        if !staged.is_empty() {
+            git(
+                &self.worktree,
+                &[
+                    "commit",
+                    "-q",
+                    "-m",
+                    &format!("mt: {} run (success)", self.node),
+                ],
+            )?;
+        }
         let tracked = git(&self.worktree, &["ls-files", ".nitra"])?;
         if !tracked.is_empty() {
             git(&self.worktree, &["rm", "-r", "-q", "--cached", ".nitra"])?;
@@ -406,6 +459,61 @@ mod tests {
         run.commit_turn("{}\n", "mt: виправлення").unwrap();
         let outcome = run.done(3, 10).unwrap();
         assert!(outcome.published, "{outcome:?}");
+    }
+
+    /// done синтезує контрактні артефакти: run_001.md з ## Approvals і
+    /// мінімальний fact_001.md — обидва доїжджають у main.
+    #[test]
+    fn done_synthesizes_run_and_fact_artifacts() {
+        let fixture = Fixture::new();
+        let mut run = attach(&fixture.config(), "demo").unwrap();
+        run.add_approval(
+            "- 2026-07-12T00:00:00Z device=phone approved=true request=req-1 signature=ab".into(),
+        );
+        run.commit_turn("{}\n", "mt: хід").unwrap();
+
+        let outcome = run.done(3, 10).unwrap();
+        assert!(outcome.published, "{outcome:?}");
+
+        let run_md = super::git(
+            Path::new(fixture.origin.path()),
+            &["show", "main:mt/demo/run_001.md"],
+        )
+        .unwrap();
+        assert!(run_md.starts_with("---\nschema_version: 1"), "{run_md}");
+        assert!(run_md.contains("actor: human"), "{run_md}");
+        assert!(run_md.contains("result: success"), "{run_md}");
+        assert!(run_md.contains("## Approvals"), "{run_md}");
+        assert!(run_md.contains("request=req-1"), "{run_md}");
+
+        let fact_md = super::git(
+            Path::new(fixture.origin.path()),
+            &["show", "main:mt/demo/fact_001.md"],
+        )
+        .unwrap();
+        assert!(fact_md.contains("## Summary"), "{fact_md}");
+    }
+
+    /// Власний fact виконавця з тим самим NNN не перезаписується синтезом.
+    #[test]
+    fn executor_fact_is_preserved() {
+        let fixture = Fixture::new();
+        let run = attach(&fixture.config(), "demo").unwrap();
+        std::fs::write(
+            run.worktree.join("mt/demo/fact_001.md"),
+            "## Summary\n\nвласний fact виконавця\n",
+        )
+        .unwrap();
+        run.commit_turn("{}\n", "mt: fact від виконавця").unwrap();
+
+        assert!(run.done(3, 10).unwrap().published);
+
+        let fact_md = super::git(
+            Path::new(fixture.origin.path()),
+            &["show", "main:mt/demo/fact_001.md"],
+        )
+        .unwrap();
+        assert!(fact_md.contains("власний fact виконавця"), "{fact_md}");
     }
 
     /// renew просуває claim SHA і лишає ownership за нами.
