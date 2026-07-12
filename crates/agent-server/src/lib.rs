@@ -10,12 +10,14 @@
 
 pub mod discovery;
 pub mod graph;
+pub mod relay_client;
 pub mod runner;
 pub mod session;
 pub mod ws;
 
 pub use discovery::{token_hash, Discovery, PortFile};
 pub use graph::{attach, GraphConfig, InteractiveRun};
+pub use relay_client::{spawn_relay_bridge, RelayBridgeConfig};
 pub use runner::{AgentTurnRunner, EchoTurnRunner, TurnRunner};
 pub use session::{is_ephemeral, Session, SessionHost};
 pub use ws::{serve, AppState};

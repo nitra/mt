@@ -1,5 +1,9 @@
 # Журнал змін документації
 
+## 2026-07-12
+
+* **Update**: M2, міст agent-server ↔ relay (задача `mt/m2-relay-bridge`) — транспорт (в) із runtime.md: хост тримає вихідне WS до relay, ретранслює broadcast сесій у кімнату і приймає клієнтські кадри віддалених пристроїв у штатну обробку (device_id — з конверта). Анти-цикл: relay ставить `from_host` на кадри пристроїв role=host (не з кадру — спуфінг виключено); міст ігнорує host-ехо, тонкі клієнти рендерять лише host-кадри (seq призначає хост). Reconnect із backoff 1s→30s. `agent-cli serve` отримав `--relay-url`/`--relay-token`/`--relay-root`. Тест — mock-relay у Rust (кадровий протокол relay).
+
 ## 2026-07-11
 
 * **Update**: старт **M2** (mission control) — ядро relay `relay/` (Bun-сервіс, plain JS + JSDoc; задача `mt/m2-relay-core`): store-інтерфейс за схемою access.md (in-memory реалізація; PostgreSQL — окрема задача за тим самим інтерфейсом), кімнати з буфером ≤200 Envelope і реплеєм при підписці, membership-гейти (підписка лише учасникам кореня; viewer не шле клієнтські події), invite → accept → MemberChanged, transfer ownership, роздача pubkey-ів approver+, WS-сервер (пакет `ws`, кадр ≤2 МБ, помилки — error-кадром без розриву). Межі дотримані: без журналів сесій, git-проксі, lease і виконання агентів. Поза скоупом: PostgreSQL, FCM push, Ory Kratos, deploy, інтеграція agent-server як relay-клієнта.
