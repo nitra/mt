@@ -15,7 +15,7 @@
     },
     "crates/mt-napi": {
       "name": "@7n/mt-napi",
-      "version": "0.1.3",
+      "version": "0.1.5",
       "devDependencies": {
         "@napi-rs/cli": "^3.6.0",
         "ajv": "^8.20.0",
@@ -23,13 +23,20 @@
     },
     "npm": {
       "name": "@7n/mt",
-      "version": "0.14.0",
+      "version": "0.17.0",
       "bin": {
         "mt": "bin/mt.js",
       },
       "optionalDependencies": {
         "@7n/mt-darwin-arm64": "0.2.0",
         "@7n/mt-linux-x64": "0.2.0",
+      },
+    },
+    "relay": {
+      "name": "@7n/relay",
+      "version": "0.1.0",
+      "dependencies": {
+        "ws": "^8.18.0",
       },
     },
   },
@@ -46,6 +53,8 @@
     "@7n/mt-linux-x64": ["@7n/mt-linux-x64@0.5.1", "", { "os": "linux", "cpu": "x64" }, "sha512-c4b1c435vfGZcRKkLnWcoKs8O6KTATFFx6gPGnid4ee+JDqzyhtxb5kzxYkcTQySO8iBHPAtUMEOBCHDrF1UjQ=="],
 
     "@7n/mt-napi": ["@7n/mt-napi@workspace:crates/mt-napi"],
+
+    "@7n/relay": ["@7n/relay@workspace:relay"],
 
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.91.1", "", { "dependencies": { "json-schema-to-ts": "^3.1.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw=="],
 
