@@ -73,3 +73,7 @@ timestamp: 2026-07-07
 | **approver** | роль учасника, що підписує approvals з будь-якого пристрою **без git-доступу** | [access.md](access.md) |
 | **base-мова** | канонічна мова контенту в `main`; переклади — derived у `refs/mt/i18n/*` | [i18n.md](i18n.md) |
 | **authored-переклад** | версія мовою автора правки; захищена від перезапису зворотним перекладом | [i18n.md](i18n.md) |
+| **мандат** | зона, у межах якої власник вирішує сам без ескалації (`.mt/mandates.yaml`) | [mandates.md](mandates.md) |
+| **decision-request** | упакована для власника розвилка: контекст, варіанти, рекомендація агента | [mandates.md](mandates.md) |
+| **leverage-фасети** | декларативні поля розвилки (незворотність, blast radius, дивергенція, ціна) з детермінованим мапінгом на режим ескалації | [mandates.md](mandates.md) |
+| **process watcher** | node actor, що стежить за застряглими claim-ами і SLA `decision-request` — сигналізує спершу виконавцю | [mandates.md](mandates.md) |

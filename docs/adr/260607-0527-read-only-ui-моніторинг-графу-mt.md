@@ -38,3 +38,13 @@ UI flow з transcript:
 - прогрес складеної задачі: розгорнути кореневий вузол → побачити дочірні вузли і їхні стани.
 
 У UI не додаються кнопки `kill` / `run`, редагування `task.md`, повний inline-вміст великих `outputs_NNN.md` або real-time stream логів агента.
+
+## Update 2026-06-07
+
+Transcript уточнив спосіб доступу UI до стану task-графа: UI має читати стан через API-шар на базі `mt scan --json`, REST або SSE, а не через пряме монтування `tasks/` у UI.
+
+Додаткові факти:
+- прямий доступ до `tasks/` через dev pod/Zed remote розглядався як developer-debug сценарій, а не як основний UI transport;
+- для Kubernetes-середовища обговорено dev pod, який монтує той самий PVC, що й worker pods;
+- запропонована тимчасова команда доступу: `kubectl port-forward pod/n-graph-dev 2222:22`, але остаточне рішення щодо доступу тут не зафіксовано;
+- назви `n-graph`, `graphwatch`, `taskflow` обговорювалися, але фінальний вибір у transcript не підтверджено.
