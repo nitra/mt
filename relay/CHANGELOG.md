@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] - 2026-07-12
+
+### Changed
+
+- Додано RelayCore для управління кімнатами, ролями та membership API
+- Додано RelayCore, Rooms та Server для управління кімнатами та членством
+- Додано відстеження `from_host` для клієнтських envelope
+
 ## [0.2.0] - 2026-07-12
 
 ### Changed
