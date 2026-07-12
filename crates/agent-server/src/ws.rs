@@ -23,6 +23,7 @@ use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
+use crate::approvals_gate::ApprovalGate;
 use crate::graph::{self, GraphConfig, InteractiveRun};
 use crate::runner::TurnRunner;
 use crate::session::{Session, SessionHost};
@@ -35,6 +36,8 @@ pub struct AppState {
     pub runner: Arc<dyn TurnRunner>,
     /// `None` — без перевірки (embedded/in-process клієнт).
     pub token: Option<String>,
+    /// Гейт підписаних approvals (access.md); pubkey-кеш наповнює relay-міст.
+    pub approvals: ApprovalGate,
     graph: Option<GraphConfig>,
     /// Активні інтерактивні run-и за node-ключем кімнати. Git-операції
     /// швидкі й локальні — виконуються під локом (spawn_blocking — TODO
@@ -48,9 +51,36 @@ impl AppState {
             sessions,
             runner,
             token,
+            approvals: ApprovalGate::default(),
             graph: None,
             runs: tokio::sync::Mutex::new(HashMap::new()),
         }
+    }
+
+    /// Mid-run approval-гейт: шле `ApprovalRequest` у кімнату і повертає
+    /// one-shot із підписаним вердиктом (access.md, перший гейт).
+    pub fn request_approval(
+        &self,
+        node: &str,
+        action: String,
+        diff: Option<String>,
+    ) -> std::io::Result<tokio::sync::oneshot::Receiver<bool>> {
+        let session = self.sessions.get_or_open(node)?;
+        let request_id = Uuid::new_v4().to_string();
+        let receiver = self
+            .approvals
+            .register(&request_id, node, session.run_token);
+        self.sessions.publish(
+            &session,
+            Event::ApprovalRequest {
+                request_id,
+                action,
+                diff,
+            },
+            None,
+            None,
+        );
+        Ok(receiver)
     }
 
     /// Увімкнути graph-міст: кімната = вузол, UserMessage веде claim/worktree.
@@ -215,6 +245,31 @@ pub(crate) async fn handle_client_frame(
         }
         Event::DoneSession {} => handle_done(state, &session, &node).await,
         Event::ReleaseSession {} => handle_release(state, &session, &node).await,
+        Event::ApprovalResponse {
+            request_id,
+            approved,
+            signature,
+        } => {
+            match state
+                .approvals
+                .resolve(&request_id, approved, &signature, device_id)
+            {
+                // Верифікований вердикт журналюється у сесію (аудит-трейл).
+                Ok(_) => {
+                    state.sessions.publish(
+                        &session,
+                        Event::ApprovalResponse {
+                            request_id,
+                            approved,
+                            signature,
+                        },
+                        device_id,
+                        envelope.account_id,
+                    );
+                }
+                Err(message) => publish_error(state, &session, message),
+            }
+        }
         _ => {}
     }
 }

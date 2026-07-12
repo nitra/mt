@@ -2,6 +2,8 @@
 
 ## 2026-07-12
 
+* **Update**: M2, підписані approvals у потоці (задача `mt/m2-approvals-flow`) — перший гейт access.md наскрізно: `AppState::request_approval` шле `ApprovalRequest` у кімнату → пристрій approver+ підписує `(request_id, approved, node_hash, run_token)` → `ApprovalGate` звіряє Ed25519-підпис із pubkey-кешем (пристрій поза списком чи зіпсований підпис → `Error` у сесію, запит лишається живим до валідної відповіді; верифікований вердикт журналюється в сесію). Кеш наповнює relay-міст новим кадром `pubkeys` (relay віддає pubkey-и approver+ за `core.pubkeys`); разом із кешем вмикається `require_signed` — без relay (локальний dev) порожній підпис приймається. Поза скоупом: TTL-refresh кешу, тригер деструктивного ToolCall, матеріалізація `## Approvals` у run_NNN.md (потребує синтезу run-файлу в інтерактивному done).
+
 * **Update**: M2, міст agent-server ↔ relay (задача `mt/m2-relay-bridge`) — транспорт (в) із runtime.md: хост тримає вихідне WS до relay, ретранслює broadcast сесій у кімнату і приймає клієнтські кадри віддалених пристроїв у штатну обробку (device_id — з конверта). Анти-цикл: relay ставить `from_host` на кадри пристроїв role=host (не з кадру — спуфінг виключено); міст ігнорує host-ехо, тонкі клієнти рендерять лише host-кадри (seq призначає хост). Reconnect із backoff 1s→30s. `agent-cli serve` отримав `--relay-url`/`--relay-token`/`--relay-root`. Тест — mock-relay у Rust (кадровий протокол relay).
 
 ## 2026-07-11
