@@ -19,6 +19,7 @@ use mt_core::claims::{
 };
 use mt_core::publish::{fenced_publish, PublishOutcome, PublishRequest};
 use mt_core::worktree::{create_run_worktree, push_run_ref, remove_run_worktree};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Конфігурація моста.
@@ -86,15 +87,51 @@ fn iso(ts: chrono::DateTime<Utc>) -> String {
     ts.format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
-/// Attach вузла: CAS claim → detached worktree від `base_sha` → run ref.
-/// `accepted: false` CAS-у → явна помилка claim-lost (вузол уже зайнято).
-pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String> {
+/// Тікет кооперативного handoff (runtime.md, «Міграція сесії між хостами»):
+/// ідентифікує старий run ref, з якого новий хост відновлює worktree, і
+/// generation, від якої продовжує лічильник claim-а (git.md: «новий хост:
+/// create, generation+1» — попри те, що механічно це create-only CAS,
+/// бо старий claim уже видалено). Serialize/Deserialize — тікет піде через
+/// relay `HandoffRequest`-відповідь у наступній задачі.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HandoffTicket {
+    pub run_token: String,
+    pub generation: u64,
+}
+
+/// Спільна реалізація attach/attach_resume: `resume_token` — `None` для
+/// звичайного attach (worktree від `origin/main`), `Some(старий token)` —
+/// worktree від tip старого run ref (журнал і мідфлайт-правки успадковані).
+fn attach_impl(
+    config: &GraphConfig,
+    node: &str,
+    generation: u64,
+    resume_token: Option<&str>,
+) -> Result<InteractiveRun, String> {
     let repo_root = discover_repo_root(&config.tasks_dir)?;
     let tasks_root_rel = tasks_root_relative(&repo_root, &config.tasks_dir)?;
     let hash = node_hash(&tasks_root_rel, node);
 
     git(&repo_root, &["fetch", "--quiet", "origin", "main"])?;
     let base_sha = git(&repo_root, &["rev-parse", "origin/main"])?;
+
+    let worktree_base = match resume_token {
+        None => base_sha.clone(),
+        Some(old_token) => {
+            let old_run_ref = format!("{RUN_REF_PREFIX}/{hash}/{old_token}");
+            git(
+                &repo_root,
+                &[
+                    "fetch",
+                    "--quiet",
+                    "origin",
+                    &format!("+{old_run_ref}:{old_run_ref}"),
+                ],
+            )
+            .map_err(|e| format!("attach-resume: старий run ref {old_run_ref} недоступний: {e}"))?;
+            git(&repo_root, &["rev-parse", &old_run_ref])?
+        }
+    };
 
     let token = Uuid::new_v4().to_string();
     let runner_id = format!("agent-server/{}", std::process::id());
@@ -106,7 +143,7 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
         claimed_at: &iso(Utc::now()),
         lease_until: &iso(Utc::now() + Duration::seconds(config.lease_sec)),
         token: &token,
-        generation: 1,
+        generation,
         base_sha: &base_sha,
         run_ref: &run_ref,
         interactive: true,
@@ -119,7 +156,7 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
     }
 
     let worktrees_dir = repo_root.join(".worktrees");
-    let worktree = create_run_worktree(&repo_root, &worktrees_dir, &hash, &token, &base_sha)?;
+    let worktree = create_run_worktree(&repo_root, &worktrees_dir, &hash, &token, &worktree_base)?;
     push_run_ref(&worktree, &hash, &token)?;
 
     Ok(InteractiveRun {
@@ -131,11 +168,30 @@ pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String
         worktree,
         repo_root,
         tasks_root_rel,
-        generation: 1,
+        generation,
         lease_sec: config.lease_sec,
         actor: config.actor.clone(),
         approvals: Vec::new(),
     })
+}
+
+/// Attach вузла: CAS claim → detached worktree від `base_sha` → run ref.
+/// `accepted: false` CAS-у → явна помилка claim-lost (вузол уже зайнято).
+pub fn attach(config: &GraphConfig, node: &str) -> Result<InteractiveRun, String> {
+    attach_impl(config, node, 1, None)
+}
+
+/// Відновлення на новому хості після кооперативного `handoff`
+/// (runtime.md, кроки 2-3): CAS-create claim (generation = `ticket` + 1) →
+/// worktree ЗІ СТАНУ старого run ref (не `origin/main`) — журнал і
+/// мідфлайт-правки успадковані → push нового run ref. Недоступний старий
+/// run ref (втрачено/типо у тікеті) → явна помилка, не паніка.
+pub fn attach_resume(
+    config: &GraphConfig,
+    node: &str,
+    ticket: &HandoffTicket,
+) -> Result<InteractiveRun, String> {
+    attach_impl(config, node, ticket.generation + 1, Some(&ticket.run_token))
 }
 
 impl InteractiveRun {
@@ -278,6 +334,36 @@ impl InteractiveRun {
         let released = release_claim(&self.repo_root, &self.node_hash, &self.claim_sha)?;
         let _ = remove_run_worktree(&self.repo_root, &self.worktree);
         Ok(released)
+    }
+
+    /// Кооперативний handoff (git.md, claim-операція `handoff`; runtime.md,
+    /// «Міграція сесії між хостами», крок 2): синтезує `run_NNN.md
+    /// (result: handoff)` → коміт → push run ref БЕЗ стрипу `.nitra/` —
+    /// повний журнал розмови їде разом (checkpoint-режим із дистильованим
+    /// summary — окрема задача) → CAS-delete claim. Повертає тікет для
+    /// `attach_resume` на новому хості.
+    pub fn handoff(self) -> Result<HandoffTicket, String> {
+        let dir = self.worktree.join(&self.tasks_root_rel).join(&self.node);
+        let nnn = mt_core::nnn::pad_nnn(mt_core::signal::next_run_nnn(&dir));
+        mt_core::signal::write_run_fm(&dir, &nnn, &self.actor, "handoff", "\n", "")?;
+
+        git(&self.worktree, &["add", "-A"])?;
+        let staged = git(&self.worktree, &["status", "--porcelain"])?;
+        if !staged.is_empty() {
+            git(
+                &self.worktree,
+                &["commit", "-q", "-m", &format!("mt: {} handoff", self.node)],
+            )?;
+        }
+        push_run_ref(&self.worktree, &self.node_hash, &self.token)?;
+
+        let ticket = HandoffTicket {
+            run_token: self.token.clone(),
+            generation: self.generation,
+        };
+        release_claim(&self.repo_root, &self.node_hash, &self.claim_sha)?;
+        let _ = remove_run_worktree(&self.repo_root, &self.worktree);
+        Ok(ticket)
     }
 }
 
@@ -550,5 +636,149 @@ mod tests {
         );
         // Вузол знову можна attach-нути.
         assert!(attach(&fixture.config(), "demo").is_ok());
+    }
+
+    /// handoff: run-файл result:handoff з повним журналом (.nitra/
+    /// НЕ стрипається — checkpoint-режим поза скоупом), claim знято,
+    /// worktree прибрано, run ref лишається (база attach_resume).
+    #[test]
+    fn handoff_writes_marker_and_frees_claim() {
+        let fixture = Fixture::new();
+        let run = attach(&fixture.config(), "demo").unwrap();
+        run.commit_turn("{\"seq\":0}\n", "mt: перший хід").unwrap();
+        let node_hash = run.node_hash.clone();
+        let old_token = run.token.clone();
+        let worktree = run.worktree.clone();
+
+        let ticket = run.handoff().unwrap();
+
+        assert_eq!(ticket.run_token, old_token);
+        assert_eq!(ticket.generation, 1);
+        assert!(!worktree.exists(), "worktree прибрано після handoff");
+
+        let refs = fixture.remote_refs();
+        assert!(
+            !refs.contains(&format!("refs/mt/claims/{node_hash}")),
+            "claim знято: {refs}"
+        );
+        let run_ref = format!("refs/mt/runs/{node_hash}/{old_token}");
+        assert!(refs.contains(&run_ref), "run ref лишається: {refs}");
+
+        let run_md = super::git(
+            Path::new(fixture.origin.path()),
+            &["show", &format!("{run_ref}:mt/demo/run_001.md")],
+        )
+        .unwrap();
+        assert!(run_md.contains("result: handoff"), "{run_md}");
+        let journal = super::git(
+            Path::new(fixture.origin.path()),
+            &["show", &format!("{run_ref}:.nitra/session.jsonl")],
+        )
+        .unwrap();
+        assert_eq!(
+            journal, "{\"seq\":0}",
+            "повний журнал (без checkpoint-стрипу): {journal}"
+        );
+    }
+
+    /// attach_resume: claim CAS-create (generation = old+1), worktree
+    /// успадковує мідфлайт-правки і журнал старого run ref, новий run ref
+    /// існує.
+    #[test]
+    fn attach_resume_inherits_worktree_and_bumps_generation() {
+        let fixture = Fixture::new();
+        let run = attach(&fixture.config(), "demo").unwrap();
+        std::fs::write(run.worktree.join("mt/demo/draft.md"), "мідфлайт").unwrap();
+        run.commit_turn("{\"seq\":0}\n", "mt: чернетка").unwrap();
+        let ticket = run.handoff().unwrap();
+
+        let resumed = attach_resume(&fixture.config(), "demo", &ticket).unwrap();
+
+        assert_eq!(resumed.generation(), ticket.generation + 1);
+        assert_ne!(resumed.token, ticket.run_token, "новий token сесії");
+        assert_eq!(
+            std::fs::read_to_string(resumed.worktree.join("mt/demo/draft.md")).unwrap(),
+            "мідфлайт",
+            "мідфлайт-правка успадкована у новому worktree"
+        );
+        assert_eq!(
+            std::fs::read_to_string(resumed.worktree.join(".nitra/session.jsonl")).unwrap(),
+            "{\"seq\":0}\n",
+            "журнал сесії успадкований"
+        );
+        let refs = fixture.remote_refs();
+        assert!(
+            refs.contains(&format!(
+                "refs/mt/runs/{}/{}",
+                resumed.node_hash, resumed.token
+            )),
+            "новий run ref: {refs}"
+        );
+        assert!(
+            refs.contains(&format!("refs/mt/claims/{}", resumed.node_hash)),
+            "новий claim: {refs}"
+        );
+    }
+
+    /// attach_resume із тікетом на неіснуючий run ref → явна помилка,
+    /// не паніка.
+    #[test]
+    fn attach_resume_missing_run_ref_is_explicit_error() {
+        let fixture = Fixture::new();
+        let ticket = HandoffTicket {
+            run_token: "no-such-token".into(),
+            generation: 1,
+        };
+        let error = attach_resume(&fixture.config(), "demo", &ticket).unwrap_err();
+        assert!(error.contains("недоступний"), "{error}");
+    }
+
+    /// Наскрізно: attach → хід → handoff → attach_resume → done — публікує
+    /// ту саму серію NNN без розривів (генерація продовжена через handoff).
+    #[test]
+    fn full_handoff_cycle_publishes_without_nnn_gap() {
+        let fixture = Fixture::new();
+        let first = attach(&fixture.config(), "demo").unwrap();
+        first
+            .commit_turn("{\"seq\":0}\n", "mt: перший хід")
+            .unwrap();
+        let ticket = first.handoff().unwrap();
+
+        let second = attach_resume(&fixture.config(), "demo", &ticket).unwrap();
+        second
+            .commit_turn("{\"seq\":0}\n{\"seq\":1}\n", "mt: другий хід")
+            .unwrap();
+        let node_hash = second.node_hash.clone();
+        let second_token = second.token.clone();
+        let outcome = second.done(3, 10).unwrap();
+        assert!(outcome.published, "{outcome:?}");
+
+        // run_001.md — handoff-маркер першого хосту; run_002.md — success
+        // від другого. Без розривів NNN попри зміну хоста.
+        let main_files = super::git(
+            Path::new(fixture.origin.path()),
+            &["ls-tree", "-r", "--name-only", "main"],
+        )
+        .unwrap();
+        assert!(main_files.contains("mt/demo/run_002.md"), "{main_files}");
+        assert!(main_files.contains("mt/demo/fact_002.md"), "{main_files}");
+        assert!(!main_files.contains(".nitra"), "{main_files}");
+
+        let refs = fixture.remote_refs();
+        assert!(
+            !refs.contains(&format!("refs/mt/claims/{node_hash}")),
+            "claim прибрано: {refs}"
+        );
+        assert!(
+            !refs.contains(&format!("refs/mt/runs/{node_hash}/{second_token}")),
+            "новий run ref прибрано fenced publish-ом: {refs}"
+        );
+        // Handoff-run ref першого хосту навмисно лишається (не-checkpoint
+        // режим не архівує журнал; GC орфанованих run ref-ів після done —
+        // окрема задача, аналог `mt cleanup`).
+        assert!(
+            refs.contains(&format!("refs/mt/runs/{node_hash}/{}", ticket.run_token)),
+            "{refs}"
+        );
     }
 }
