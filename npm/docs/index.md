@@ -23,6 +23,7 @@ docgen:
 * [Runtime](architecture/runtime.md) - agent-server, протокол подій v4, інтерактивні сесії, міграція між хостами, preview
 * [Спеціалізовані поверхні](architecture/surfaces.md) - surface-профілі, MCP-тули, звʼязка з sandbox, референсні designer/writer/cli
 * [Люди, пристрої, доступ](architecture/access.md) - relay, membership і ролі, три approval-гейти з Ed25519-підписами, push
+* [Мандати й людино-центрична ескалація](architecture/mandates.md) - карта мандатів, профілі людей і моделей, decision-request, маршрутизація за важелем, прецедентний рушій
 * [Багатомовність (i18n)](architecture/i18n.md) - base-канон і derived-переклади, worktree-матеріалізація, contract-aware перекладач
 * [Мета-цикл (retro)](architecture/retro.md) - аналіз audit trail, приватні opt-in пропозиції виконавцю
 * [Експлуатація](architecture/operations.md) - CLI, конфігурація, security model, відмовостійкість, наскрізні сценарії
