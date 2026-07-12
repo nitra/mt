@@ -3,9 +3,8 @@ type: JS Module
 title: server.mjs
 resource: relay/lib/server.mjs
 docgen:
-  crc: 4ccc1e5f
+  crc: 9c356734
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini

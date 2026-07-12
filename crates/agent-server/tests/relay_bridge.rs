@@ -94,6 +94,8 @@ async fn remote_user_message_runs_turn_and_streams_back() {
     let subscribe = next_frame(&mut received).await;
     assert_eq!(subscribe["kind"], "subscribe");
     assert_eq!(subscribe["root"], "demo");
+    let pubkeys_request = next_frame(&mut received).await;
+    assert_eq!(pubkeys_request["kind"], "pubkeys");
 
     // Віддалений клієнт шле UserMessage через relay.
     outgoing.send(remote_user_message("привіт")).await.unwrap();
@@ -128,4 +130,134 @@ async fn remote_user_message_runs_turn_and_streams_back() {
         .filter(|envelope| matches!(envelope.event, agent_protocol::Event::UserMessage { .. }))
         .count();
     assert_eq!(user_messages, 1, "host-ехо не мусить оброблятись повторно");
+}
+
+/// Кадр ApprovalResponse віддаленого пристрою (підпис — за протоколом).
+fn remote_approval_response(
+    request_id: &str,
+    approved: bool,
+    signature: Vec<u8>,
+    device_id: uuid::Uuid,
+) -> Value {
+    let envelope = agent_protocol::Envelope {
+        seq: 0,
+        ts: chrono::Utc::now(),
+        node_hash: "demo".into(),
+        run_token: uuid::Uuid::nil(),
+        device_id: Some(device_id),
+        account_id: None,
+        event: agent_protocol::Event::ApprovalResponse {
+            request_id: request_id.into(),
+            approved,
+            signature,
+        },
+    };
+    json!({ "kind": "envelope", "envelope": serde_json::to_value(&envelope).unwrap() })
+}
+
+/// Наскрізний approvals-потік (access.md): pubkeys з relay → ApprovalRequest
+/// у кімнату → підписаний ApprovalResponse віддаленого пристрою → вердикт;
+/// невалідний підпис → Error у стрічку, запит живий до валідної відповіді.
+#[tokio::test(flavor = "multi_thread")]
+async fn signed_approval_flow_via_relay() {
+    let state_dir = tempfile::tempdir().unwrap();
+    let state = Arc::new(AppState::new(
+        SessionHost::new(state_dir.path().to_path_buf()).unwrap(),
+        Arc::new(EchoTurnRunner),
+        None,
+    ));
+    let (url, mut received, outgoing) = mock_relay().await;
+    let _bridge = spawn_relay_bridge(
+        Arc::clone(&state),
+        RelayBridgeConfig {
+            url,
+            device_token: "host-token".into(),
+            root: "demo".into(),
+        },
+    );
+    // hello / subscribe / pubkeys-запит.
+    for _ in 0..3 {
+        next_frame(&mut received).await;
+    }
+
+    // Relay віддає pubkey телефона-approver-а (hex Ed25519).
+    let phone_key = agent_protocol::SigningKey::from_bytes(&[5u8; 32]);
+    let phone_device = uuid::Uuid::from_u128(0xF0);
+    let pubkey_hex: String = phone_key
+        .verifying_key()
+        .to_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    outgoing
+        .send(json!({
+            "kind": "pubkeys",
+            "root": "demo",
+            "pubkeys": [{ "device_id": phone_device.to_string(), "pubkey": pubkey_hex }]
+        }))
+        .await
+        .unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+    // Хост просить approval деструктивної дії.
+    let verdict = state
+        .request_approval("demo", "git push origin main".into(), Some("+1 -1".into()))
+        .unwrap();
+    let request_frame = next_frame(&mut received).await;
+    assert_eq!(
+        request_frame["envelope"]["event"]["type"],
+        "ApprovalRequest"
+    );
+    let request_id = request_frame["envelope"]["event"]["request_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let run_token: uuid::Uuid = request_frame["envelope"]["run_token"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+
+    // Спершу — зіпсований підпис: Error у стрічці, вердикту немає.
+    let payload = agent_protocol::ApprovalPayload {
+        request_id: request_id.clone(),
+        approved: true,
+        node_hash: "demo".into(),
+        run_token,
+    };
+    let mut corrupted = agent_protocol::sign_approval(&phone_key, &payload)
+        .to_bytes()
+        .to_vec();
+    corrupted[7] ^= 0xFF;
+    outgoing
+        .send(remote_approval_response(
+            &request_id,
+            true,
+            corrupted,
+            phone_device,
+        ))
+        .await
+        .unwrap();
+    let error_frame = next_frame(&mut received).await;
+    assert_eq!(error_frame["envelope"]["event"]["type"], "Error");
+
+    // Валідний підпис завершує запит.
+    let signature = agent_protocol::sign_approval(&phone_key, &payload)
+        .to_bytes()
+        .to_vec();
+    outgoing
+        .send(remote_approval_response(
+            &request_id,
+            true,
+            signature,
+            phone_device,
+        ))
+        .await
+        .unwrap();
+    let echoed = next_frame(&mut received).await;
+    assert_eq!(
+        echoed["envelope"]["event"]["type"], "ApprovalResponse",
+        "верифікований вердикт журналюється в сесію"
+    );
+    assert_eq!(verdict.await, Ok(true));
 }

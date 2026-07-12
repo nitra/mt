@@ -30,14 +30,26 @@ function handleFrame(core, state, frame, send) {
     return
   }
   if (!state.device) throw new Error('спершу hello з device_token')
-  if (frame.kind === 'subscribe') {
-    state.subscriptions.get(frame.root)?.()
-    state.subscriptions.set(frame.root, core.subscribe(state.device, frame.root, send))
-    send({ kind: 'ok', subscribed: frame.root })
-  } else if (frame.kind === 'envelope') {
-    core.clientEnvelope(state.device, frame.root, frame.envelope)
+  switch (frame.kind) {
+    case 'subscribe': {
+      state.subscriptions.get(frame.root)?.()
+      state.subscriptions.set(frame.root, core.subscribe(state.device, frame.root, send))
+      send({ kind: 'ok', subscribed: frame.root })
+      break
+    }
+    case 'envelope': {
+      core.clientEnvelope(state.device, frame.root, frame.envelope)
+      break
+    }
+    case 'pubkeys': {
+      // Роздача pubkey-ів approver+ (access.md «GET pubkeys») — хост звіряє
+      // з ними підписи approvals.
+      send({ kind: 'pubkeys', root: frame.root, pubkeys: core.pubkeys(state.device, frame.root) })
+      break
+    }
+    // Невідомі kind ігноруються (forward-compatibility).
+    default:
   }
-  // Невідомі kind ігноруються (forward-compatibility).
 }
 
 /**

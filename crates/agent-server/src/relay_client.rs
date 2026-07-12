@@ -61,6 +61,12 @@ async fn run_bridge(state: &Arc<AppState>, config: &RelayBridgeConfig) -> Result
     ws.send(Message::text(subscribe.to_string()))
         .await
         .map_err(|error| error.to_string())?;
+    // Pubkey-кеш для перевірки підписів approvals (access.md); разом із
+    // ним гейт вмикає require_signed.
+    let pubkeys_request = json!({ "kind": "pubkeys", "root": config.root });
+    ws.send(Message::text(pubkeys_request.to_string()))
+        .await
+        .map_err(|error| error.to_string())?;
 
     let mut updates = state.sessions.subscribe();
     loop {
@@ -99,8 +105,13 @@ async fn handle_incoming(state: &Arc<AppState>, text: &str) {
     let Ok(frame) = serde_json::from_str::<Value>(text) else {
         return;
     };
-    if frame.get("kind").and_then(Value::as_str) != Some("envelope") {
-        return;
+    match frame.get("kind").and_then(Value::as_str) {
+        Some("pubkeys") => {
+            update_pubkeys(state, &frame);
+            return;
+        }
+        Some("envelope") => {}
+        _ => return,
     }
     if frame
         .get("from_host")
@@ -117,4 +128,41 @@ async fn handle_incoming(state: &Arc<AppState>, text: &str) {
         .and_then(Value::as_str)
         .and_then(|raw| Uuid::parse_str(raw).ok());
     handle_client_frame(state, &envelope.to_string(), device_id).await;
+}
+
+/// Кадр `pubkeys` від relay → оновлення pubkey-кешу гейту approvals.
+/// `pubkey` — hex 32-байтового Ed25519 ключа; непарсибельні записи
+/// пропускаються (пристрої без валідного ключа не можуть підписувати).
+fn update_pubkeys(state: &Arc<AppState>, frame: &Value) {
+    let Some(list) = frame.get("pubkeys").and_then(Value::as_array) else {
+        return;
+    };
+    let keys = list
+        .iter()
+        .filter_map(|entry| {
+            let device_id = entry
+                .get("device_id")
+                .and_then(Value::as_str)
+                .and_then(|raw| Uuid::parse_str(raw).ok())?;
+            let hex = entry.get("pubkey").and_then(Value::as_str)?;
+            let bytes = decode_hex_32(hex)?;
+            let key = agent_protocol::VerifyingKey::from_bytes(&bytes).ok()?;
+            Some((device_id, key))
+        })
+        .collect();
+    state.approvals.set_pubkeys(keys);
+}
+
+/// Hex → 32 байти (Ed25519 pubkey); інша довжина/не-hex → None.
+fn decode_hex_32(hex: &str) -> Option<[u8; 32]> {
+    if hex.len() != 64 {
+        return None;
+    }
+    let mut bytes = [0u8; 32];
+    for (index, chunk) in hex.as_bytes().chunks(2).enumerate() {
+        let high = (chunk[0] as char).to_digit(16)?;
+        let low = (chunk[1] as char).to_digit(16)?;
+        bytes[index] = ((high << 4) | low) as u8;
+    }
+    Some(bytes)
 }

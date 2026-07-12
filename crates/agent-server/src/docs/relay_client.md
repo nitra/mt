@@ -3,9 +3,8 @@ type: Rust Module
 title: relay_client.rs
 resource: crates/agent-server/src/relay_client.rs
 docgen:
-  crc: 45cb50ac
+  crc: aa18a55b
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.99
   judgeModel: openai-codex/gpt-5.4-mini

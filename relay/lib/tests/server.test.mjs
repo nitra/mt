@@ -105,6 +105,17 @@ test('hello → subscribe → envelope доходить підписнику; р
   publisher.close()
 })
 
+test('pubkeys-кадр: pubkey-и approver+ пристроїв для перевірки підписів', async () => {
+  const socket = await connect()
+  await roundtrip(socket, { kind: 'hello', device_token: viewerToken })
+  const reply = await roundtrip(socket, { kind: 'pubkeys', root: 'root-1' })
+  expect(reply.kind).toBe('pubkeys')
+  expect(reply.root).toBe('root-1')
+  // Owner (approver+) — так; viewer — ні.
+  expect(reply.pubkeys.map(k => k.pubkey)).toEqual(['pk-mac'])
+  socket.close()
+})
+
 test('viewer не шле клієнтські події через WS', async () => {
   const socket = await connect()
   await roundtrip(socket, { kind: 'hello', device_token: viewerToken })
