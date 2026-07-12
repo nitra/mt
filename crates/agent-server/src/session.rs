@@ -130,6 +130,23 @@ impl SessionHost {
         })
     }
 
+    /// Засіває журнал сесії напряму у файл (attach_resume після handoff:
+    /// новий хост успадковує `.nitra/session.jsonl` вже готовим — той самий
+    /// формат, що й локальний журнал). Наступний `get_or_open` прочитає
+    /// його як після рестарту хоста — продовжить seq/run_token природно.
+    /// Помилка, якщо сесія для цього ключа вже відкрита: живий стан у
+    /// пам'яті заднім числом не перечитується, сіяти треба ДО першого
+    /// `get_or_open`.
+    pub fn seed_journal(&self, node: &str, jsonl: &str) -> std::io::Result<()> {
+        if self.sessions.lock().unwrap().contains_key(node) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::AlreadyExists,
+                format!("seed_journal: сесія {node} вже відкрита"),
+            ));
+        }
+        fs::write(self.state_dir.join(format!("{node}.session.jsonl")), jsonl)
+    }
+
     /// Сесія кімнати; створюється (або відновлюється з журналу) ліниво.
     pub fn get_or_open(&self, node_hash: &str) -> std::io::Result<std::sync::Arc<Session>> {
         let mut sessions = self.sessions.lock().unwrap();
@@ -262,5 +279,44 @@ mod tests {
         let received = receiver.recv().await.unwrap();
         assert_eq!(received.node_hash, "room-1");
         assert_eq!(received.event, Event::AgentTextDone {});
+    }
+
+    /// seed_journal: сіяний журнал підхоплюється наступним get_or_open —
+    /// той самий механізм відновлення, що й після рестарту хоста.
+    #[test]
+    fn seed_journal_is_picked_up_by_next_open() {
+        let (_dir, host) = host();
+        let seeded = Envelope {
+            seq: 0,
+            ts: Utc::now(),
+            node_hash: "room-1".into(),
+            run_token: Uuid::from_u128(9),
+            device_id: None,
+            account_id: None,
+            event: Event::UserMessage {
+                text: "успадковано".into(),
+                attachments: vec![],
+                surface: None,
+            },
+        };
+        let jsonl = format!("{}\n", serde_json::to_string(&seeded).unwrap());
+        host.seed_journal("room-1", &jsonl).unwrap();
+
+        let session = host.get_or_open("room-1").unwrap();
+        assert_eq!(session.run_token, Uuid::from_u128(9));
+        assert_eq!(session.replay_from(0), vec![seeded]);
+
+        let next = session.append(Event::AgentTextDone {}, None, None);
+        assert_eq!(next.seq, 1, "seq продовжується від сіяного журналу");
+    }
+
+    /// seed_journal після відкриття сесії — явна помилка (живий стан у
+    /// пам'яті заднім числом не перечитується).
+    #[test]
+    fn seed_journal_after_open_is_rejected() {
+        let (_dir, host) = host();
+        host.get_or_open("room-1").unwrap();
+        let error = host.seed_journal("room-1", "").unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::AlreadyExists);
     }
 }

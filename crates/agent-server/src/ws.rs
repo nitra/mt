@@ -89,6 +89,59 @@ impl AppState {
         self.graph = Some(config);
         self
     }
+
+    /// Кооперативний handoff вузла (runtime.md, «Міграція сесії між
+    /// хостами», крок 2): знімає run з обліку, `InteractiveRun::handoff`
+    /// пише `run_NNN.md (result: handoff)` і CAS-delete claim; сповіщає
+    /// сесію `ClaimChanged { holder: None }` — той самий сигнал, що й
+    /// release (деталь «це handoff, не пауза» лишається в run-файлі).
+    pub async fn handoff_node(&self, node: &str) -> Result<graph::HandoffTicket, String> {
+        let Some(run) = self.runs.lock().await.remove(node) else {
+            return Err(format!("handoff: вузол {node} без активного run"));
+        };
+        let generation = run.generation();
+        let ticket = run.handoff()?;
+        if let Ok(session) = self.sessions.get_or_open(node) {
+            self.sessions.publish(
+                &session,
+                Event::ClaimChanged {
+                    node_hash: node.to_string(),
+                    holder_device_id: None,
+                    lease_until: None,
+                    generation,
+                },
+                None,
+                None,
+            );
+        }
+        Ok(ticket)
+    }
+
+    /// Відновлення на цьому хості після кооперативного handoff (runtime.md,
+    /// крок 3): `attach_resume` матеріалізує worktree зі стану старого run
+    /// ref → журнал `.nitra/session.jsonl` засіває локальну сесію (best
+    /// effort: помилка сіву не валить resume — сесія просто почне з
+    /// чистого seq) → run під обліком, renewal запущено.
+    pub async fn resume_node(
+        self: &Arc<Self>,
+        node: &str,
+        ticket: &graph::HandoffTicket,
+    ) -> Result<(), String> {
+        let config = self
+            .graph
+            .as_ref()
+            .ok_or_else(|| "resume: graph-міст не увімкнено".to_string())?;
+        let run = graph::attach_resume(config, node, ticket)?;
+
+        if let Ok(jsonl) = std::fs::read_to_string(run.worktree.join(".nitra/session.jsonl")) {
+            let _ = self.sessions.seed_journal(node, &jsonl);
+        }
+
+        let lease_sec = config.lease_sec;
+        self.runs.lock().await.insert(node.to_string(), run);
+        spawn_renewal(Arc::clone(self), node.to_string(), lease_sec);
+        Ok(())
+    }
 }
 
 /// Маршрути хоста: єдина точка `/ws`.
