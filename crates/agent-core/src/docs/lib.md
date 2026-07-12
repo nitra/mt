@@ -3,7 +3,7 @@ type: Rust Module
 title: lib.rs
 resource: crates/agent-core/src/lib.rs
 docgen:
-  crc: 326412a3
+  crc: 13410f5d
   model: openai-codex/gpt-5.5
   score: 100
   issues: judge:inaccurate:0.96

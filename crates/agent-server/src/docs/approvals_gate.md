@@ -3,9 +3,8 @@ type: Rust Module
 title: approvals_gate.rs
 resource: crates/agent-server/src/approvals_gate.rs
 docgen:
-  crc: 7db305e0
+  crc: 6b2295e9
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
-  tier: local-min
   score: 100
   issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini

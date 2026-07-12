@@ -18,7 +18,7 @@ type WsStream =
 /// Сервер із MockProvider, який на кожен хід відповідає одним текстом.
 async fn start_server(dir: &tempfile::TempDir, responses: Vec<&str>) -> String {
     let responses: Vec<String> = responses.into_iter().map(String::from).collect();
-    let runner = AgentTurnRunner::new(move |_workdir| {
+    let runner = AgentTurnRunner::new(move |_context| {
         Agent::new(
             MockProvider::scripted(responses.iter().map(|text| Completion {
                 text: text.clone(),

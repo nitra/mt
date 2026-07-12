@@ -6,13 +6,21 @@
 //! [`EchoTurnRunner`] — заглушка для demo/CLI без налаштованого провайдера.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use agent_core::provider::Provider;
 use agent_core::{Agent, AgentError};
 use agent_protocol::Event;
 use async_trait::async_trait;
+
+/// Контекст кімнати для фабрики агента: вузол (для approval-гейта тулів —
+/// запити йдуть у правильну кімнату) і workdir run-а (worktree).
+#[derive(Debug, Clone)]
+pub struct RoomContext {
+    pub node: String,
+    pub workdir: Option<PathBuf>,
+}
 
 /// Виконавець одного ходу кімнати. `workdir` — робоча директорія ходу
 /// (worktree інтерактивного run-а); runner-и без файлових тулів її ігнорують.
@@ -27,8 +35,8 @@ pub trait TurnRunner: Send + Sync {
     ) -> Result<String, AgentError>;
 }
 
-/// Фабрика агента кімнати: отримує workdir run-а (worktree run-а).
-type AgentFactory<P> = Box<dyn Fn(Option<&Path>) -> Agent<P> + Send + Sync>;
+/// Фабрика агента кімнати: отримує контекст кімнати (вузол + workdir).
+type AgentFactory<P> = Box<dyn Fn(&RoomContext) -> Agent<P> + Send + Sync>;
 
 /// Референсний runner: окремий `Agent` (своя історія) на кожну кімнату.
 /// Фабрика отримує workdir run-а (worktree) — агент кімнати будується з
@@ -39,9 +47,9 @@ pub struct AgentTurnRunner<P: Provider> {
 }
 
 impl<P: Provider> AgentTurnRunner<P> {
-    /// `factory` створює агента кімнати (system prompt, tools за workdir,
-    /// модель).
-    pub fn new(factory: impl Fn(Option<&Path>) -> Agent<P> + Send + Sync + 'static) -> Self {
+    /// `factory` створює агента кімнати (system prompt, tools за
+    /// контекстом кімнати, модель).
+    pub fn new(factory: impl Fn(&RoomContext) -> Agent<P> + Send + Sync + 'static) -> Self {
         Self {
             agents: tokio::sync::Mutex::new(HashMap::new()),
             factory: Box::new(factory),
@@ -54,11 +62,13 @@ impl<P: Provider> AgentTurnRunner<P> {
         workdir: Option<&Path>,
     ) -> Arc<tokio::sync::Mutex<Agent<P>>> {
         let mut agents = self.agents.lock().await;
-        Arc::clone(
-            agents
-                .entry(node_hash.to_string())
-                .or_insert_with(|| Arc::new(tokio::sync::Mutex::new((self.factory)(workdir)))),
-        )
+        Arc::clone(agents.entry(node_hash.to_string()).or_insert_with(|| {
+            let context = RoomContext {
+                node: node_hash.to_string(),
+                workdir: workdir.map(Path::to_path_buf),
+            };
+            Arc::new(tokio::sync::Mutex::new((self.factory)(&context)))
+        }))
     }
 }
 
@@ -110,7 +120,7 @@ mod tests {
     /// AgentTurnRunner дає події ходу; історія кімнати зберігається між ходами.
     #[tokio::test]
     async fn agent_turn_runner_keeps_per_room_history() {
-        let runner = AgentTurnRunner::new(|_workdir| {
+        let runner = AgentTurnRunner::new(|_context| {
             Agent::new(
                 MockProvider::scripted([
                     Completion {
@@ -157,10 +167,10 @@ mod tests {
         use agent_core::register_workspace_tools;
 
         let workdir = tempfile::tempdir().unwrap();
-        let runner = AgentTurnRunner::new(|workdir: Option<&Path>| {
+        let runner = AgentTurnRunner::new(|context: &RoomContext| {
             let mut tools = ToolRegistry::new();
-            if let Some(root) = workdir {
-                register_workspace_tools(&mut tools, root.to_path_buf());
+            if let Some(root) = &context.workdir {
+                register_workspace_tools(&mut tools, root.clone());
             }
             Agent::new(
                 MockProvider::scripted([
