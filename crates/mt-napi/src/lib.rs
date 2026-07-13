@@ -147,7 +147,7 @@ pub fn config_defaults() -> serde_json::Value {
     mt_core::config::config_defaults()
 }
 
-/// Зливає сирий текст `.mt.json` (або null) з дефолтами; `model_map` — deep merge.
+/// Зливає сирий текст `.mt.json` (або null) з дефолтами
 #[napi]
 pub fn merge_config(raw: Option<String>) -> serde_json::Value {
     mt_core::config::merge_config(raw.as_deref())

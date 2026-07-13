@@ -23,41 +23,39 @@ timestamp: 2026-07-07
 
 ## Surface-профіль
 
-`surface_profiles` у `.mt.json` розширюється з мапи «рядок → провайдер» до обʼєкта:
+`surface_profiles` у `.mt.json` розширюється з мапи «рядок → виконавець» до обʼєкта:
 
 ```jsonc
 // .mt.json
 {
   "surface_profiles": {
     "designer": {
-      "provider": "local-omlx",            // ключ із provider_profiles
+      "agent_cli": "pi",                   // виконавець surface (ACP; pi = локальні omlx-моделі)
       "system_prompt": ".mt/prompts/designer.md",
       "skills": ["read-files", "write-files", "preview"],
       "tools": ["mcp:figma", "mcp:browser"],   // MCP-сервери (нижче)
       "context_kinds": ["dom_element", "file_region"]
     },
     "writer": {
-      "provider": "litellm",
+      "agent_cli": "codex",
       "system_prompt": ".mt/prompts/writer.md",
       "skills": ["read-files", "write-files"],
       "tools": [],
       "context_kinds": ["text_range"]
     },
-    "cli": { "provider": "litellm", "skills": ["bash", "read-files", "write-files"] }
+    "cli": { "agent_cli": "claude", "skills": ["bash", "read-files", "write-files"] }
   }
 }
 ```
 
-- Усі поля, крім `provider`, опціональні; відсутній профіль → профіль сесії за замовчуванням (деградація як у 0.2.x).
+- Усі поля, крім `agent_cli`, опціональні; відсутній профіль → виконавець сесії за замовчуванням (env `MT_AGENT_CLI`). Модель тиру — та сама `MT_AGENT_CLI_MODEL_MAP`, транспорт — ACP ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
 - `context_kinds` — які `ContextSelected.kind` цей режим уміє інтерпретувати; події з іншими kind хост відхиляє з `Error` (а не мовчки губить).
-- Резолюція per-turn: `UserMessage.surface` → профіль → провайдер/промпт/tools цього ходу. Без hint — профіль попереднього ходу; на старті — default за `client_kind`.
+- Резолюція per-turn: `UserMessage.surface` → профіль → виконавець (agent_cli)/промпт/tools цього ходу. Без hint — профіль попереднього ходу; на старті — default за `client_kind`.
 
 ## Tools: MCP — нормативний механізм розширення
 
-Заділ `register_external(...)` зі [stack.md](stack.md) стає нормою:
-
-- **Кожен зовнішній тул — MCP-сервер**, задекларований у конфігу (`mcp_servers`) і згаданий у `tools` surface-профілю як `mcp:<name>`. Власний тул-протокол не вводиться; вбудовані skills (bash, read/write-files, preview) лишаються нативними.
-- **Життєвий цикл:** agent-server стартує MCP-сервер ліниво при першому ході surface, що його потребує; помирає разом із сесією або за idle-TTL. Схеми тулів MCP-сервера потрапляють у контекст агента лише для ходів цього surface — спеціалізація і є економія контексту.
+- **Кожен зовнішній тул — MCP-сервер**, задекларований у конфігу (`mcp_servers`) і згаданий у `tools` surface-профілю як `mcp:<name>`. Власний тул-протокол не вводиться; MCP-сервери передаються виконавцю surface (CLI мають власний штатний MCP-механізм) при старті ACP-сесії.
+- **Життєвий цикл:** MCP-сервер стартує ліниво при першому ході surface, що його потребує; помирає разом із сесією або за idle-TTL. Схеми тулів MCP-сервера потрапляють у контекст агента лише для ходів цього surface — спеціалізація і є економія контексту.
 - **Межа довіри:** MCP-тул виконується з боку хоста — деструктивні виклики проходять той самий mid-run approval-гейт ([access.md](access.md)), що й нативні.
 
 Схема декларації:

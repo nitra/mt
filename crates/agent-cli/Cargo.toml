@@ -11,7 +11,6 @@ name = "agent-cli"
 path = "src/main.rs"
 
 [dependencies]
-agent-core = { path = "../agent-core" }
 agent-protocol = { path = "../agent-protocol" }
 agent-server = { path = "../agent-server" }
 chrono = { workspace = true, features = ["serde"] }

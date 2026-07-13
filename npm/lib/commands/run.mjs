@@ -9,17 +9,42 @@
  *    base/diagnose-first/alternative-approach) резолвить у стратегію + ескалацію model_tier
  * 4. git worktree add .worktrees/<task-epoch>/ (atomic mkdir lock — EEXIST = skip)
  * 5. ENV: MT_RUN_NNN, MT_ATTEMPT, MT_RETRY_STRATEGY, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC,
- *    MT_STARTED_AT, MT_TASK_PATH, MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER
- * 6. Спавнить subprocess: вбудований Claude-agent-шлях АБО (якщо `.mt.json`
- *    `node_executor` заданий) — зовнішня команда-екзекутор (див. нижче)
- * 7. Після exit: fact_NNN.md є → result:success; else → result:failed
+ *    MT_STARTED_AT, MT_TASK_PATH, MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER,
+ *    MT_AGENT_CLI
+ * 6. Спавнить subprocess: підписочний CLI-виконавець (agent_cli, див. нижче) АБО
+ *    (якщо `.mt.json` `node_executor` заданий) — зовнішня команда-екзекутор (див. нижче)
+ * 7. Після exit: fact_NNN.md є І `## Check` пройдено → result:success; else → failed
  * 8. Пише run_NNN.md
  * 9. Якщо success: git merge + delete worktree
+ *
+ * ## Підписочні CLI-виконавці (`agent_cli`)
+ *
+ * Вбудований agent-шлях — headless-запуск одного з підписочних CLI (runtime.md
+ * «Підписочні CLI-виконавці»): `claude` | `codex` | `cursor` | `pi` (локальні
+ * omlx-моделі через pi.dev CLI). Користувач авторизується у CLI локально під
+ * ВЛАСНОЮ підпискою — MT не тримає ключів і не білінгує токени.
+ *
+ * Конфігурація виконавців — **user-level, з ENV** (`.mt.json` — лише
+ * repo-scoped): `MT_AGENT_CLI` (дефолтний CLI), `MT_CLOUD_AGENT_CLIS`
+ * (каскад, comma-separated), `MT_AGENT_CLI_MODEL_MAP` (JSON «CLI → тир →
+ * модель»). Per-node override CLI — секція `## Agent cli` в `a.md`
+ * (крос-програмковий вимір vision.md). Модель тиру MIN/AVG/MAX резолвиться
+ * мапою; CLI без мапінгу резолвить модель сам — тир іде hint-ом
+ * env `MT_MODEL_TIER`.
+ *
+ * ## Каскад хмарних підписок (`MT_CLOUD_AGENT_CLIS`)
+ *
+ * Упорядкований список хмарних CLI користувача (напр. "codex,cursor").
+ * Якщо запуск CLI падає з ознаками вичерпаних лімітів підписки
+ * (rate limit / quota / 429), runner автоматично пробує наступний CLI
+ * каскаду — [обраний agent_cli, ...каскад] без дублів — поки не спрацює або
+ * не вичерпаються всі. Фактичний CLI фіксується у frontmatter run_NNN.md
+ * (`agent_cli`).
  *
  * ## Точка розширення: зовнішній екзекутор вузла (`node_executor`)
  *
  * `.mt.json` `node_executor` (рядок-команда, напр. `npx n-cursor mt-run-node`)
- * замінює вбудований Claude-agent-шлях для actor=agent. Мотивація: зовнішній консюмер
+ * замінює вбудований CLI-шлях (agent_cli) для actor=agent. Мотивація: зовнішній консюмер
  * виконує вузли ВЛАСНИМ harness-ом (свої моделі/тири, власна телеметрія) замість
  * Claude-моделей `.mt.json` model_map. MT лишає за собою всю оркестрацію
  * (claim/lease, worktree-ізоляція, budget/timeout, ## Check, fenced publish);
@@ -50,7 +75,14 @@ import { cwd as processCwd } from 'node:process'
 
 import { buildMarkdown, parseFrontMatter } from '../core/frontmatter.mjs'
 import { latestFactNNN, nextRunNNN } from '../core/nnn.mjs'
-import { loadConfig, resolveModelByTier, resolveMtDir, resolveWorktreesDir } from '../core/config.mjs'
+import {
+  loadAgentCliEnv,
+  loadConfig,
+  normalizeModelTier,
+  resolveModelForCli,
+  resolveMtDir,
+  resolveWorktreesDir
+} from '../core/config.mjs'
 import { scanTasks, topoSort, areDepsResolved } from '../core/scanner.mjs'
 import { createWorktree, listActiveWorktrees, mergeWorktree, makeWorktreeName } from '../core/worktree.mjs'
 
@@ -60,8 +92,8 @@ const EXECUTOR_SPEC_SPLIT = /\s+/
 /** Маркер буліта (`-`/`*`) на початку рядка щабля `## Retry ladder` у `a.md`. */
 const LADDER_BULLET_RE = /^[-*]\s*/
 
-/** Порядок model_tier для ескалації драбиною (позиційний зсув: MIM→AVG→MAX, cap на MAX). */
-const MODEL_TIER_ORDER = ['MIM', 'AVG', 'MAX']
+/** Порядок model_tier для ескалації драбиною (позиційний зсув: MIN→AVG→MAX, cap на MAX). */
+const MODEL_TIER_ORDER = ['MIN', 'AVG', 'MAX']
 
 /**
  * Драбина ретраїв за замовчуванням (graph.md "Retry ladder"): 1 — base;
@@ -75,11 +107,119 @@ const DEFAULT_RETRY_LADDER = [
 ]
 
 /**
- * Пише run_NNN.md артефакт.
+ * Підписочні CLI-виконавці вбудованого agent-шляху (runtime.md «Підписочні
+ * CLI-виконавці»). Кожен CLI користувач авторизує локально під власною
+ * підпискою; MT не тримає ключів. Тир-алгоритм MIN/AVG/MAX резолвить
+ * КОНКРЕТНУ модель per-CLI через env `MT_AGENT_CLI_MODEL_MAP` (напр. codex:
+ * MIN→luna, AVG→terra, MAX→sola) — `resolveModelForCli`; без мапи модель
+ * `null` → прапор моделі не передається, CLI вирішує сам (тир лишається
+ * hint-ом env `MT_MODEL_TIER`).
+ */
+const AGENT_CLIS = {
+  claude: {
+    cmd: 'claude',
+    /**
+     * @param {{ model: string | null, prompt: string }} p параметри запуску
+     * @returns {string[]} argv
+     */
+    buildArgs: p => [...(p.model ? ['--model', p.model] : []), '--no-session', '-p', p.prompt]
+  },
+  codex: {
+    cmd: 'codex',
+    /**
+     * @param {{ model: string | null, prompt: string }} p параметри запуску
+     * @returns {string[]} argv
+     */
+    buildArgs: p => ['exec', ...(p.model ? ['-m', p.model] : []), '--full-auto', p.prompt]
+  },
+  cursor: {
+    cmd: 'cursor-agent',
+    /**
+     * @param {{ model: string | null, prompt: string }} p параметри запуску
+     * @returns {string[]} argv
+     */
+    buildArgs: p => [...(p.model ? ['--model', p.model] : []), '--print', '--force', p.prompt]
+  },
+  pi: {
+    cmd: 'pi',
+    /**
+     * @param {{ model: string | null, prompt: string }} p параметри запуску
+     * @returns {string[]} argv
+     */
+    buildArgs: p => [...(p.model ? ['--model', p.model] : []), '-p', p.prompt]
+  }
+}
+
+/** Ознаки вичерпаних лімітів підписки у виводі CLI (каскад MT_CLOUD_AGENT_CLIS). */
+const RATE_LIMIT_RE = /rate.?limit|too many requests|usage limit|quota (exceeded|reached)|\b429\b/i
+
+/**
+ * Чи схожий результат spawnSync на вичерпані ліміти підписки: ненульовий exit
+ * і rate-limit-маркер у stdout/stderr. Best-effort евристика по тексту виводу.
+ * @param {{ status?: number | null, stdout?: string, stderr?: string } | null | undefined} res результат spawnSync
+ * @returns {boolean} true якщо ліміти вичерпані
+ */
+function isRateLimited(res) {
+  if (!res || res.status === 0) return false
+  return RATE_LIMIT_RE.test(`${res.stdout ?? ''}\n${res.stderr ?? ''}`)
+}
+
+/**
+ * Headless-запуск підписочного CLI з каскадом по хмарних провайдерах
+ * (env `MT_CLOUD_AGENT_CLIS`): порядок — [обраний agent_cli, ...каскад] без
+ * дублів; rate-limited результат → лог і наступний кандидат; невідомі імена
+ * пропускаються. Модель тиру резолвиться per-кандидат (`MT_AGENT_CLI_MODEL_MAP`).
+ * @param {{
+ *   agentCli: string, cliEnv: object, modelTier: string,
+ *   prompt: string, cwd: string, env: Record<string, string>,
+ *   timeoutMs: number | undefined,
+ *   spawnSync: (cmd: string, args: string[], opts?: object) => object,
+ *   log: (m: string) => void
+ * }} p параметри
+ * @returns {string | null} імʼя CLI, що виконав run, або null (усі вичерпані)
+ */
+function spawnAgentCliCascade(p) {
+  const cascade = [p.agentCli, ...p.cliEnv.cloudAgentClis].filter((c, i, arr) => arr.indexOf(c) === i)
+  for (const cliName of cascade) {
+    const cli = AGENT_CLIS[cliName]
+    if (!cli) {
+      p.log(`run: пропускаю невідомий CLI "${cliName}" у каскаді MT_CLOUD_AGENT_CLIS`)
+      continue
+    }
+    const model = resolveModelForCli(p.cliEnv, cliName, p.modelTier)
+    const res = p.spawnSync(cli.cmd, cli.buildArgs({ model, prompt: p.prompt }), {
+      cwd: p.cwd,
+      env: { ...p.env, MT_AGENT_CLI: cliName },
+      encoding: 'utf8',
+      timeout: p.timeoutMs
+    })
+    if (!isRateLimited(res)) return cliName
+    p.log(`run: "${cliName}" — вичерпано ліміти підписки, каскад на наступний хмарний CLI`)
+  }
+  p.log('run: усі CLI каскаду вичерпали ліміти підписки')
+  return null
+}
+
+/**
+ * Будує headless-промпт agent-шляху — спільний для всіх підписочних CLI.
+ * @param {{ taskPath: string, worktreeTaskDir: string, nnn: string, budgetSec: number }} p параметри
+ * @returns {string} промпт
+ */
+function buildAgentPrompt(p) {
+  return (
+    `You are executing task: ${p.taskPath}\nWorking directory: ${p.worktreeTaskDir}\n` +
+    `Run NNN: ${p.nnn}\nBudget: ${p.budgetSec}s\n\n` +
+    `Read task.md and plan_*.md, execute the task, write fact_${p.nnn}.md with results.`
+  )
+}
+
+/**
+ * Пише run_NNN.md артефакт. `meta.agentCli` (фактичний CLI після каскаду
+ * cloud_agent_clis) потрапляє у frontmatter як `agent_cli`.
  * @param {string} taskDir директорія задачі
  * @param {string} nnn NNN рядок
  * @param {'success'|'failed'} result результат
- * @param {{ actor: string, startedAt: string, now: string }} meta метадані
+ * @param {{ actor: string, startedAt: string, now: string, agentCli?: string | null }} meta метадані
  * @param {(p: string, c: string, enc: string) => void} writeFile функція запису
  */
 function writeRunFile(taskDir, nnn, result, meta, writeFile) {
@@ -87,6 +227,7 @@ function writeRunFile(taskDir, nnn, result, meta, writeFile) {
     created_at: meta.now,
     started_at: meta.startedAt,
     actor: meta.actor,
+    ...(meta.agentCli && { agent_cli: meta.agentCli }),
     result
   }
   const content = buildMarkdown(fm, `## Run ${nnn}\n\nactor: ${meta.actor}\nresult: ${result}\n`)
@@ -94,14 +235,16 @@ function writeRunFile(taskDir, nnn, result, meta, writeFile) {
 }
 
 /**
- * Читає model_tier із прапора `a.md` (секція "## Model tier") — джерело істини
- * виконавця після перенесення авторингу в Rust (`mt-scanner create`).
+ * Читає непорожні рядки секції `## <title>` прапора `a.md` — спільний
+ * markdown-конвент прапорів виконавця («## Model tier», «## Retry ladder»,
+ * «## Agent cli»; авторинг mt-scanner). Немає a.md/секції/рядків → null.
  * @param {string} taskDir директорія задачі
+ * @param {string} title заголовок секції у lower-case (напр. "## model tier")
  * @param {(p: string, enc: string) => string} readFile читання файлу
  * @param {(p: string) => boolean} exists перевірка існування
- * @returns {string | null} tier (напр. "MAX") або null якщо немає a.md/секції
+ * @returns {string[] | null} trim-нуті рядки секції або null
  */
-function readModelTierFromFlag(taskDir, readFile, exists) {
+function readFlagSection(taskDir, title, readFile, exists) {
   const flagPath = join(taskDir, 'a.md')
   if (!exists(flagPath)) return null
   let content
@@ -111,46 +254,29 @@ function readModelTierFromFlag(taskDir, readFile, exists) {
     return null
   }
   const lines = content.split('\n')
-  const idx = lines.findIndex(l => l.trim().toLowerCase() === '## model tier')
+  const idx = lines.findIndex(l => l.trim().toLowerCase() === title)
   if (idx === -1) return null
+  const values = []
   for (let i = idx + 1; i < lines.length; i++) {
     const t = lines[i].trim()
     if (t.startsWith('##')) break
-    if (t) return t
+    if (t) values.push(t)
   }
-  return null
+  return values.length ? values : null
 }
 
 /**
- * Читає per-node override драбини ретраїв із `a.md` (секція "## Retry ladder",
- * один рядок/буліт на щабель — той самий markdown-конвент, що й "## Model tier").
- * Відсутність секції чи `a.md` → null (виконавець бере драбину за замовчуванням).
+ * Парсить рядки секції "## Retry ladder" у драбину (один рядок/буліт на щабель).
  * Щабель "alternative-approach" завжди несе `model_tier_delta: 1` (graph.md);
  * решта назв — 0 (сигнал стратегії без ескалації тиру).
- * @param {string} taskDir директорія задачі
- * @param {(p: string, enc: string) => string} readFile читання файлу
- * @param {(p: string) => boolean} exists перевірка існування
+ * @param {string[]} lines рядки секції
  * @returns {{ strategy: string, model_tier_delta: number }[] | null} драбина або null
  */
-function readRetryLadderFromFlag(taskDir, readFile, exists) {
-  const flagPath = join(taskDir, 'a.md')
-  if (!exists(flagPath)) return null
-  let content
-  try {
-    content = readFile(flagPath, 'utf8')
-  } catch {
-    return null
-  }
-  const lines = content.split('\n')
-  const idx = lines.findIndex(l => l.trim().toLowerCase() === '## retry ladder')
-  if (idx === -1) return null
-  const steps = []
-  for (let i = idx + 1; i < lines.length; i++) {
-    const t = lines[i].trim()
-    if (t.startsWith('##')) break
-    const strategy = t.replace(LADDER_BULLET_RE, '').trim().toLowerCase()
-    if (strategy) steps.push({ strategy, model_tier_delta: strategy === 'alternative-approach' ? 1 : 0 })
-  }
+function parseRetryLadder(lines) {
+  const steps = lines
+    .map(l => l.replace(LADDER_BULLET_RE, '').trim().toLowerCase())
+    .filter(Boolean)
+    .map(strategy => ({ strategy, model_tier_delta: strategy === 'alternative-approach' ? 1 : 0 }))
   return steps.length ? steps : null
 }
 
@@ -179,7 +305,7 @@ function resolveRetryStep(attempt, ladder) {
 }
 
 /**
- * Підвищує model_tier на `delta` позицій драбиною MIM→AVG→MAX (cap на MAX).
+ * Підвищує model_tier на `delta` позицій драбиною MIN→AVG→MAX (cap на MAX).
  * Невідомий tier або delta=0 → без змін.
  * @param {string} tier поточний tier
  * @param {number} delta кількість позицій підвищення
@@ -193,27 +319,33 @@ function bumpModelTier(tier, delta) {
 }
 
 /**
- * Резолвить виконавця задачі: тип і модель. Істина model_tier — прапор `a.md`
- * (секція "## Model tier", авторинг mt-scanner). Fallback на `executor` у frontmatter
- * (старі вузли) → `default_model_tier` із `.mt.json`. На attempt 2+ (retry ladder)
- * ескалює ефективний model_tier за щаблем драбини (`## Retry ladder` override у
- * `a.md`, або дефолт) і повертає стратегію щабля для `MT_RETRY_STRATEGY`.
+ * Резолвить виконавця задачі: тип, модель і підписочний CLI. Істина model_tier —
+ * прапор `a.md` (секція "## Model tier", авторинг mt-scanner). Fallback на `executor`
+ * у frontmatter (старі вузли) → `default_model_tier` із `.mt.json`. На attempt 2+
+ * (retry ladder) ескалює ефективний model_tier за щаблем драбини (`## Retry ladder`
+ * override у `a.md`, або дефолт) і повертає стратегію щабля для `MT_RETRY_STRATEGY`.
+ * Підписочний CLI: `a.md` "## Agent cli" (per-node) → `.mt.json` `agent_cli` → claude.
+ * Модель тут не резолвиться — вона per-кандидат каскаду (`spawnAgentCliCascade`).
  * @param {string} taskDir директорія задачі
  * @param {Record<string, unknown>} fm frontmatter task.md
  * @param {object} config конфігурація
  * @param {{ readFile: (p: string, enc: string) => string, exists: (p: string) => boolean }} io ФС-ін'єкції
  * @param {number} attempt номер спроби (MT_ATTEMPT)
- * @returns {{ executorType: string, modelTier: string, model: string, retryStrategy: string }} виконавець
+ * @param {object} cliEnv конфіг виконавців з ENV (`loadAgentCliEnv`)
+ * @returns {{ executorType: string, modelTier: string, retryStrategy: string, agentCli: string }} виконавець
  */
-function resolveExecutor(taskDir, fm, config, io, attempt) {
+function resolveExecutor(taskDir, fm, config, io, attempt, cliEnv) {
   const executor = fm.executor && typeof fm.executor === 'object' ? fm.executor : {}
   const executorType = executor.type ?? 'agent'
-  const tierFromFlag = readModelTierFromFlag(taskDir, io.readFile, io.exists)
-  const baseModelTier = tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG'
-  const ladder = readRetryLadderFromFlag(taskDir, io.readFile, io.exists) ?? DEFAULT_RETRY_LADDER
+  const tierFromFlag = readFlagSection(taskDir, '## model tier', io.readFile, io.exists)?.[0] ?? null
+  const baseModelTier = normalizeModelTier(tierFromFlag ?? executor.model_tier ?? config.default_model_tier ?? 'AVG')
+  const ladderLines = readFlagSection(taskDir, '## retry ladder', io.readFile, io.exists)
+  const ladder = (ladderLines && parseRetryLadder(ladderLines)) ?? DEFAULT_RETRY_LADDER
   const step = resolveRetryStep(attempt, ladder)
   const modelTier = bumpModelTier(baseModelTier, step.model_tier_delta)
-  return { executorType, modelTier, model: resolveModelByTier(config, modelTier), retryStrategy: step.strategy }
+  const cliFromFlag = readFlagSection(taskDir, '## agent cli', io.readFile, io.exists)?.[0]
+  const agentCli = (cliFromFlag ?? cliEnv.agentCli).toLowerCase()
+  return { executorType, modelTier, retryStrategy: step.strategy, agentCli }
 }
 
 /**
@@ -363,6 +495,21 @@ function resolveExecutorResult(outcome, ctx) {
 }
 
 /**
+ * Визначає результат run-у після виходу виконавця — спільний `## Check`-гейт
+ * обох шляхів. node_executor-шлях: `resolveExecutorResult` (Check + синтез fact).
+ * Вбудований CLI-шлях: агент сам пише fact; success = fact існує І Check пройдено.
+ * @param {boolean} usedExecutor чи виконував вузол зовнішній екзекутор
+ * @param {{ ok: boolean, applied: boolean, touchedFiles: string[] } | null} executorOutcome результат екзекутора
+ * @param {Parameters<typeof resolveExecutorResult>[1]} ctx контекст (як у resolveExecutorResult)
+ * @returns {'success'|'failed'} результат
+ */
+function resolveRunResult(usedExecutor, executorOutcome, ctx) {
+  if (usedExecutor) return resolveExecutorResult(executorOutcome, ctx)
+  const checksPass = runCheckGate(extractCheckCommands(ctx.taskMd), ctx.worktreeTaskDir, ctx.execSync, ctx.log)
+  return ctx.exists(ctx.factPath) && checksPass ? 'success' : 'failed'
+}
+
+/**
  * Запускає одну задачу: creates worktree, spawns agent, writes run_NNN.md.
  * @param {string} taskPath відносний шлях задачі
  * @param {string} taskDir абсолютний шлях до директорії задачі
@@ -383,6 +530,9 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const spawnSyncFn = deps.spawnSync ?? spawnSync
   const nowFn = deps.now ?? (() => new Date().toISOString())
   const uuidFn = deps.uuid ?? randomUUID
+  // Конфіг виконавців — user-level ENV (спільний для всіх репозиторіїв).
+  const baseEnv = deps.env ?? process.env
+  const cliEnv = loadAgentCliEnv(baseEnv)
 
   // 1. Читаємо task.md
   let taskMd
@@ -402,18 +552,26 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const lastFactNNN = latestFactNNN(taskDir, readdir)
   const attempt = computeAttempt(nnn, lastFactNNN)
 
-  const { executorType, modelTier, model, retryStrategy } = resolveExecutor(
+  const { executorType, modelTier, retryStrategy, agentCli } = resolveExecutor(
     taskDir,
     fm,
     config,
     { readFile, exists },
-    attempt
+    attempt,
+    cliEnv
   )
 
   const actor = opts.actor ?? executorType
-  // Точка розширення: зовнішній екзекутор замінює Claude-шлях лише для agent-actor.
+  const isAgentActor = actor === 'agent' || actor === 'a'
+  // Точка розширення: зовнішній екзекутор замінює вбудований CLI-шлях лише для agent-actor.
   const nodeExecutor = config.node_executor || null
-  const usedExecutor = Boolean(nodeExecutor) && (actor === 'agent' || actor === 'a')
+  const usedExecutor = Boolean(nodeExecutor) && isAgentActor
+
+  // Валідація підписочного CLI до створення worktree (fail-fast).
+  if (!usedExecutor && isAgentActor && !AGENT_CLIS[agentCli]) {
+    log(`run: невідомий agent_cli "${agentCli}" — підтримується: ${Object.keys(AGENT_CLIS).join(', ')}`)
+    return { ok: false, code: 1 }
+  }
 
   // 4. Створюємо worktree (atomic mkdir lock)
   const worktreesDir = resolveWorktreesDir(config, root)
@@ -445,7 +603,7 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   const startedAt = nowFn()
   const runToken = uuidFn()
   const env = {
-    ...process.env,
+    ...baseEnv,
     MT_RUN_NNN: nnn,
     MT_ATTEMPT: String(attempt),
     MT_RETRY_STRATEGY: retryStrategy,
@@ -456,32 +614,33 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
     MT_NODE_DIR: worktreeTaskDir,
     MT_WORKTREE: worktreePath,
     MT_RUN_TOKEN: runToken,
-    MT_MODEL_TIER: modelTier
+    MT_MODEL_TIER: modelTier,
+    MT_AGENT_CLI: agentCli
   }
 
   // 6. Спавнимо subprocess (spawnSync — синхронно)
   const timeoutMs = budgetHardSec > 0 ? budgetHardSec * 1000 : undefined
 
   let executorOutcome = null
+  let usedAgentCli = null
 
   if (usedExecutor) {
-    // Зовнішній екзекутор виконує вузол замість Claude-шляху.
+    // Зовнішній екзекутор виконує вузол замість вбудованого CLI-шляху.
     log(`run: делегуємо вузол зовнішньому екзекутору "${nodeExecutor}"`)
     executorOutcome = spawnNodeExecutor(nodeExecutor, worktreeTaskDir, env, timeoutMs, spawnSyncFn, log)
-  } else if (actor === 'agent' || actor === 'a') {
-    // Запускаємо claude CLI у worktree
-    const claudeArgs = [
-      '--model',
-      model,
-      '--no-session',
-      '-p',
-      `You are executing task: ${taskPath}\nWorking directory: ${worktreeTaskDir}\nRun NNN: ${nnn}\nBudget: ${budgetSec}s\n\nRead task.md and plan_*.md, execute the task, write fact_${nnn}.md with results.`
-    ]
-    spawnSyncFn('claude', claudeArgs, {
+  } else if (isAgentActor) {
+    // Headless-запуск підписочного CLI у worktree (auth — локальна підписка
+    // користувача) з каскадом по хмарних провайдерах за rate-limit.
+    usedAgentCli = spawnAgentCliCascade({
+      agentCli,
+      cliEnv,
+      modelTier,
+      prompt: buildAgentPrompt({ taskPath, worktreeTaskDir, nnn, budgetSec }),
       cwd: worktreeTaskDir,
       env,
-      encoding: 'utf8',
-      timeout: timeoutMs
+      timeoutMs,
+      spawnSync: spawnSyncFn,
+      log
     })
   } else if (actor === 'human') {
     // Людина виконує вручну — чекаємо на fact файл
@@ -496,27 +655,21 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
     return { ok: false, code: 1 }
   }
 
-  // 8. Після exit: визначаємо результат
+  // 8. Після exit: визначаємо результат (спільний ## Check-гейт обох шляхів)
   const factPath = join(worktreeTaskDir, `fact_${nnn}.md`)
 
-  let result
-  if (usedExecutor) {
-    result = resolveExecutorResult(executorOutcome, {
-      taskMd,
-      nnn,
-      factPath,
-      worktreeTaskDir,
-      nodeExecutor,
-      now: nowFn(),
-      exists,
-      writeFile,
-      execSync: execSyncFn,
-      log
-    })
-  } else {
-    // Claude-шлях: fact у worktree-директорії вузла = success.
-    result = exists(factPath) ? 'success' : 'failed'
-  }
+  const result = resolveRunResult(usedExecutor, executorOutcome, {
+    taskMd,
+    nnn,
+    factPath,
+    worktreeTaskDir,
+    nodeExecutor,
+    now: nowFn(),
+    exists,
+    writeFile,
+    execSync: execSyncFn,
+    log
+  })
 
   // 9. Success artifacts мають пройти через git merge; failed run фіксуємо
   // у main checkout, бо діагностичний worktree навмисно лишається незмердженим.
@@ -529,7 +682,8 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
       {
         actor,
         startedAt,
-        now: nowFn()
+        now: nowFn(),
+        agentCli: usedAgentCli
       },
       writeFile
     )

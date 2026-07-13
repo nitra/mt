@@ -15,7 +15,7 @@ timestamp: 2026-07-07
 | --- | --- | --- |
 | `@7n/mt` — ядро графа: CLI, claim/fenced publish, scan, wrapper | Bun + plain JS/JSDoc | існує (0.2.x) |
 | `agent-protocol` — Envelope/Event, підписи, версія протоколу | Rust crate (`serde`, `ed25519-dalek`; без tokio/tauri) | планується |
-| `agent-core` — agent loop, tools, provider, preview | Rust crate (`tokio`, `async-openai`, `schemars`, `notify`, `gix` feature-gated) | планується |
+| `agent-core` — ACP-клієнт (Agent Client Protocol) до зовнішніх CLI-виконавців | Rust crate (`tokio`, ACP; `notify`, `gix` feature-gated) | планується |
 | `agent-server` — хост-процес: сесії, транспорти, relay-клієнт, discovery | Rust crate (`axum`, `tokio-tungstenite`, `reqwest`) | планується |
 | `agent-cli` — тонкий клієнт + headless (`mt serve`/`attach` фронтенд) | Rust бінарник (`clap`) | планується |
 | Desktop-додатки (macOS) | Tauri v2 — тонкий клієнт + lifecycle agent-server | планується |
@@ -25,7 +25,7 @@ timestamp: 2026-07-07
 
 ## Правило одного коду контракту
 
-Логіка контракту графа (claim CAS, fenced publish, scan, схеми файлів) реалізована **один раз** — у `@7n/mt`. `agent-server` (Rust) **не реімплементує** її: викликає `mt … --json` як підпроцес для graph-операцій. Rust-шар відповідає за те, чого немає в `@7n/mt`: довгоживучий процес, сесії/broadcast, транспорти, preview, підписи, provider-стрімінг.
+Логіка контракту графа (claim CAS, fenced publish, scan, схеми файлів) реалізована **один раз** — у `@7n/mt`. `agent-server` (Rust) **не реімплементує** її: викликає `mt … --json` як підпроцес для graph-операцій. Rust-шар відповідає за те, чого немає в `@7n/mt`: довгоживучий процес, сесії/broadcast, транспорти, preview, підписи, ACP-сесії виконавців.
 
 - Плюс: неможлива розбіжність двох реалізацій fenced publish.
 - Мінус: залежність agent-server від Bun у PATH — фіксується в discovery/preflight (`mt doctor`-перевірка).
@@ -51,15 +51,17 @@ timestamp: 2026-07-07
 
 - `agent-core` НЕ залежить від `tauri` — фейл CI, якщо `cargo tree -p agent-core -e normal` містить `tauri`;
 - `agent-protocol` без tokio/tauri — чистий контракт;
-- типи `async-openai` не протікають назовні provider-реалізації; `CompletionRequest` — нейтральний;
 - relay НЕ імпортує нічого з agent-* — спілкується лише протоколом.
 
-## LLM-провайдери
+## Виконавці та AI-транспорт
 
-- Транспорт — **OpenAI-compatible Chat Completions** (`async-openai`, `base_url` через config) як мінімальний спільний знаменник: omlx, Ollama, LM Studio, LiteLLM.
-- Хмарні моделі (Anthropic та ін.) — через LiteLLM-профіль; `model_map` (MIM/AVG/MAX) з `.mt.json` резолвиться у `provider_profiles`.
-- Tool-схеми — derive (`schemars`), не руками; SSE-парсинг і збірку tool calls руками не писати.
-- MCP: заділ `register_external(...)` у реєстрі tools + закоментований `rmcp`; власну реалізацію MCP не писати.
+- **Виконавці — підписочні CLI** (`agent_cli`: claude | codex | cursor | pi; [runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)): auth, вибір моделі, tools і білінг — на боці CLI під підпискою користувача. MT не тримає ключів; власного provider-шару і LiteLLM-прокладки **немає** (видалені).
+- **Локальні моделі — pi.dev CLI поверх omlx**: pi обгортає локальний omlx-сервер і є таким самим виконавцем (`agent_cli: pi`), як хмарні.
+- **Конфігурація виконавців — user-level ENV** (`MT_AGENT_CLI`, `MT_CLOUD_AGENT_CLIS`, `MT_AGENT_CLI_MODEL_MAP`), не `.mt.json`: підписки і моделі — властивість користувача, спільна для всіх репозиторіїв.
+- **Кілька хмарних підписок — каскад** `MT_CLOUD_AGENT_CLIS`: вичерпані ліміти одного CLI → автоматичний перехід до наступного.
+- MIN/AVG/MAX — канон тирів: tier резолвиться у конкретну модель CLI через `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]`; без мапінгу CLI вирішує сам (тир — hint `MT_MODEL_TIER`).
+- **ACP (Agent Client Protocol) — єдиний транспорт усіх AI-викликів**: один ACP-клієнт в agent-server; `permission-request` → `ApprovalRequest` (Ed25519).
+- MCP-тули підключаються через штатний `mcp_servers`-механізм самих CLI (декларація — surfaces.md); власної MCP-реалізації в MT немає.
 
 ## Git-операції
 
@@ -85,7 +87,7 @@ timestamp: 2026-07-07
 
 ## CI
 
-- Rust: `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace` (без мережі: MockProvider, локальний bare-репо як remote);
+- Rust: `cargo fmt --check`, `clippy -D warnings`, `cargo test --workspace` (без мережі: ScriptedTurnRunner, локальний bare-репо як remote);
 - перевірка межі agent-core ↔ tauri (вище);
 - Bun: `bun test` для relay і `@7n/mt`; ключові кейси: CAS-конфлікт двох хостів, takeover протухлого claim, handoff, membership-роутінг кімнат, viewer не шле клієнтські події, флоу invite→accept→MemberChanged, transfer ownership, відхилення підпису пристрою поза pubkey-списком, відхилення несумісної protocol_version;
 - Tauri: `cargo check` обох додатків; build-job-и — заглушки до стабілізації.

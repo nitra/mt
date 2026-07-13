@@ -3,7 +3,7 @@ type: Rust Module
 title: runner.rs
 resource: crates/agent-server/src/runner.rs
 docgen:
-  crc: 3e2feb3d
+  crc: 99261f36
   model: openai-codex/gpt-5.4-mini
   score: 100
   issues: judge:inaccurate:0.98
@@ -12,26 +12,15 @@ docgen:
 
 ## Огляд
 
-Міст між клієнтським `UserMessage` і `agent-core`: `UserMessage` запускає хід агента, а всі події цього ходу емітяться в сесію, яку збирає session host через `Envelope`. Референсна реалізація — `AgentTurnRunner` поверх `agent_core::Agent` з будь-яким `Provider`; `EchoTurnRunner` — заглушка для demo/CLI без налаштованого провайдера. `TurnRunner`, `AgentTurnRunner`, `new`, `EchoTurnRunner` — публічні точки входу модуля. Файл read-only: не пише у ФС чи БД; за окремих помилок повертає порожнє значення (`null`) замість винятку.
+Виконавці ходу інтерактивної сесії: `UserMessage` клієнта запускає хід, усі події ходу емітяться в сесію (Envelope збирає session host). Транспорт виконавця — **ACP (Agent Client Protocol)**: майбутній `AcpTurnRunner` підключає зовнішній підписочний CLI (claude / codex / cursor / pi) через ACP і мапить `permission-request` на `ApprovalRequest` (ADR `260713-2110`). Власного agent loop/provider у модулі немає.
 
 ## Поведінка
 
-- **TurnRunner** — запускає один хід кімнати, емітить події ходу в сесію і повертає відповідь агента.
-- **AgentTurnRunner** — керує окремим `agent-core`-агентом для кожної кімнати, щоб зберігати історію між ходами.
-- **new** — створює `AgentTurnRunner` на основі фабрики агента для конкретної кімнати.
-- **EchoTurnRunner** — віддзеркалює текст користувача для demo/CLI без налаштованого провайдера і для тестів транспорту.
-
-## Публічний API
-
-TurnRunner — запускає один хід у кімнаті й повертає результат відповіді.
-
-AgentTurnRunner — веде окремого `Agent` для кожної кімнати, щоб не змішувати історії між кімнатами.
-
-new — через `factory` збирає агента кімнати з system prompt, tools і моделлю.
-
-EchoTurnRunner — без LLM повертає назад текст користувача; корисний для demo `attach` без provider і для transport-тестів.
+- **TurnRunner** — трейт одного ходу кімнати: емітить події ходу і повертає відповідь виконавця; `workdir` — робоча директорія ходу (worktree run-а).
+- **TurnError** — текстова помилка ходу (транспорт/виконавець повідомляє причину).
+- **ScriptedTurnRunner** — скриптований виконавець для тестів транспорту/сесій: на кожен хід віддає наступний текст зі скрипту (`AgentTextDelta` + `AgentTextDone`), без LLM.
+- **EchoTurnRunner** — заглушка без LLM: віддзеркалює текст користувача; для demo `attach` без підключеного ACP-виконавця.
 
 ## Гарантії поведінки
 
-- Read-only: не виконує операцій запису (ФС/БД).
-- За певних помилок повертає порожнє значення (напр. `null`) замість винятку.
+- Модуль не пише у ФС/БД; помилки ходу повертаються значенням `TurnError`, не панікою.

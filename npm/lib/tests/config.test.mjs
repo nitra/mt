@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { CONFIG_DEFAULTS, loadConfig, resolveMtDir } from '../core/config.mjs'
+import {
+  CONFIG_DEFAULTS,
+  loadAgentCliEnv,
+  loadConfig,
+  normalizeModelTier,
+  resolveModelForCli,
+  resolveMtDir
+} from '../core/config.mjs'
 
 describe('CONFIG_DEFAULTS', () => {
   test('mt_dir default is ./mt', () => {
@@ -58,14 +65,49 @@ describe('loadConfig', () => {
     expect(cfg.mt_dir).toBe('./mt')
   })
 
-  test('model_map is deeply merged', () => {
-    const cfg = loadConfig({
-      root: '/repo',
-      exists: p => p.endsWith('.mt.json'),
-      readFile: () => JSON.stringify({ model_map: { MIM: 'custom-haiku' } })
+  test('модельних ключів у .mt.json немає — конфіг виконавців іде з ENV', () => {
+    const cfg = loadConfig({ root: '/repo', exists: () => false })
+    expect(cfg).not.toHaveProperty('model_map')
+    expect(cfg).not.toHaveProperty('claude_model')
+    expect(cfg).not.toHaveProperty('audit_model')
+  })
+})
+
+describe('normalizeModelTier — канон MIN/AVG/MAX', () => {
+  test('uppercase-нормалізація', () => {
+    expect(normalizeModelTier('min')).toBe('MIN')
+    expect(normalizeModelTier('avg')).toBe('AVG')
+    expect(normalizeModelTier('MAX')).toBe('MAX')
+    expect(normalizeModelTier()).toBe('')
+  })
+})
+
+describe('loadAgentCliEnv / resolveModelForCli — user-level ENV', () => {
+  test('дефолти без ENV: claude, порожній каскад і мапа', () => {
+    const cliEnv = loadAgentCliEnv({})
+    expect(cliEnv.agentCli).toBe('claude')
+    expect(cliEnv.cloudAgentClis).toEqual([])
+    expect(cliEnv.modelMap).toEqual({})
+  })
+
+  test('читає MT_AGENT_CLI, MT_CLOUD_AGENT_CLIS (comma), MT_AGENT_CLI_MODEL_MAP (JSON)', () => {
+    const cliEnv = loadAgentCliEnv({
+      MT_AGENT_CLI: 'Codex',
+      MT_CLOUD_AGENT_CLIS: 'codex, Cursor',
+      MT_AGENT_CLI_MODEL_MAP: JSON.stringify({
+        codex: { MIN: 'gpt-5.6-luna', AVG: 'gpt-5.6-terra', MAX: 'gpt-5.6-sola' }
+      })
     })
-    expect(cfg.model_map.MIM).toBe('custom-haiku')
-    expect(cfg.model_map.AVG).toBe(CONFIG_DEFAULTS.model_map.AVG)
+    expect(cliEnv.agentCli).toBe('codex')
+    expect(cliEnv.cloudAgentClis).toEqual(['codex', 'cursor'])
+    expect(resolveModelForCli(cliEnv, 'codex', 'avg')).toBe('gpt-5.6-terra')
+    expect(resolveModelForCli(cliEnv, 'cursor', 'AVG')).toBeNull()
+  })
+
+  test('невалідний JSON у MT_AGENT_CLI_MODEL_MAP → порожня мапа, без винятку', () => {
+    const cliEnv = loadAgentCliEnv({ MT_AGENT_CLI_MODEL_MAP: 'not json {' })
+    expect(cliEnv.modelMap).toEqual({})
+    expect(resolveModelForCli(cliEnv, 'codex', 'AVG')).toBeNull()
   })
 })
 

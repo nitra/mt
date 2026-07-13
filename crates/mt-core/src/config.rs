@@ -28,20 +28,15 @@ pub fn config_defaults() -> Value {
         "claim_grace_sec": 60,
         "publish_retry_max": 8,
         "publish_retry_base_ms": 250,
-        "claude_model": "claude-sonnet-4-6",
-        "audit_model": "claude-haiku-4-5-20251001",
-        "model_map": {
-            "MIM": "claude-haiku-4-5-20251001",
-            "AVG": "claude-sonnet-4-6",
-            "MAX": "claude-opus-4-8"
-        },
         "stale_worktree_min": 30,
         "system_prompt": ".mt/system-prompt.md"
     })
 }
 
 /// Зливає сирий текст `.mt.json` з дефолтами (JS `loadConfig` без FS).
-/// `None` / невалідний JSON / не-об'єкт → чисті дефолти. `model_map` — deep merge.
+/// `None` / невалідний JSON / не-об'єкт → чисті дефолти. Модельна
+/// конфігурація виконавців — НЕ тут: вона user-level, через ENV
+/// (`MT_AGENT_CLI` / `MT_CLOUD_AGENT_CLIS` / `MT_AGENT_CLI_MODEL_MAP`).
 pub fn merge_config(raw: Option<&str>) -> Value {
     let defaults = config_defaults();
     let Some(raw) = raw else {
@@ -54,23 +49,9 @@ pub fn merge_config(raw: Option<&str>) -> Value {
     let Value::Object(mut merged) = defaults else {
         unreachable!("config_defaults is an object");
     };
-    let default_model_map = merged.get("model_map").cloned();
-
     for (k, v) in overrides {
         merged.insert(k, v);
     }
-
-    // model_map — deep merge (дефолтні tier-и лишаються, override поверх).
-    if let Some(Value::Object(dm)) = default_model_map {
-        let mut mm = dm.clone();
-        if let Some(Value::Object(om)) = merged.get("model_map") {
-            for (k, v) in om {
-                mm.insert(k.clone(), v.clone());
-            }
-        }
-        merged.insert("model_map".to_string(), Value::Object(mm));
-    }
-
     Value::Object(merged)
 }
 
@@ -136,10 +117,12 @@ mod tests {
     }
 
     #[test]
-    fn model_map_deep_merge() {
-        let cfg = merge_config(Some(r#"{"model_map":{"MIM":"custom-haiku"}}"#));
-        assert_eq!(cfg["model_map"]["MIM"], "custom-haiku");
-        assert_eq!(cfg["model_map"]["AVG"], "claude-sonnet-4-6");
+    fn no_model_keys_in_defaults() {
+        // Модельна конфігурація виконавців — user-level ENV, не .mt.json.
+        let cfg = merge_config(None);
+        assert!(cfg.get("model_map").is_none());
+        assert!(cfg.get("claude_model").is_none());
+        assert!(cfg.get("audit_model").is_none());
     }
 
     #[test]

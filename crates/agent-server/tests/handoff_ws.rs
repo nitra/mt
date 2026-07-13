@@ -8,10 +8,8 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use agent_core::provider::{Completion, MockProvider};
-use agent_core::{Agent, ToolRegistry};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::{serve, AgentTurnRunner, AppState, ApprovalGate, GraphConfig, SessionHost};
+use agent_server::{serve, AppState, ApprovalGate, GraphConfig, ScriptedTurnRunner, SessionHost};
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
@@ -70,26 +68,12 @@ impl Fixture {
     }
 }
 
-/// Стартує AppState (свій `state_dir`, скриптований MockProvider) + WS-сервер.
+/// Стартує AppState (свій `state_dir`, скриптований runner) + WS-сервер.
 async fn start_host(
     fixture: &Fixture,
     responses: Vec<&str>,
 ) -> (Arc<AppState>, String, tempfile::TempDir) {
-    let completions = responses
-        .into_iter()
-        .map(|text| Completion {
-            text: text.into(),
-            tool_calls: vec![],
-        })
-        .collect::<Vec<_>>();
-    let runner = AgentTurnRunner::new(move |_context| {
-        Agent::new(
-            MockProvider::scripted(completions.clone()),
-            ToolRegistry::new(),
-            "mock",
-            "system",
-        )
-    });
+    let runner = ScriptedTurnRunner::new(responses);
     let state_dir = tempfile::tempdir().unwrap();
     let state = Arc::new(
         AppState::from_parts(

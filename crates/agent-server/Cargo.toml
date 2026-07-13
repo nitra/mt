@@ -10,7 +10,6 @@ repository.workspace = true
 name = "agent_server"
 
 [dependencies]
-agent-core = { path = "../agent-core" }
 agent-protocol = { path = "../agent-protocol" }
 async-trait.workspace = true
 mt-core = { path = "../mt-core" }
