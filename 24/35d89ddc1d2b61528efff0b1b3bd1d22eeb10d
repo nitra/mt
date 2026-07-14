@@ -1,0 +1,47 @@
+relay/lib/rooms.mjs
+  s_40764a7ac308ab::t_d78a2bdd53583e 11
+relay/lib/docs/rooms.md
+  s_40764a7ac308ab::t_c83889858281d7 6
+relay/stryker.config.mjs
+  s_40764a7ac308ab::t_942b12358ae325 1-2
+npm/.changes/260714-0814.md
+  s_40764a7ac308ab::t_5b135ae96c2f41 5
+  s_40764a7ac308ab::t_3a8016e46ebbae 1-4
+npm/lib/core/docs/worktree.md
+  s_40764a7ac308ab::t_c83889858281d7 6
+npm/lib/core/worktree.mjs
+  s_40764a7ac308ab::t_af668d98c01399 5-7
+relay/.changes/260714-0814.md
+  s_40764a7ac308ab::t_3a8016e46ebbae 1-5
+.cspell.json
+  s_40764a7ac308ab::t_419538bb2a8935 72,109,115,163,172-173,206,254,287,314,338,358,365,406,416-417
+  s_40764a7ac308ab::t_73d8ce85c78478 35,47,64,126,141-142,155,164,168,180,188,191,193,195,198-199,203-204,246,250,252,256-257,261,283,290,302,309,313,321,324-327,332,361-362,369,373,377,384-385,403,405,408,411-412,414,419,439-441,453-455,457,465-466,472,493
+relay/lib/docs/store.md
+  s_40764a7ac308ab::t_c83889858281d7 6
+relay/docs/stryker.config.md
+  s_40764a7ac308ab::t_e2861c616cffeb 6
+relay/lib/server.mjs
+  s_40764a7ac308ab::t_d78a2bdd53583e 16
+relay/lib/store.mjs
+  s_40764a7ac308ab::t_d78a2bdd53583e 27
+relay/lib/docs/server.md
+  s_40764a7ac308ab::t_c83889858281d7 6
+knip.json
+  s_40764a7ac308ab::t_09ecd01240536f 3-11,14,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2435d89ddc1d2b61528efff0b1b3bd1d22eeb10d",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
