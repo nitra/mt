@@ -15,5 +15,5 @@
   "publish_retry_base_ms": 250,
   "stale_worktree_min": 30,
   "system_prompt": ".mt/system-prompt.md",
-  "node_executor": "npx @nitra/cursor mt-run-node"
+  "node_executor": "npx @7n/rules mt-run-node"
 }
