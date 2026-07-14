@@ -1,0 +1,25 @@
+npm/docs/architecture/mandates.md
+  s_40764a7ac308ab::t_fe3d6ce5ea35ae 153,156
+.cspell.json
+  s_40764a7ac308ab::t_1394654aaceb81 95-96,105,108,110-112,136,141,144-145,149,154,159,171,178,203,205,250,275-276,291,293,296-297,383,394
+  s_40764a7ac308ab::t_ebbe3c45747fac 177
+  s_40764a7ac308ab::t_b5d6f2a7c13b0c 397-398
+  s_40764a7ac308ab::t_b9fa95f4cd21dd 399
+  s_40764a7ac308ab::t_2f5ef9acb70918 375
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "5b215f89f6839ea058f76c59e2acb061fd337646",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
