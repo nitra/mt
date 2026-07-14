@@ -1,0 +1,20 @@
+knip.json
+  s_40764a7ac308ab::t_3503ad27dc7605 5,16,20-40,45-46
+  s_40764a7ac308ab::t_bd36a633ddf50b 41-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "cb7057c1be3efc77180ebf46d064b9c820a2c072",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
