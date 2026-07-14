@@ -1,0 +1,95 @@
+.claude/commands/n-brainstorming.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-8
+.cursor/skills/n-llm-patch/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 78,200,254
+.cursor/rules/n-ga.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 125,279
+.claude/commands/n-lint.md
+  s_40764a7ac308ab::t_79e7d767452ec4 3
+.n-rules.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-33
+.cursor/rules/n-adr.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 44,48,72,80,103,105,125
+.cursor/skills/n-doc-files/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 8,20,61,68
+.cursor/rules/n-rust.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 26-27
+.cursor/rules/n-js.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 8,14,58
+.pi/extensions/n-rules-adr/tsconfig.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-17
+.pi/skills/n-lint/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 4
+.claude/hooks/capture-decisions.sh
+  s_40764a7ac308ab::t_79e7d767452ec4 23,204,209
+.cursor/rules/n-test.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 4,12,14,16,18-20,24,31-32,39,54,103,107-117,162,179-183,185,191,220,259
+.cursor/rules/n-security.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,100
+.cursor/rules/n-bun.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 111
+.cursor/rules/n-ci4.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 31,348,371-373,407-411
+hk.pkl
+  s_40764a7ac308ab::t_462b23c679e966 16
+AGENTS.md
+  s_40764a7ac308ab::t_79e7d767452ec4 31,33,40,45-46,55
+.cursor/skills/n-adr-normalize/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 9,32,37,49-50
+.licensee.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-14
+.cursor/rules/n-image-compress.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,8,10
+.cursor/rules/n-text.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 61-62,165,199-200,213-214,238,314-316
+.claude/settings.json
+  s_40764a7ac308ab::t_79e7d767452ec4 9-11,21
+.cursor/skills/n-brainstorming/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-165
+CLAUDE.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1,28,32,42-43,46
+.pi/extensions/n-rules-adr/index.ts
+  s_40764a7ac308ab::t_79e7d767452ec4 1-105
+.cursor/rules/n-npm-module.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,16-29,32,87,211-212,233,243,276,290
+.claude/hooks/normalize-decisions.sh
+  s_40764a7ac308ab::t_79e7d767452ec4 22,297,313
+.pi/skills/n-brainstorming/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-9
+.vscode/extensions.json
+  s_40764a7ac308ab::t_79e7d767452ec4 8-10
+package.json
+  s_40764a7ac308ab::t_79e7d767452ec4 22-23
+.cspell.json
+  s_40764a7ac308ab::t_79e7d767452ec4 378-379
+.cursor/skills/n-lint/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 4,8,31,36,42,56,60,64,69,124,129,135,149,151
+.cursor/rules/n-feedback.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,7,11,15,17,40,55
+.cursor/rules/n-js-run.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,80,87,113,136,145,152
+.cursor/skills/n-taze/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 9,32,37,80,115,142
+.github/workflows/lint-ga.yml
+  s_40764a7ac308ab::t_79e7d767452ec4 43
+.cursor/rules/n-doc-files.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,5,12,14-15,17-24,29-34,38-42,46-49
+bun.lock
+  s_40764a7ac308ab::t_f1d2ffa816b21a 8,26,37,59-60,2087-2088
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "3ff275bd8d6aa6db05509dd8b8ec5018cbd62fbe",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
