@@ -1,0 +1,52 @@
+npm/docs/architecture/graph.md
+  s_19239459d70c22::t_c26df7004865ad 137,139
+hk.pkl
+  s_19239459d70c22::t_0b06bdea0d251b 16
+npm/docs/architecture/runtime.md
+  s_19239459d70c22::t_cb4f54e6d4d0b7 60
+  s_19239459d70c22::t_4d6cffe03ba0cc 50
+  s_19239459d70c22::t_4ccfd5be6a0f75 30
+npm/lib/commands/run.mjs
+  s_19239459d70c22::t_f926e1ee159517 468-481
+  s_19239459d70c22::t_eafde1581a79d4 366-367,369,376
+  s_19239459d70c22::t_4901c8f71e8543 504-516
+  s_19239459d70c22::t_49c6a142003f00 437
+  s_19239459d70c22::t_2ea2b3f8fc541b 14
+  s_19239459d70c22::t_454b2a15e3bb5c 518,521
+npm/lib/tests/run.test.mjs
+  s_19239459d70c22::t_bfb64049d5a516 63-75
+  s_19239459d70c22::t_936c0cc9d05366 108-110,112,114-115,118
+  s_19239459d70c22::t_90927cb0e630cd 258,262,270,274,282,288
+  s_19239459d70c22::t_baae0ab17612aa 62
+npm/.changes/260714-0730.md
+  s_19239459d70c22::t_ca6d9881e66983 1-5
+npm/lib/commands/docs/run.md
+  s_19239459d70c22::t_14c52df927cffe 6
+  s_19239459d70c22::t_083d567d09610c 23,25
+.mt.json
+  s_40764a7ac308ab::t_b29bd15645581c 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "41c887b7036161ca7672c9c5659a065b6e90db85",
+  "prompts": {},
+  "sessions": {
+    "s_19239459d70c22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9106a573-9b36-4984-ad2e-361d624684bd",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
