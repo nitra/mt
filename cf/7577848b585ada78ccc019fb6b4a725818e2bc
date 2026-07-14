@@ -1,0 +1,25 @@
+.github/workflows/lint-text.yml
+  s_40764a7ac308ab::t_1f8dbafa07e7b7 63
+.cspell.json
+  s_40764a7ac308ab::t_e86269c18b229d 354
+  s_40764a7ac308ab::t_3c672e7dd70259 30,132,189,279-284
+  s_40764a7ac308ab::t_0102d980d0008b 141
+.github/workflows/lint-ga.yml
+  s_40764a7ac308ab::t_75739644b63aa8 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "cf7577848b585ada78ccc019fb6b4a725818e2bc",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
