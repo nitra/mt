@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.25.0] - 2026-07-14
+
+### Added
+
+- docs: нова глава architecture/mandates.md (карта мандатів, профілі людей/моделей, decision-request, ескалація за важелем) + оновлені vision/roadmap/index/overview
+
+### Changed
+
+- docs: профілі людей — синтез C+E: org-репо people-profiles (читання колективу, пише лише агрегатор), positive-only досьє підтверджень з evidence, dispute через підпис власника мандата
+- docs: інверсія делегування в тезі vision.md + пакетна межа contract/napi/mt у stack.md (інтеграція spec-ів з PR #22/#23 у канон)
+- docs: stack.md — пакетний поділ contract/napi/mt прибрано (YAGNI без зовнішніх споживачів); лишається @7n/mt-contract + conformance-suite двома add-only PR
+- ACP — єдиний транспорт AI-викликів: конфіг виконавців user-level ENV (MT_AGENT_CLI / MT_CLOUD_AGENT_CLIS / MT_AGENT_CLI_MODEL_MAP), каскад хмарних підписок за rate-limit, канон тирів MIN/AVG/MAX без legacy, підписочні CLI claude|codex|cursor|pi, спільний ## Check-гейт
+
+### Removed
+
+- Точку розширення `node_executor` видалено (`.mt.json`-ключ, `spawnNodeExecutor`/`resolveExecutorResult`/`parseExecutorSpec` у `mt run`, розділ «Зовнішній екзекутор вузла» runtime.md): останній консюмер `n-cursor mt-run-node` мігрував на вбудований шлях підписочних CLI (`claude|codex|cursor|pi`, user-level ENV-конфіг) за ADR `260713-2110` «ACP — єдиний транспорт AI-викликів» — паралельний виконавчий шлях більше не потрібен
+
 ## [0.24.1] - 2026-07-12
 
 ### Changed
