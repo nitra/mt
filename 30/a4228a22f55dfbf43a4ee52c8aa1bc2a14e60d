@@ -1,0 +1,23 @@
+npm/lib/commands/docs/run.md
+  s_c77c6c75dbee3c::t_de2ad1103294b9 23,25
+.mt.json
+  s_c77c6c75dbee3c::t_f09ed5fa314503 17
+npm/.changes/260714-1749.md
+  s_c77c6c75dbee3c::t_52c1ce23648c50 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "30a4228a22f55dfbf43a4ee52c8aa1bc2a14e60d",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
