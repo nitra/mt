@@ -59,3 +59,22 @@ Transcript facts:
 - Gateway має перевіряти права доступу перед відкриттям SSH-зʼєднання до dev pod.
 - Рівень доступу до dev pod може бути read або rw залежно від ролі.
 - Вибір між Teleport і власним gateway у цьому ранньому фрагменті ще не був завершений; наступний transcript зафіксував Teleport як обраний варіант.
+
+## Update 2026-06-07
+
+- Драфт уточнює UX `Open in Zed`: бекенд `nitra/task` перевіряє права, створює dev pod з labels `task` і `owner`, чекає Ready, після чого Teleport node-agent реєструє ноду.
+- Dev pod монтує `tasks-pvc`; розробник бачить актуальні `task.md`, `run_NNN.md`, `outputs_NNN.md`.
+- Lifecycle dev pod: grace period після закриття SSH, auto-delete після timeout або при переході task-node у `resolved`.
+- Назва UI-проєкту зафіксована як `nitra/task` у `/Users/vitaliytv/www/nitra/task`.
+
+## Update 2026-06-07
+
+- Підтверджено відмову від `kubectl port-forward`, бо розробники не мають `kubectl`-доступу.
+- Teleport обрано через RBAC по labels, SSO, audit log і короткоживучі SSH-сертифікати без статичних ключів.
+- Для multi-editor UX VS Code і Cursor можуть відкриватися через URI deep link (`vscode://...`, `cursor://...`), а Zed лишається через copy hostname, бо transcript не фіксує URI-протокол для Zed.
+
+## Update 2026-06-07
+
+- Драфт додає deployment facts для Teleport у `nitra/task`: `k8s/teleport/configmap.yaml`, `deployment.yaml`, `service.yaml`, `ingress.yaml`, `pvc.yaml`, `rbac.yaml`, `roles.yaml`, а також `k8s/dev-pod/template.yaml` і `k8s/dev-pod/rbac.yaml`.
+- Dev pod монтує `tasks-pvc`; join method — Kubernetes ServiceAccount JWT без статичних токенів.
+- Backend service account `task-backend` має права створювати й видаляти dev pods; шаблон dev pod використовує placeholder-и `${TASK_NODE_ID}`, `${OWNER_EMAIL}`, `${TELEPORT_JOIN_TOKEN}`.
