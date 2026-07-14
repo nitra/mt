@@ -1,0 +1,22 @@
+crates/mt-core/src/lifecycle.rs
+  s_289200e0021bd9::t_8a32491b134ca1 162,264-295
+  s_289200e0021bd9::t_ef506a85c77257 124-140,145-151,159-161
+  s_289200e0021bd9::t_3801edacf28ae2 7-11
+  s_289200e0021bd9::t_7af332f14f0456 141-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "0e356478b6f9df8fbcf8213a30c896720111ba27",
+  "prompts": {},
+  "sessions": {
+    "s_289200e0021bd9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c6799e7-da96-47e1-82f5-903369cac6e8",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
