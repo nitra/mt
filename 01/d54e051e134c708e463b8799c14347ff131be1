@@ -1,0 +1,69 @@
+crates/mt-core/src/docs/runner.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+package.json
+  s_40764a7ac308ab::t_c11b9c9574e011 13
+  s_40764a7ac308ab::t_818efafae5198e 19
+crates/mt-core/src/docs/config.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+crates/mt-core/src/config.rs
+  s_40764a7ac308ab::t_a126250652e2d3 204-213,215-236
+  s_40764a7ac308ab::t_0856ecfb569b14 94-155,161-168
+  s_40764a7ac308ab::t_044819e720bf61 214
+  s_40764a7ac308ab::t_3051842ee322ad 156-160
+  s_40764a7ac308ab::t_d7cb42d4c87c4f 9
+npm/lib/tests/run.test.mjs
+  s_40764a7ac308ab::t_a9ffdf278dfdd6 1,12-13,16-17,20,25,35-38,49-90,92-93,95-127,130-153
+  s_40764a7ac308ab::t_bfa5b6afb52ecf 26-33
+crates/mt-napi/src/lib.rs
+  s_40764a7ac308ab::t_b8f13deb731ff8 172-198
+npm/lib/commands/run.mjs
+  s_40764a7ac308ab::t_0f11f1e071a774 80-81
+  s_40764a7ac308ab::t_fc09511a0ff31d 95-98
+  s_40764a7ac308ab::t_857103e9b93f80 2,4-8,10-20,22-24,26-27,30-31,57-63,66-75,79,82,100,107,115,130-135,138-146,148-155
+crates/mt-core/src/docs/signal.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+crates/mt-napi/src/docs/lib.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+npm/docs/architecture/stack.md
+  s_40764a7ac308ab::t_e187008d2fc12a 16-17
+  s_40764a7ac308ab::t_b903b9d9d43a2e 29,31-33
+crates/mt-core/src/signal.rs
+  s_40764a7ac308ab::t_35109376bccd0d 257-268,273-283
+  s_40764a7ac308ab::t_e734a2d9440dc4 224
+  s_40764a7ac308ab::t_7926aebdc2e01e 203
+docs/adr/260714-0710-rust-порт-run-оркестрації-до-паритету-run-mjs-тонкий-клієнт.md
+  s_40764a7ac308ab::t_949939476ec28c 1-41
+crates/mt-core/src/runner.rs
+  s_40764a7ac308ab::t_174a1cbca04dcf 2-4,6-15,25,33-36,44-67,69,77-84,95-97,114-134,136-166,172-227,236-272,277-304,311-320,377-408,410-418,426-429,524,550-561,563-638,640-649,693,695,698-704,709-711,716-721,723-762,765-767,769-773,776-792,794-795,807,809,819-821,823,832-836,839,845,888,918-922,925,928,933-936,947-949,951-1001,1005-1050,1055,1057-1058,1067,1079-1081,1090,1092,1105,1107,1110,1117-1143,1149,1168,1171-1207,1212-1271
+  s_40764a7ac308ab::t_108d75d7a02567 5
+  s_40764a7ac308ab::t_673ba31d1161e3 135,167-171,228-235,273-276,705-708,712-715,825,1051-1054,1062,1064,1208-1211
+  s_40764a7ac308ab::t_3d3a82be9f2ef8 307-309
+  s_40764a7ac308ab::t_f83f1493ada2c1 562
+  s_19239459d70c22::t_1406a979cbbe91 305,1056
+npm/lib/commands/docs/run.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "01d54e051e134c708e463b8799c14347ff131be1",
+  "prompts": {},
+  "sessions": {
+    "s_19239459d70c22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9106a573-9b36-4984-ad2e-361d624684bd",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
