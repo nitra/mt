@@ -1,0 +1,81 @@
+.claude/commands/n-brainstorming.md
+  s_e3e2c8a1378c74::t_3f4665fe6d6e8e 1-8
+.claude/commands/n-lint.md
+  s_e3e2c8a1378c74::t_7c6764a6449c0e 3
+.claude/hooks/capture-decisions.sh
+  s_e3e2c8a1378c74::t_ceabdd9140a2ab 23,204,209
+.claude/hooks/normalize-decisions.sh
+  s_e3e2c8a1378c74::t_3ae39086df9807 22,297,313
+.claude/settings.json
+  s_e3e2c8a1378c74::t_da73fea159005a 9-11,21
+.cursor/rules/n-adr.mdc
+  s_e3e2c8a1378c74::t_1d83d1077dc6d3 44,48,72,80,103,105,125
+.cursor/rules/n-bun.mdc
+  s_e3e2c8a1378c74::t_f0a07a3201bd82 110
+.cursor/rules/n-ci4.mdc
+  s_e3e2c8a1378c74::t_c7cce6238faa5c 31,348,371-373,407-411
+.cursor/rules/n-doc-files.mdc
+  s_e3e2c8a1378c74::t_c0f6eea4c9490a 2,5,12,14-15,17-24,29-34,38-42,46-49
+.cursor/rules/n-feedback.mdc
+  s_e3e2c8a1378c74::t_bf3826dbfdfc0a 2,7,11,15,17,40,55
+.cursor/rules/n-ga.mdc
+  s_e3e2c8a1378c74::t_97e23228cde411 122,272
+.cursor/rules/n-image-compress.mdc
+  s_e3e2c8a1378c74::t_6c2cc221ff9d9b 2,8,10
+.cursor/rules/n-js-run.mdc
+  s_e3e2c8a1378c74::t_b8954f7cc014de 12,78,85,111,134,143,150
+.cursor/rules/n-js.mdc
+  s_e3e2c8a1378c74::t_ba8f55c7190727 8,14,58
+.cursor/rules/n-npm-module.mdc
+  s_e3e2c8a1378c74::t_c11512b148805a 12,16-29,32,86,208-209,230,240,273,287
+.cursor/rules/n-rust.mdc
+  s_e3e2c8a1378c74::t_2449f1c86181c5 26-27
+.cursor/rules/n-security.mdc
+  s_e3e2c8a1378c74::t_6eb8ff1bbd4409 12,99
+.cursor/rules/n-test.mdc
+  s_e3e2c8a1378c74::t_435523dea1f67e 4,12,14,16,18-20,24,31-32,39,54,103,107-117,162,179-183,185,191,220,259
+.cursor/rules/n-text.mdc
+  s_e3e2c8a1378c74::t_a76cc3426a4b60 58-59,158,191-192,205-206,230,306-308
+.cursor/skills/n-adr-normalize/SKILL.md
+  s_e3e2c8a1378c74::t_d6b161609134c5 9,32,37,49-50
+.cursor/skills/n-brainstorming/SKILL.md
+  s_e3e2c8a1378c74::t_ba793fec2f94e1 1-165
+.cursor/skills/n-doc-files/SKILL.md
+  s_e3e2c8a1378c74::t_3c65b9f1020aba 8,20,61,68
+.cursor/skills/n-lint/SKILL.md
+  s_e3e2c8a1378c74::t_43d3f1f08107c7 4,8,31,36,42,56,60,64,69,124,129,135,149,151
+.cursor/skills/n-llm-patch/SKILL.md
+  s_e3e2c8a1378c74::t_255eca98f13346 78,200,254
+.cursor/skills/n-taze/SKILL.md
+  s_e3e2c8a1378c74::t_e79de04b8ca933 9,32,37,80,115,142
+.n-rules.json
+  s_e3e2c8a1378c74::t_d3c66dee0e17d7 2,26
+.pi/extensions/n-rules-adr/index.ts
+  s_e3e2c8a1378c74::t_529e487a4e9102 72,75
+.pi/skills/n-brainstorming/SKILL.md
+  s_e3e2c8a1378c74::t_5203f636584ba6 1-9
+.pi/skills/n-lint/SKILL.md
+  s_e3e2c8a1378c74::t_9bf37d19b163e3 4
+AGENTS.md
+  s_e3e2c8a1378c74::t_5e213e6d214e05 31,33,40,45-46,55
+CLAUDE.md
+  s_e3e2c8a1378c74::t_e0347cab0350c8 1,27,31,41-42,45
+bun.lock
+  s_e3e2c8a1378c74::t_cc3a64e23de583 8,26,37,59-60,2087-2088
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "85389cc35f8b4fa5d28aabb4e4386fddd4d5c2b8",
+  "prompts": {},
+  "sessions": {
+    "s_e3e2c8a1378c74": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c2d566d0-8687-4e2b-bca4-6eafb3522bf5",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
