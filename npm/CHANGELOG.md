@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.25.2] - 2026-07-14
+
+### Changed
+
+- run.mjs — тонкий клієнт Rust-раннера (mt-core/napi run_node/run_auto); makeWorktreeName видалено з core/worktree.mjs (іменування run-worktree — у Rust)
+
 ## [0.25.1] - 2026-07-14
 
 ### Changed
