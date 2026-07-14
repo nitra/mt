@@ -2,8 +2,9 @@
  * Git worktree management для mt task system.
  *
  * Atomic mkdir lock: EEXIST → skip (вже запущено).
- * Worktree name: sanitize(task-path) + '-' + epoch (секунди) — іменування та
- * матчінг делеговано Rust-ядру (crates/mt-core/src/worktree.rs через napi-аддон).
+ * Матчінг worktree ↔ задача делеговано Rust-ядру
+ * (crates/mt-core/src/worktree.rs через napi-аддон); іменування run-worktree
+ * повністю переїхало в Rust-раннер (run.mjs — тонкий клієнт).
  *
  * Всі git операції через execSync (node:child_process). FS через ін'єкцію.
  */
@@ -12,17 +13,6 @@ import { mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { loadNative } from './native.mjs'
-
-/**
- * Генерує ім'я worktree для задачі.
- * @param {string} taskPath відносний шлях задачі (напр. "research/collect-data")
- * @param {number} [epochSec] epoch в секундах (default: Date.now()/1000)
- * @returns {string} ім'я worktree
- */
-export function makeWorktreeName(taskPath, epochSec) {
-  const epoch = epochSec ?? Math.floor(Date.now() / 1000)
-  return loadNative().makeWorktreeName(taskPath, epoch)
-}
 
 /**
  * Створює git worktree для задачі з atomic mkdir lock.

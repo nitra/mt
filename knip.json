@@ -1,8 +1,17 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "eslint.config.{js,mjs,cjs}",
+    "stylelint.config.{js,cjs,mjs}",
+    "oxlint.config.{js,mjs}",
+    "jscpd.config.{js,mjs}",
+    "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
+    ".markdownlint-cli2.{jsonc,cjs,mjs}",
+    "commitlint.config.{js,cjs,mjs}"
+  ],
   "project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"],
   "ignore": ["**/__fixtures__/**"],
-  "ignoreDependencies": ["@nitra/cspell-dict", "/@cspell\\/dict-.+/", "ajv", "globals", "graphql"],
+  "ignoreDependencies": ["@nitra/cspell-dict", "/@cspell\\/dict-.+/", "graphql"],
   "ignoreBinaries": [
     "actionlint",
     "cspell",
@@ -13,31 +22,8 @@
     "oxfmt",
     "oxlint",
     "shellcheck",
-    "trufflehog",
     "uvx",
     "v8r",
     "zizmor"
-  ],
-  "workspaces": {
-    ".": {
-      "entry": [
-        "eslint.config.{js,mjs,cjs}",
-        "stylelint.config.{js,cjs,mjs}",
-        "oxlint.config.{js,mjs}",
-        "jscpd.config.{js,mjs}",
-        "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
-        ".markdownlint-cli2.{jsonc,cjs,mjs}",
-        "commitlint.config.{js,cjs,mjs}",
-        ".pi/extensions/**/index.ts"
-      ]
-    },
-    "npm": {
-      "entry": ["bin/7.js", "index.js", "stryker.config.mjs", "**/*.test.{js,mjs}"],
-      "project": ["**/*.{js,mjs}"]
-    },
-    "crates/mt-napi": {
-      "entry": ["stryker.config.mjs", "**/*.test.{js,mjs}"],
-      "project": ["**/*.{js,mjs}"]
-    }
-  }
+  ]
 }
