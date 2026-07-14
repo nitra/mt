@@ -6,15 +6,15 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
+use agent_protocol::{Envelope, Event};
 use agent_server::{serve, AppState, ApprovalGate, GraphConfig, ScriptedTurnRunner, SessionHost};
 use chrono::Utc;
-use futures::{SinkExt, StreamExt};
+use futures::SinkExt;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-type WsStream =
-    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+mod common;
+use common::next_json;
 
 fn sh(dir: &Path, args: &[&str]) {
     let out = Command::new("git")
@@ -98,36 +98,9 @@ impl Fixture {
     }
 }
 
-async fn connect(url: &str) -> WsStream {
-    let hello = ClientHello {
-        protocol_version: PROTOCOL_VERSION,
-        device_id: Uuid::from_u128(7),
-        device_token: String::new(),
-        client_kind: "cli".into(),
-        client_capabilities: vec![],
-        lang: "uk".into(),
-        want_replay_from: None,
-    };
-    let (mut stream, _) = tokio_tungstenite::connect_async(url).await.unwrap();
-    stream
-        .send(Message::text(serde_json::to_string(&hello).unwrap()))
-        .await
-        .unwrap();
-    let _: ServerHello = next_json(&mut stream).await;
-    stream
-}
-
-async fn next_json<T: serde::de::DeserializeOwned>(stream: &mut WsStream) -> T {
-    loop {
-        let message = tokio::time::timeout(std::time::Duration::from_secs(10), stream.next())
-            .await
-            .expect("timeout очікування кадру")
-            .expect("стрім закрито")
-            .unwrap();
-        if let Message::Text(text) = message {
-            return serde_json::from_str(text.as_str()).unwrap();
-        }
-    }
+/// WS-клієнт цього тест-бінарника (device_id — довільна константа).
+async fn connect(url: &str) -> common::WsStream {
+    common::connect(url, 7).await
 }
 
 fn client_event(node: &str, event: Event) -> Message {

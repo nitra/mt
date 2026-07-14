@@ -10,7 +10,7 @@
   "type": "module",
   "scripts": {
     "start": "bun ./npm/bin/mt.js",
-    "test": "vitest run",
+    "test": "bunx --bun vitest run",
     "oxfmt": "oxfmt .",
     "coverage": "npx @7n/test coverage"
   },
