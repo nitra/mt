@@ -1,3 +1,5 @@
+import '@stryker-mutator/vitest-runner'
+
 /** @type {import('@stryker-mutator/core').PartialStrykerOptions} */
 export default {
   testRunner: 'vitest',
