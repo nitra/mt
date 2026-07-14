@@ -23,7 +23,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   "[html]": { "editor.defaultFormatter": "oxc.oxc-vscode" }
 }
 ```
-
 - `.oxfmtrc.json`:
 
 ```json
@@ -36,7 +35,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   "ignorePatterns": ["**/hasura/metadata/**", "**/schema.graphql", "**/auto-imports.d.ts"]
 }
 ```
-
 - `.markdownlint-cli2.jsonc`:
 
 ```
@@ -52,12 +50,13 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   }
 }
 ```
-
 - `.cspell.json`:
 
 ```json
 {
   "version": "0.2",
+  "useGitignore": true,
+  "gitignoreRoot": ".",
   "ignorePaths": [
     "**/node_modules/**",
     "**/vscode-extension/**",
@@ -70,7 +69,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   ]
 }
 ```
-
 - `.cspell.json`:
 
 ```json
@@ -80,7 +78,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   }
 }
 ```
-
 - `.cspell.json`:
 
 ```json
@@ -88,7 +85,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   "import": ["@nitra/cspell-dict"]
 }
 ```
-
 - `extensions.json`:
 
 ```json
@@ -96,7 +92,6 @@ Rego-пакети, що перевіряються через conftest (auto-dis
   "recommendations": ["DavidAnson.vscode-markdownlint", "oxc.oxc-vscode", "timonwong.shellcheck"]
 }
 ```
-
 - `lint-text.yml`:
 
 ```yaml
@@ -160,9 +155,8 @@ jobs:
           | sh -s -- -b /usr/local/bin
 
       - name: Lint text
-        run: bunx n-cursor lint text --read-only
+        run: bunx n-rules lint text --no-fix
 ```
-
 - `package.json`:
 
 ```json
@@ -194,6 +188,8 @@ Rego-пакет: `text.cspell`
 **Що перевіряється:**
 
 - `version` — має відповідати канону (наразі `"0.2"`)
+- `useGitignore` — має бути `true`: cspell поважає всі `.gitignore` репо, тож білд-артефакти (`target/`, `dist/` тощо) не потрапляють у прогін і не потребують дублювання в `ignorePaths`
+- `gitignoreRoot` — має бути `"."`: обмежує збір `.gitignore` коренем репо. Без цього cspell підіймається каталогами вище і в git-worktree застосовує `.gitignore` основного дерева (патерн на кшталт `.claude/worktrees/` матчить усе) → «Files checked: 0», делта-лінт мовчки зелений при червоному CI
 - `language` — поле обов'язкове (presence-only, значення довільне, наприклад `"en,uk"`)
 - `ignorePaths` — масив має бути надмножиною канонічних glob-ів, включно з `docs/adr/**`
 - `import` — має містити підрядок `@nitra/cspell-dict`; заборонені будь-які записи з підрядком `@cspell/dict-` (використовуй лише `@nitra/cspell-dict`)
@@ -206,6 +202,8 @@ Rego-пакет: `text.cspell`
 {
   "version": "0.2",
   "language": "en,uk",
+  "useGitignore": true,
+  "gitignoreRoot": ".",
   "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "ignorePaths": ["**/node_modules/**", "**/.git/**", "docs/adr/**"]
 }
@@ -229,7 +227,7 @@ Prettier **повністю заборонено** — форматування 
 
 Також потрібно прибрати, якщо є в проєкті, модуль **`@nitra/prettier-config`**, **prettier** та всі виклики prettier і налаштування для нього. Канон заборонених top-level/`dependencies`/`devDependencies` (prettier, `@nitra/prettier-config`, `markdownlint-cli2`): [package.json.deny.json](./policy/package_json/template/package.json.deny.json)
 
-Перевірка `npx @nitra/cursor fix text` падає, якщо у корені є `.prettierignore`, `.prettierrc*`, `prettier.config.*` або у `package.json#scripts` зустрічається команда з `prettier`.
+Перевірка `npx @7n/rules fix text` падає, якщо у корені є `.prettierignore`, `.prettierrc*`, `prettier.config.*` або у `package.json#scripts` зустрічається команда з `prettier`.
 
 Заборонені файли конфігурації Prettier у корені:
 
@@ -305,9 +303,9 @@ Rego-пакет: `text.markdownlint`
 `.scss`) мають бути відформатовані **oxfmt**. Prettier заборонено — див. `forbidden-prettier`. Канон
 формату — `.oxfmtrc.json` у корені проєкту (включно з `ignorePatterns`).
 
-`npx @nitra/cursor lint text` повідомляє неформатовані файли (`oxfmt --list-different`). Fix-режим
-(`npx @nitra/cursor lint`) виправляє їх детерміновано через `oxfmt --write` (T0, поза LLM). У CI
-(`--read-only`) неформатовані файли — порушення без мутацій.
+`npx @7n/rules lint text` повідомляє неформатовані файли (`oxfmt --list-different`). Fix-режим
+(`npx @7n/rules lint`) виправляє їх детерміновано через `oxfmt --write` (T0, поза LLM). У CI
+(`--no-fix`) неформатовані файли — порушення без мутацій.
 
 Типи поза формату-доменою (`.md`, `.json`, `.yaml` тощо), де діє інше тулінг, цей концерн не зачіпає.
 

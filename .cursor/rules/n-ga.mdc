@@ -12,7 +12,6 @@ alwaysApply: false
 ```json
 { "[github-actions-workflow]": { "editor.defaultFormatter": "oxc.oxc-vscode" } }
 ```
-
 - `git-ai.yml`:
 
 ```yaml
@@ -47,7 +46,6 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git-ai ci github run
 ```
-
 - `clean-ga-workflows.yml`:
 
 ```yaml
@@ -78,7 +76,6 @@ jobs:
           save_period: 31
           save_min_runs_number: 0
 ```
-
 - `lint-ga.yml`:
 
 ```yaml
@@ -122,9 +119,8 @@ jobs:
           | sudo tar -xz -C /usr/local/bin conftest
 
       - name: Lint GA
-        run: bunx n-cursor lint ga --read-only
+        run: bunx n-rules lint ga --no-fix
 ```
-
 - `zizmor.yml`:
 
 ```yaml
@@ -134,7 +130,6 @@ rules:
       policies:
         '*': ref-pin
 ```
-
 - `clean-merged-branch.yml`:
 
 ```yaml
@@ -176,13 +171,11 @@ jobs:
         run: |
           echo "Deleted branches: ${DELETED_BRANCHES}"
 ```
-
 - `extensions.json`:
 
 ```json
 { "recommendations": ["github.vscode-github-actions"] }
 ```
-
 - `uses-min-versions`:
 
 ```json
@@ -276,7 +269,7 @@ Rego-пакет: `ga.lint_ga`
 - `jobs.lint-ga.steps` — не порожній
 - `steps[*].uses` — кожен `uses:` з template має бути присутнім у кроках; SHA-пін того самого action (`owner/action@<40-hex SHA>`, з тег-коментарем `# vX` чи без) задовольняє канонічний тег — НЕ замінюй наявний SHA-пін тегом
 - `steps[*].run` (сукупно) — містить `open-policy-agent/conftest` (Install conftest)
-- `steps[*].run` (сукупно) — містить `n-cursor lint ga --read-only`
+- `steps[*].run` (сукупно) — містить `n-rules lint ga --no-fix`
 
 Канон: [lint-ga.yml.snippet.yml](./template/lint-ga.yml.snippet.yml)
 

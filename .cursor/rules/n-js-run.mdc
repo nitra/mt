@@ -9,7 +9,7 @@ version: '1.12'
 
 ## Швидкий gate через conftest
 
-Rego-пакети, які запускає `npx @nitra/cursor fix js-run` / `npx @nitra/cursor check`:
+Rego-пакети, які запускає `npx @7n/rules fix js-run` / `npx @7n/rules check`:
 
 - `jsconfig.json`:
 
@@ -25,7 +25,6 @@ Rego-пакети, які запускає `npx @nitra/cursor fix js-run` / `npx
   "include": ["src/**/*"]
 }
 ```
-
 - `configmap.yaml`:
 
 ```yaml
@@ -34,7 +33,6 @@ data:
     - 'service.name='
     - 'service.namespace='
 ```
-
 - `package.json`:
 
 ```json
@@ -77,14 +75,14 @@ Rego-пакет: `js-run.configmap`
 
 Канон маркерів: [configmap.yaml.contains.yml](./template/configmap.yaml.contains.yml)
 
-**✓ Правильно:**
+**✓ Правильно**
 
 ```yaml
 data:
   OTEL_RESOURCE_ATTRIBUTES: 'service.name=my-svc,service.namespace=prod'
 ```
 
-**✗ Неправильно:**
+**✗ Неправильно**
 
 ```yaml
 data:
@@ -110,7 +108,7 @@ Rego-пакет: `js-run.jsconfig`
 Перевірені поля:
 
 | Поле | Очікуване значення |
-| --- | --- |
+|------|--------------------|
 | `compilerOptions.module` | `"NodeNext"` |
 | `compilerOptions.moduleResolution` | `"NodeNext"` |
 | `compilerOptions.target` | `"esnext"` |
@@ -133,7 +131,7 @@ Rego-пакет: `js-run.package_json`
 **1. Заборонені залежності** (`dependencies` / `devDependencies`)
 
 | Пакет | Причина |
-| --- | --- |
+|-------|---------|
 | `bunyan` | використовуй стандартні логери |
 | `@nitra/bunyan` | використовуй стандартні логери |
 
@@ -142,14 +140,14 @@ Rego-пакет: `js-run.package_json`
 - Патерн `\bnode(\s|$)` — заміни `node` на `bun`
 - Патерн `\benv\s+\$\(cat\s+[^)]+\)\s+bun\b` — заміни `env $(cat A B) bun` на `bun --env-file=A --env-file=B`
 
-**✓ Правильно:**
+**✓ Правильно**
 
 ```json
 { "scripts": { "start": "bun src/index.js" } }
 { "scripts": { "start": "bun --env-file=.env src/index.js" } }
 ```
 
-**✗ Неправильно:**
+**✗ Неправильно**
 
 ```json
 { "scripts": { "start": "node src/index.js" } }
