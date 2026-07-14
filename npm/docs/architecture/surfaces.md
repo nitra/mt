@@ -21,6 +21,8 @@ timestamp: 2026-07-07
 | `client_capabilities` | **що клієнт вміє відобразити** (preview, diff_view, self-translate) | `ClientHello` |
 | `surface` | **у якому режимі працює агент** (designer, writer, cli) | `UserMessage.surface`, конфіг |
 
+ACP-редактори (Zed, JetBrains, Neovim, … через acp-shim — [runtime.md](runtime.md)) — ще один тип тонкого клієнта, `client_kind: "acp"`; surface-механіка для них не змінюється, бо профілі збирає хост.
+
 ## Surface-профіль
 
 `surface_profiles` у `.mt.json` розширюється з мапи «рядок → провайдер» до обʼєкта:

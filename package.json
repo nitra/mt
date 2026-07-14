@@ -10,13 +10,13 @@
   "type": "module",
   "scripts": {
     "start": "bun ./npm/bin/mt.js",
-    "test": "vitest run",
+    "test": "bun run --bun vitest run",
     "oxfmt": "oxfmt .",
     "coverage": "npx @7n/test coverage"
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
-    "@nitra/cursor": "^14.32.1",
+    "@nitra/cursor": "^14.33.0",
     "@nitra/eslint-config": "^3.10.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@vitest/coverage-v8": "^4.1.7",

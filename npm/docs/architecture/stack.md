@@ -51,6 +51,7 @@ timestamp: 2026-07-07
 
 - `agent-core` НЕ залежить від `tauri` — фейл CI, якщо `cargo tree -p agent-core -e normal` містить `tauri`;
 - `agent-protocol` без tokio/tauri — чистий контракт;
+- `agent-protocol` і `agent-core` НЕ залежать від `agent-client-protocol` — ACP є межею хост-процесу (`agent-server`/`agent-cli`), не ядра;
 - типи `async-openai` не протікають назовні provider-реалізації; `CompletionRequest` — нейтральний;
 - relay НЕ імпортує нічого з agent-* — спілкується лише протоколом.
 
@@ -60,6 +61,13 @@ timestamp: 2026-07-07
 - Хмарні моделі (Anthropic та ін.) — через LiteLLM-профіль; `model_map` (MIM/AVG/MAX) з `.mt.json` резолвиться у `provider_profiles`.
 - Tool-схеми — derive (`schemars`), не руками; SSE-парсинг і збірку tool calls руками не писати.
 - MCP: заділ `register_external(...)` у реєстрі tools + закоментований `rmcp`; власну реалізацію MCP не писати.
+
+## ACP (Agent Client Protocol)
+
+Обидві сторони межі ACP ([runtime.md](runtime.md): ACP-міст і ACP-екзекутор) — на офіційному Rust-крейті `agent-client-protocol` (Zed); власну реалізацію ACP не писати (та сама політика, що з `rmcp` для MCP). Залежність живе лише в `agent-server` (клієнт-сторона runner-а) та `agent-cli` (acp-shim агент-сторони).
+
+- Зовнішні екзекутори: `@zed-industries/claude-code-acp` (Claude Code), Gemini CLI (вбудований ACP-режим); не-ACP команди — generic argv→ACP shim;
+- нюанс спавну `claude-code-acp`: гард nested-сесій Claude Code — прибирати `CLAUDECODE` з env підпроцесу.
 
 ## Git-операції
 
@@ -98,4 +106,5 @@ timestamp: 2026-07-07
 
 - `openai/codex` (codex-rs) — App Server: JSON-RPC-сервер як єдиний власник тредів, поверхні — тонкі клієнти;
 - `aaif-goose/goose` — структура workspace (core/cli/server/mcp), sessions/providers/config;
-- `Dicklesworthstone/pi_agent_rust` — agent loop: message history, tool iteration, event callbacks.
+- `Dicklesworthstone/pi_agent_rust` — agent loop: message history, tool iteration, event callbacks;
+- `zed-industries/claude-code-acp` — агент-сторона ACP поверх SDK: референс мапінгу permission/updates для ACP-екзекутора і acp-shim.
