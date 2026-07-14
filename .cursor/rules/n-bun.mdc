@@ -15,7 +15,6 @@ version: '2.1'
   "dependencies": "кореневий package.json не повинен містити dependencies — додай у workspace-пакети (bun.mdc)"
 }
 ```
-
 - `bunfig.toml`:
 
 ```toml
