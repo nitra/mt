@@ -25,7 +25,6 @@ Rego-пакети, які запускає `npx @7n/rules fix js-run` / `npx @7n
   "include": ["src/**/*"]
 }
 ```
-
 - `configmap.yaml`:
 
 ```yaml
@@ -34,7 +33,6 @@ data:
     - 'service.name='
     - 'service.namespace='
 ```
-
 - `package.json`:
 
 ```json

@@ -46,7 +46,6 @@ jobs:
         with:
           extra_args: --results=verified,unknown
 ```
-
 - `package.json`:
 
 ```json
