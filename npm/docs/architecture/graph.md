@@ -124,7 +124,8 @@ parent: research/collect-data # відносно mt/; відсутній у ко
 ```yaml
 schema_version: 1
 created_at: ISO8601
-model_tier: AVG        # MIM | AVG | MAX; default AVG
+model_tier: AVG        # MIN | AVG | MAX; default AVG
+agent_cli: codex       # опціонально; claude | codex | cursor | pi — підписочний CLI (runtime.md)
 skills: [bash, write-files]
 secrets: [STRIPE_KEY]  # опціонально; wrapper інжектить через ENV
 retry_ladder:          # опціонально; per-node override
@@ -133,7 +134,9 @@ retry_ladder:          # опціонально; per-node override
 interactive: false     # НОВЕ: true → вузол очікує інтерактивну сесію (див. runtime.md)
 ```
 
-`model_tier` — джерело істини виконавця. За вбудованого Claude-шляху runner мапить його через `.mt.json` `model_map` (MIM/AVG/MAX → Claude-модель). Якщо `.mt.json` задає `node_executor` (зовнішній екзекутор вузла, [runtime.md](runtime.md#зовнішній-екзекутор-вузла-node_executor)), той самий tier передається екзекутору як env `MT_MODEL_TIER` — консюмер мапить його на власний пул моделей (тир-канон обов'язковий і для fix-вузлів). Схема `a.md` при цьому не змінюється: делегування — глобальне рішення `.mt.json`, а не per-node прапор.
+`model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` (напр. codex: MIN→luna / AVG→terra / MAX→sola); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
+
+`agent_cli` (який підписочний CLI виконує вузол) — **per-node** прапор `a.md` з user-level дефолтом env `MT_AGENT_CLI`. Per-node вибір CLI — це крос-програмковий вимір [мети](../vision.md): спеціалізований тул на вузол.
 
 #### `h.md`
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/@nitra/cursor/schemas/n-cursor.json",
+  "$schema": "https://unpkg.com/@7n/rules/schemas/n-rules.json",
   "rules": [
     "adr",
     "bun",
@@ -23,6 +23,7 @@
   ],
   "skills": [
     "adr-normalize",
+    "brainstorming",
     "doc-files",
     "lint",
     "llm-patch",

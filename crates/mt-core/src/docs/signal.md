@@ -3,7 +3,7 @@ type: Rust Module
 title: signal.rs
 resource: crates/mt-core/src/signal.rs
 docgen:
-  crc: 5d8c7204
+  crc: 63679729
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

@@ -24,7 +24,7 @@ function tokenEquals(a, b) {
 }
 
 /** Ролі учасників задачі (access.md): owner ⊃ host ⊃ approver ⊃ viewer. */
-export const ROLES = ['owner', 'host', 'approver', 'viewer']
+const ROLES = ['owner', 'host', 'approver', 'viewer']
 
 /**
  * Чи достатня роль `actual` для мінімально потрібної `required`.

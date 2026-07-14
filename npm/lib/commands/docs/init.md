@@ -3,7 +3,7 @@ type: JS Module
 title: init.mjs
 resource: npm/lib/commands/init.mjs
 docgen:
-  crc: 31191d11
+  crc: da578e8d
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

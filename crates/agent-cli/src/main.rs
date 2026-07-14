@@ -1,7 +1,8 @@
 //! Тонкий клієнт agent-server (M1-заділ `mt serve`/`mt attach`).
 //!
 //! `serve` — стартує хост-процес: WS на 127.0.0.1, discovery port-file +
-//! токен; runner — `OpenAiProvider` (якщо задано `--base-url`) або echo.
+//! токен; runner — echo-заглушка до появи ACP-клієнта (ADR `260713-2110`:
+//! ACP — єдиний транспорт AI-викликів; виконавці — зовнішні підписочні CLI).
 //! `attach <node>` — читає discovery, хендшейк v4, REPL: stdin →
 //! `UserMessage`, стрічка подій → термінал. M1-заділ адресує кімнату
 //! рядком вузла; hash-адресація і graph-операції (claim/publish через
@@ -11,14 +12,10 @@ use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use agent_core::{
-    gate_tools, register_workspace_tools, Agent, ApprovalRequester, OpenAiProvider, ToolRegistry,
-};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::approvals_gate::request_approval;
 use agent_server::{
-    serve, spawn_relay_bridge, AgentTurnRunner, AppState, ApprovalGate, Discovery, EchoTurnRunner,
-    GraphConfig, RelayBridgeConfig, SessionHost, TurnRunner,
+    serve, spawn_relay_bridge, AppState, ApprovalGate, Discovery, EchoTurnRunner, GraphConfig,
+    RelayBridgeConfig, SessionHost, TurnRunner,
 };
 use clap::{Parser, Subcommand};
 use futures::{SinkExt, StreamExt};
@@ -43,16 +40,6 @@ enum Command {
         /// Порт (0 — ефемерний).
         #[arg(long, default_value_t = 0)]
         port: u16,
-        /// base_url OpenAI-compatible провайдера (omlx/Ollama/LiteLLM);
-        /// без нього — echo-заглушка.
-        #[arg(long)]
-        base_url: Option<String>,
-        /// Модель провайдера.
-        #[arg(long, default_value = "default")]
-        model: String,
-        /// API-ключ (для локальних серверів — порожній).
-        #[arg(long, default_value = "")]
-        api_key: String,
         /// Адреса relay (`ws://…`/`wss://…`) — вмикає міст до relay.
         #[arg(long)]
         relay_url: Option<String>,
@@ -85,9 +72,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Command::Serve {
             port,
-            base_url,
-            model,
-            api_key,
             relay_url,
             relay_token,
             relay_root,
@@ -97,15 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 device_token: relay_token,
                 root: relay_root,
             });
-            run_serve(
-                state_dir(cli.state_dir),
-                port,
-                base_url,
-                model,
-                api_key,
-                relay,
-            )
-            .await
+            run_serve(state_dir(cli.state_dir), port, relay).await
         }
         Command::Attach { node, lang } => run_attach(state_dir(cli.state_dir), node, lang).await,
     }
@@ -114,56 +90,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn run_serve(
     dir: PathBuf,
     port: u16,
-    base_url: Option<String>,
-    model: String,
-    api_key: String,
     relay: Option<RelayBridgeConfig>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let sessions = Arc::new(SessionHost::new(dir.join("sessions"))?);
     let gate = Arc::new(ApprovalGate::default());
-    let runner: Arc<dyn TurnRunner> = match base_url {
-        Some(base_url) => {
-            let approval_sessions = Arc::clone(&sessions);
-            let approval_gate = Arc::clone(&gate);
-            Arc::new(AgentTurnRunner::new(move |context| {
-                // Файлові тули пісковані до worktree run-а (workdir є лише
-                // з graph-мостом); write_file — за approval-гейтом
-                // (access.md, mid-run tool approval; таймаут 120s → відмова).
-                let mut tools = ToolRegistry::new();
-                if let Some(root) = &context.workdir {
-                    register_workspace_tools(&mut tools, root.clone());
-                    let sessions = Arc::clone(&approval_sessions);
-                    let gate = Arc::clone(&approval_gate);
-                    let node = context.node.clone();
-                    let requester: ApprovalRequester = Arc::new(move |action, diff| {
-                        let sessions = Arc::clone(&sessions);
-                        let gate = Arc::clone(&gate);
-                        let node = node.clone();
-                        Box::pin(async move {
-                            let Ok(receiver) =
-                                request_approval(&sessions, &gate, &node, action, diff)
-                            else {
-                                return false;
-                            };
-                            matches!(
-                                tokio::time::timeout(std::time::Duration::from_secs(120), receiver)
-                                    .await,
-                                Ok(Ok(true))
-                            )
-                        })
-                    });
-                    gate_tools(&mut tools, &["write_file"], requester);
-                }
-                Agent::new(
-                    OpenAiProvider::new(base_url.clone(), api_key.clone()),
-                    tools,
-                    model.clone(),
-                    "Ти — виконавець вузла графа задач MT.",
-                )
-            }))
-        }
-        None => Arc::new(EchoTurnRunner),
-    };
+    // Виконавець ходу — ACP-клієнт до зовнішнього підписочного CLI
+    // (окремий milestone); до нього — echo-заглушка транспорту.
+    let runner: Arc<dyn TurnRunner> = Arc::new(EchoTurnRunner);
     let token = Uuid::new_v4().to_string();
     let mut state = AppState::from_parts(sessions, gate, runner, Some(token.clone()));
     // Кімната = вузол графа, якщо запущено з кореня MT-проєкту (tasks-дир

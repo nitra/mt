@@ -5,8 +5,8 @@
     "": {
       "name": "mono",
       "devDependencies": {
+        "@7n/rules": "^1.2.1",
         "@nitra/cspell-dict": "^2.1.0",
-        "@nitra/cursor": "^14.25.1",
         "@nitra/eslint-config": "^3.10.1",
         "@stryker-mutator/vitest-runner": "^9.6.1",
         "@vitest/coverage-v8": "^4.1.7",
@@ -15,7 +15,7 @@
     },
     "crates/mt-napi": {
       "name": "@7n/mt-napi",
-      "version": "0.1.5",
+      "version": "0.2.1",
       "devDependencies": {
         "@napi-rs/cli": "^3.6.0",
         "ajv": "^8.20.0",
@@ -23,7 +23,7 @@
     },
     "npm": {
       "name": "@7n/mt",
-      "version": "0.17.0",
+      "version": "0.25.2",
       "bin": {
         "mt": "bin/mt.js",
       },
@@ -34,7 +34,7 @@
     },
     "relay": {
       "name": "@7n/relay",
-      "version": "0.1.0",
+      "version": "0.7.1",
       "dependencies": {
         "ws": "^8.18.0",
       },
@@ -55,6 +55,8 @@
     "@7n/mt-napi": ["@7n/mt-napi@workspace:crates/mt-napi"],
 
     "@7n/relay": ["@7n/relay@workspace:relay"],
+
+    "@7n/rules": ["@7n/rules@1.2.1", "", { "dependencies": { "@7n/llm-lib": "^2.0.0", "@7n/mt": "^0.5.1", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "eslint": "^10.4.1", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "jscpd": "^5.0.11", "knip": "^6.22.0", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "oxlint": "^1.68.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@earendil-works/pi-ai": "0.80.2", "@earendil-works/pi-coding-agent": "0.80.2" }, "bin": { "n-rules": "bin/n-rules.js", "n-cursor": "bin/n-rules.js" } }, "sha512-5SkSw5LXMMTd3pSfcjEcxSHfqb9OqzGP1HKPouHjw4zX/1Yp/jfYUo80N39KjmezRaqBp9eEk7xlc/t+CzcOAA=="],
 
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.91.1", "", { "dependencies": { "json-schema-to-ts": "^3.1.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw=="],
 
@@ -505,8 +507,6 @@
     "@napi-rs/wasm-tools-win32-x64-msvc": ["@napi-rs/wasm-tools-win32-x64-msvc@1.0.1", "", { "os": "win32", "cpu": "x64" }, "sha512-rEAf05nol3e3eei2sRButmgXP+6ATgm0/38MKhz9Isne82T4rPIMYsCIFj0kOisaGeVwoi2fnm7O9oWp5YVnYQ=="],
 
     "@nitra/cspell-dict": ["@nitra/cspell-dict@2.2.2", "", { "dependencies": { "@cspell/dict-bash": "^4.2.2", "@cspell/dict-csharp": "^4.0.8", "@cspell/dict-css": "^4.1.1", "@cspell/dict-docker": "^1.1.17", "@cspell/dict-html": "^4.0.15", "@cspell/dict-k8s": "^1.0.12", "@cspell/dict-kotlin": "^1.1.1", "@cspell/dict-lua": "^4.0.8", "@cspell/dict-markdown": "^2.0.16", "@cspell/dict-php": "^4.1.1", "@cspell/dict-python": "^4.2.26", "@cspell/dict-ro-ro": "^2.0.6", "@cspell/dict-ru_ru": "^2.3.2", "@cspell/dict-sql": "^2.2.1", "@cspell/dict-swift": "^2.0.6", "@cspell/dict-tr-tr": "^3.0.6", "@cspell/dict-uk-ua": "^4.0.6", "@cspell/dict-vue": "^3.0.5" } }, "sha512-BQvJ4qGRJLeGezIXNe2sGdG4dVaT/BpCUVYvQbxbqg9wEqcDCPjGRPuoTKLpz8YxahEa4i7Usme8vipitQ0d2A=="],
-
-    "@nitra/cursor": ["@nitra/cursor@14.25.1", "", { "dependencies": { "@7n/llm-lib": "^2.0.0", "@7n/mt": "^0.5.1", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "eslint": "^10.4.1", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "jscpd": "^5.0.11", "knip": "^6.22.0", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "oxlint": "^1.68.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@earendil-works/pi-ai": "0.80.2", "@earendil-works/pi-coding-agent": "0.80.2" }, "bin": { "n-cursor": "bin/n-cursor.js" } }, "sha512-eeQZmXNbkkUD/20RvY1l3kAWPXQFH1tbot/jqTI5NTvPjAlPYRo2MYw7arGfD9DpBITTToQHOvobOVgFdZEoAg=="],
 
     "@nitra/eslint-config": ["@nitra/eslint-config@3.10.3", "", { "dependencies": { "@e18e/eslint-plugin": "^0.5.1", "@eslint/compat": "^2.1.0", "@eslint/js": "^10.0.1", "@eslint/markdown": "^8.0.2", "@graphql-eslint/eslint-plugin": "^4.4.0", "@graphql-tools/code-file-loader": "^8.1.32", "@graphql-tools/graphql-tag-pluck": "^8.3.31", "@graphql-tools/utils": "^11.1.0", "@microsoft/eslint-plugin-sdl": "^1.1.0", "eslint": "^10.6.0", "eslint-merge-processors": "^2.0.0", "eslint-plugin-import-x": "^4.17.0", "eslint-plugin-jsdoc": "^63.0.10", "eslint-plugin-jsonc": "^3.2.0", "eslint-plugin-n": "^18.2.1", "eslint-plugin-no-unsanitized": "^4.1.5", "eslint-plugin-oxlint": "^1.71.0", "eslint-plugin-security": "^4.0.1", "eslint-plugin-sonarjs": "^4.1.0", "eslint-plugin-unicorn": "^69.0.0", "eslint-plugin-vue": "^10.9.2", "eslint-plugin-yml": "^3.5.0", "eslint-processor-vue-blocks": "^2.0.0", "globals": "^17.7.0", "graphql": "^16.14.0", "vue-eslint-parser": "^10.4.1" } }, "sha512-QSHs6k6kOFUdq6ZGxjyKsLsNLBllXjAeG4sEt+b0Hw6fg4dVV+5w4omtqtChJRTJdxzPm2vQDkCjtkoY8TxzMw=="],
 
@@ -2084,6 +2084,8 @@
 
     "zwitch": ["zwitch@2.0.4", "", {}, "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="],
 
+    "@7n/rules/@7n/mt": ["@7n/mt@0.5.1", "", { "optionalDependencies": { "@7n/mt-darwin-arm64": "0.5.1", "@7n/mt-linux-x64": "0.5.1" }, "bin": { "mt": "bin/mt.js" } }, "sha512-fIP75AODAX6ri+Geznpph0BJR0kkOWeCarSNJCibLCPH3vnfbEvHC9/MgTk3zg9cYIGEFAHd1gkCEnOekexIdg=="],
+
     "@aws-sdk/credential-provider-http/@smithy/node-http-handler": ["@smithy/node-http-handler@4.9.3", "", { "dependencies": { "@smithy/core": "^3.29.1", "@smithy/types": "^4.15.1", "tslib": "^2.6.2" } }, "sha512-qZTa4gQFUo8RM02rk6q5UVTDLNrQ1oS20LsepBzqq1QBVc/EHJ03OOUADcqMZiXHArW+Y7+OGY0BpdTwZRq/Yg=="],
 
     "@aws-sdk/credential-provider-sso/@aws-sdk/token-providers": ["@aws-sdk/token-providers@3.1080.0", "", { "dependencies": { "@aws-sdk/core": "^3.974.28", "@aws-sdk/nested-clients": "^3.997.28", "@aws-sdk/types": "^3.973.15", "@smithy/core": "^3.29.0", "@smithy/types": "^4.15.1", "tslib": "^2.6.2" } }, "sha512-8PufAQvncWXvdZUvODbuyXa8l3aszefEzwSMBUcgheNbZOmJMcNn388Ebt/piVrUHyxKN1MlxnR2OonzTyZaGw=="],
@@ -2123,8 +2125,6 @@
     "@microsoft/eslint-plugin-sdl/eslint-plugin-n": ["eslint-plugin-n@17.10.3", "", { "dependencies": { "@eslint-community/eslint-utils": "^4.4.0", "enhanced-resolve": "^5.17.0", "eslint-plugin-es-x": "^7.5.0", "get-tsconfig": "^4.7.0", "globals": "^15.8.0", "ignore": "^5.2.4", "minimatch": "^9.0.5", "semver": "^7.5.3" }, "peerDependencies": { "eslint": ">=8.23.0" } }, "sha512-ySZBfKe49nQZWR1yFaA0v/GsH6Fgp8ah6XV0WDz6CN8WO0ek4McMzb7A2xnf4DCYV43frjCygvb9f/wx7UUxRw=="],
 
     "@microsoft/eslint-plugin-sdl/eslint-plugin-security": ["eslint-plugin-security@1.4.0", "", { "dependencies": { "safe-regex": "^1.1.0" } }, "sha512-xlS7P2PLMXeqfhyf3NpqbvbnW04kN8M9NtmhpR3XGyOvt/vNKS7XPXT5EDbwKW9vCjWH4PpfQvgD/+JgN0VJKA=="],
-
-    "@nitra/cursor/@7n/mt": ["@7n/mt@0.5.1", "", { "optionalDependencies": { "@7n/mt-darwin-arm64": "0.5.1", "@7n/mt-linux-x64": "0.5.1" }, "bin": { "mt": "bin/mt.js" } }, "sha512-fIP75AODAX6ri+Geznpph0BJR0kkOWeCarSNJCibLCPH3vnfbEvHC9/MgTk3zg9cYIGEFAHd1gkCEnOekexIdg=="],
 
     "@oxc-resolver/binding-wasm32-wasi/@emnapi/core": ["@emnapi/core@1.11.0", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-l9Oo58x0HOP5znGzVhYW9U3e5wVuA4LAZU2AGezTmkhO1CgQRFDhDg4nneHsu/t3WniXg9QrG2nIXL/ZS8ln8Q=="],
 

@@ -38,37 +38,41 @@ ACP (Agent Client Protocol; JSON-RPC поверх stdio, клієнт спавн
 | ← `session/request_permission` | `ApprovalRequest` → `ApprovalResponse`: вердикт дає редактор, Ed25519-підпис ставить пристрій shim-а |
 | `session/cancel` | `CancelTurn` |
 
-Чесні межі: capabilities `preview` і `self-translate` відсутні — скріншоти не шляться, текст приходить уже перекладеним хостом (загальне правило хендшейку). Реєстрація shim-а в ACP Registry — канал дистрибуції «MT з будь-якого редактора».
+Чесні межі: capabilities `preview` і `self-translate` відсутні — скріншоти не шляться, текст приходить уже перекладеним хостом (загальне правило хендшейку). Реєстрація shim-а в ACP Registry — канал дистрибуції «MT з будь-якого редактора». Це **агент-сторона** MT (редактор — клієнт, MT — агент); дзеркальна **клієнт-сторона** (MT драйвить виконавців за ACP) — нижче, «ACP — єдиний транспорт AI-викликів».
 
-### Зовнішній екзекутор вузла (`node_executor`)
+### Підписочні CLI-виконавці (`agent_cli`)
 
-Runner виконує agent-вузол одним із двох шляхів:
+Runner виконує agent-вузол **єдиним** шляхом — headless-запуск одного з **підписочних CLI**, який користувач авторизував локально під **власною підпискою** (`claude` / `codex login` / `cursor-agent login`). MT не тримає API-ключів і не білінгує токени: auth, вибір моделі, tools і sandbox привозить вендорський CLI; за MT — уся оркестрація (claim/lease, worktree-ізоляція, budget/timeout, `## Check`, fenced publish).
 
-- **Вбудований Claude-agent-шлях** (дефолт) — спавн `claude` з моделлю за `model_tier` (`.mt.json` `model_map`);
-- **Зовнішній екзекутор** — якщо `.mt.json` має `node_executor` (рядок-команда, напр. `npx n-cursor mt-run-node`), runner замість Claude спавнить цю команду. Мотивація: зовнішній консюмер виконує вузли **власним** harness-ом (свої моделі/тири, власна телеметрія), а не Claude-моделями `model_map` — тир-канон лишається обов'язковим і для fix-вузлів.
+| `agent_cli` | Виконавець | Модель тиру |
+| --- | --- | --- |
+| `claude` (дефолт) | Claude Code (підписка Anthropic) | `MT_AGENT_CLI_MODEL_MAP.claude[tier]` |
+| `codex` | Codex CLI (підписка OpenAI) | `MT_AGENT_CLI_MODEL_MAP.codex[tier]` |
+| `cursor` | Cursor CLI (підписка Cursor) | `MT_AGENT_CLI_MODEL_MAP.cursor[tier]` |
+| `pi` | pi.dev CLI — **локальні моделі**: обгортає omlx-сервер | `MT_AGENT_CLI_MODEL_MAP.pi[tier]` |
 
-MT лишає за собою **всю оркестрацію**: claim/lease, worktree-ізоляція, budget/timeout (hard-timeout = `budget_hard_sec`), `## Check`, fenced publish. Екзекутор — **лише «застосуй зміни у worktree»**; контракт-артефакт `fact_NNN.md` синтезує runner (екзекутор його не пише).
+**Конфігурація виконавців — user-level, через ENV.** Підписки, CLI і мапи моделей — властивість **користувача**, спільна для всіх його репозиторіїв, тому вона живе в оточенні користувача, а не в repo-scoped `.mt.json`:
 
-**Контракт команди-екзекутора:**
+```bash
+# ~/.zshenv (рівень користувача — усі репозиторії)
+export MT_AGENT_CLI="claude"                       # дефолтний виконавець
+export MT_CLOUD_AGENT_CLIS="codex,cursor"          # каскад хмарних підписок (порядок = пріоритет)
+export MT_AGENT_CLI_MODEL_MAP='{"codex":{"MIN":"gpt-5.6-luna","AVG":"gpt-5.6-terra","MAX":"gpt-5.6-sola"},"pi":{"MIN":"omlx/gemma-4-e2b-it-4bit"}}'
+```
 
-| Канал | Вміст |
-| --- | --- |
-| argv | `<node_executor...> <node-dir>` — абсолютний шлях директорії вузла у worktree (= cwd) |
-| env | `MT_NODE_DIR`, `MT_WORKTREE`, `MT_RUN_TOKEN`, `MT_MODEL_TIER` (MIM/AVG/MAX — консюмер мапить на свій пул), `MT_TASK_PATH`, `MT_RUN_NNN`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT` |
-| stdout | остання непорожня лінія = JSON `{ applied: bool, touchedFiles: string[] }` (best-effort; не-JSON → applied=false) |
-| exit | `0` → runner ганяє `## Check` (якщо є) і за успіху синтезує `fact_NNN.md` → штатний merge/publish; ненульовий → failed-run штатно (worktree лишається для діагностики) |
+**Тир-алгоритм резолвить конкретну модель per-CLI.** Канон MIN/AVG/MAX — спільний для всіх виконавців; мапу «тир → модель CLI» задає `MT_AGENT_CLI_MODEL_MAP`. Retry ladder ескалює тир — отже, і конкретну модель — тією самою мапою. Без мапінгу прапор моделі не передається (CLI резолвить сам за підпискою), тир завжди йде hint-ом env `MT_MODEL_TIER`. Правило однакове для всіх транспортів: headless-виклик і ACP-сесія отримують ту саму резолвнуту модель.
 
-Застосовується лише до actor `agent`; `human` та інші actor-и — без змін. **Зворотна сумісність:** `node_executor` відсутній → поточний Claude-шлях без змін. Гранулярність — глобальна (на репо/`.mt.json`): консюмер, що володіє всім `mt/`-графом, виконує ВСІ agent-вузли своїм harness-ом; це унеможливлює «тихий» відкат окремого вузла на Claude-шлях (свідомо відхилений проміжний стан).
+Вибір CLI: `a.md` секція `## Agent cli` (per-node — крос-програмковий вимір [мети](../vision.md)) → env `MT_AGENT_CLI` → `claude`. Невідоме значення → fail-fast до створення worktree. Обраний CLI повідомляється у env run-а як `MT_AGENT_CLI`. Success = `fact_NNN.md` існує **і** `## Check` пройдено.
 
-#### ACP-екзекутор — цільовий контракт зовнішнього екзекутора
+**Правило підписки (нормативне).** Run виконується **на хості, де owner вузла сам авторизував CLI**. Підписки не пулюються і не проксюються через relay чи сервер — relay передає лише події та approvals; міграція сесії «перенести сюди» — це перенесення виконання на девайс із підпискою її власника. Rate limits підписки — зовнішній ресурс: оркестратор при них робить backoff, а не паралелить глибше.
 
-Argv-контракт вище структурно сліпий: `spawnSync` із захопленим stdout — нуль подій до exit, permission-рішення зашиваються прапорцями заздалегідь. Експеримент 2026-07-13 (argv vs ACP на еталонному вузлі) зафіксував бінарні переваги ACP: живий стрім (90 подій проти 0) і mid-run approval (11 відпрацьованих гейтів проти неможливих у принципі). Тому в цільовій картині runner agent-server говорить із зовнішнім екзекутором **лише за ACP** (клієнт-сторона; та сама межа, що ACP-міст вище, але з боку клієнта):
+**Каскад хмарних підписок (`MT_CLOUD_AGENT_CLIS`).** У користувача може бути кілька хмарних підписок одночасно (напр. codex і cursor). `MT_CLOUD_AGENT_CLIS` — **упорядкований** список підключених хмарних CLI у пріоритеті спрацювання. Якщо запуск CLI падає з ознаками вичерпаних лімітів підписки (rate limit / quota / 429), runner автоматично переходить до наступного CLI каскаду — порядок `[обраний agent_cli, ...каскад]` без дублів — поки котрийсь не спрацює або не будуть опробувані всі. Модель тиру резолвиться **per-кандидат** тією самою мапою; фактичний CLI фіксується у frontmatter `run_NNN.md` (`agent_cli`). Не-лімітні помилки каскад **не** запускають — це штатний failed-run і retry ladder.
 
-- runner = ACP-клієнт: спавнить екзекутор (`claude-code-acp`, Gemini CLI, будь-який ACP-агент) підпроцесом; `session/new` (cwd = node-dir у worktree) → `session/prompt` (інструкція з task.md); env `MT_*` передається при spawn, як в argv-контракті;
-- `session/update` транслюється в Envelope-події run-а (`ToolCall`/`ToolResult`/`AgentTextDelta`) — автономний run зовнішнім harness-ом стає спостережуваним у dashboard нарівні з інтерактивною сесією;
-- `session/request_permission` → політика runner-а: дії в межах worktree — авто-allow (`allow_always`, інакше запит летить на кожну write/execute-дію), деструктивне — штатний mid-run approval-гейт ([access.md](access.md));
-- інваріанти незмінні: MT володіє claim/lease, worktree-ізоляцією, бюджетами (hard-timeout = kill підпроцесу), `## Check`, fenced publish; `fact_NNN.md` синтезує runner, `{applied, touchedFiles}` runner рахує сам із git-стану worktree;
-- argv-контракт у Rust **не реімплементується**: сумісність із не-ACP екзекуторами (кастомний harness, shell-скрипт) — generic **argv→ACP shim** (окрема обгортка ~50 рядків: агент-сторона ACP, всередині — команда за argv-контрактом). Escape hatch живе як shim, а не як другий контракт у runner-і. JS-runner (`@7n/mt`) зберігає argv-шлях без змін до міграції runner-а в agent-server.
+**ACP — єдиний транспорт AI-викликів.** **Усі** виклики ШІ йдуть виключно через **ACP (Agent Client Protocol)**: один ACP-клієнт в agent-server, без вендорських адаптерів і без власного provider-шару; хмарні CLI підключаються своїми ACP-адаптерами, **локальні моделі — через pi.dev CLI**, який обгортає omlx-сервер і виставляє той самий ACP. `permission-request` ACP мапиться на `ApprovalRequest` (Ed25519-підписи) — mid-run гейти працюють поверх будь-якого виконавця, включно з локальним; політика runner-а: дії в межах worktree — авто-allow, деструктивне — штатний гейт ([access.md](access.md)). `session/update` транслюється в Envelope-події run-а (`ToolCall`/`ToolResult`/`AgentTextDelta`) — автономний run спостережуваний у dashboard нарівні з інтерактивною сесією. Структуровані ACP-помилки лімітів живлять каскад замість текстової евристики.
+
+**Телеметрія.** tokens/cost із зовнішнього CLI — best-effort (що CLI віддає, те потрапляє у `run_NNN.md`); бюджети для підписочного шляху — soft-alert, hard-межа лишається `budget_hard_sec` (kill за таймаутом).
+
+Історична точка розширення «зовнішній екзекутор вузла» (`.mt.json` `node_executor`, споживалась `n-cursor mt-run-node`) видалена: після «ACP — єдиний транспорт AI-викликів» зовнішні консюмери (включно з локальними моделями) покриваються тим самим CLI-шляхом (`pi` для omlx) і user-level ENV-конфігом — паралельний виконавчий шлях більше не потрібен.
 
 ## Wake: push замість polling
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1] - 2026-07-14
+
+### Changed
+
+- внутрішні константи FRAME_LIMIT/BUFFER_LIMIT/ROLES більше не експортуються (knip: unused exports)
+
 ## [0.7.0] - 2026-07-12
 
 ### Changed

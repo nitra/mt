@@ -3,9 +3,8 @@ type: Rust Module
 title: config.rs
 resource: crates/mt-core/src/config.rs
 docgen:
-  crc: 703420ae
+  crc: ac6de95a
   model: omlx/gemma-4-e2b-it-4bit
-  tier: local-min
   score: 90
 ---
 

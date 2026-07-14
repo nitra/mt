@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1] - 2026-07-14
+
+### Changed
+
+- feat(mt): Rust-порт run-оркестрації до паритету; run.mjs — тонкий клієнт mt-core (#47)
+
+## [0.2.0] - 2026-07-14
+
+### Removed
+
+- Модельні ключі (model_map / claude_model / audit_model) видалені з дефолтів .mt.json — конфігурація виконавців іде з user-level ENV (ADR 260713-2110)
+
 ## [0.1.5] - 2026-07-11
 
 ### Changed

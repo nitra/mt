@@ -72,7 +72,7 @@ export default function init(args, deps = {}) {
   }
   const { name, flags } = parsed
   if (!name) {
-    log('Usage: mt init <name> [--mode agent|human] [--model-tier MIM|AVG|MAX]')
+    log('Usage: mt init <name> [--mode agent|human] [--model-tier MIN|AVG|MAX]')
     log('                      [--budget-sec N] [--hint <text>] [--dep <id>]...')
     log('  name може містити / для вкладених задач (напр. "research/collect-data")')
     return 1

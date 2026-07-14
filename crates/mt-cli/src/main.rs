@@ -9,7 +9,7 @@ fn usage() -> ! {
     eprintln!(
         "  mt-scanner create <tasks_dir> <name> [flags]     — create a task node, output JSON"
     );
-    eprintln!("      [--mode agent|human] [--model-tier MIM|AVG|MAX] [--budget-sec N] [--hint <t>] [--dep <id>]...");
+    eprintln!("      [--mode agent|human] [--model-tier MIN|AVG|MAX] [--budget-sec N] [--hint <t>] [--dep <id>]...");
     process::exit(1);
 }
 

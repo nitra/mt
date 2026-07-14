@@ -1,6 +1,6 @@
 {
   "name": "@7n/mt-napi",
-  "version": "0.1.5",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Build-обгортка napi-аддона mt (артефакти йдуть у платформні підпакети @7n/mt-*)",

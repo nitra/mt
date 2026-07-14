@@ -8,7 +8,7 @@
  */
 
 /** Ліміт буфера кімнати (stack.md: «буфер ≤ 200 Envelope/run»). */
-export const BUFFER_LIMIT = 200
+const BUFFER_LIMIT = 200
 
 /** Кімнати з ефемерним буфером і підписниками. */
 export class Rooms {

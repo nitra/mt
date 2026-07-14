@@ -8,16 +8,14 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use agent_core::provider::{Completion, MockProvider};
-use agent_core::{Agent, ToolRegistry};
-use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::{serve, AgentTurnRunner, AppState, ApprovalGate, GraphConfig, SessionHost};
-use futures::{SinkExt, StreamExt};
+use agent_protocol::{Envelope, Event};
+use agent_server::{serve, AppState, ApprovalGate, GraphConfig, ScriptedTurnRunner, SessionHost};
+use futures::SinkExt;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-type WsStream =
-    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+mod common;
+use common::{next_json, WsStream};
 
 fn sh(dir: &Path, args: &[&str]) {
     let out = Command::new("git")
@@ -70,26 +68,12 @@ impl Fixture {
     }
 }
 
-/// Стартує AppState (свій `state_dir`, скриптований MockProvider) + WS-сервер.
+/// Стартує AppState (свій `state_dir`, скриптований runner) + WS-сервер.
 async fn start_host(
     fixture: &Fixture,
     responses: Vec<&str>,
 ) -> (Arc<AppState>, String, tempfile::TempDir) {
-    let completions = responses
-        .into_iter()
-        .map(|text| Completion {
-            text: text.into(),
-            tool_calls: vec![],
-        })
-        .collect::<Vec<_>>();
-    let runner = AgentTurnRunner::new(move |_context| {
-        Agent::new(
-            MockProvider::scripted(completions.clone()),
-            ToolRegistry::new(),
-            "mock",
-            "system",
-        )
-    });
+    let runner = ScriptedTurnRunner::new(responses);
     let state_dir = tempfile::tempdir().unwrap();
     let state = Arc::new(
         AppState::from_parts(
@@ -106,36 +90,10 @@ async fn start_host(
     (state, format!("ws://{addr}/ws"), state_dir)
 }
 
+/// WS-клієнт цього тест-бінарника (обидва «хости» — той самий device_id 1,
+/// як у вихідному сценарії handoff).
 async fn connect(url: &str) -> WsStream {
-    let hello = ClientHello {
-        protocol_version: PROTOCOL_VERSION,
-        device_id: Uuid::from_u128(1),
-        device_token: String::new(),
-        client_kind: "cli".into(),
-        client_capabilities: vec![],
-        lang: "uk".into(),
-        want_replay_from: None,
-    };
-    let (mut stream, _) = tokio_tungstenite::connect_async(url).await.unwrap();
-    stream
-        .send(Message::text(serde_json::to_string(&hello).unwrap()))
-        .await
-        .unwrap();
-    let _: ServerHello = next_json(&mut stream).await;
-    stream
-}
-
-async fn next_json<T: serde::de::DeserializeOwned>(stream: &mut WsStream) -> T {
-    loop {
-        let message = tokio::time::timeout(std::time::Duration::from_secs(10), stream.next())
-            .await
-            .expect("timeout очікування кадру")
-            .expect("стрім закрито")
-            .unwrap();
-        if let Message::Text(text) = message {
-            return serde_json::from_str(text.as_str()).unwrap();
-        }
-    }
+    common::connect(url, 1).await
 }
 
 async fn next_matching(stream: &mut WsStream, matches_event: impl Fn(&Event) -> bool) -> Envelope {
