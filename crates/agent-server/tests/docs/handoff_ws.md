@@ -3,7 +3,7 @@ type: Rust Module
 title: handoff_ws.rs
 resource: crates/agent-server/tests/handoff_ws.rs
 docgen:
-  crc: 446c2cbf
+  crc: b5181e7d
   model: openai-codex/gpt-5.4-mini
   score: 100
   judgeModel: openai-codex/gpt-5.4-mini
