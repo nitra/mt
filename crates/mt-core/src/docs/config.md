@@ -3,7 +3,7 @@ type: Rust Module
 title: config.rs
 resource: crates/mt-core/src/config.rs
 docgen:
-  crc: 2f3fa2c8
+  crc: ac6de95a
   model: omlx/gemma-4-e2b-it-4bit
   score: 90
 ---

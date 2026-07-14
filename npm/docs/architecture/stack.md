@@ -13,7 +13,8 @@ timestamp: 2026-07-07
 
 | Компонент | Стек | Статус |
 | --- | --- | --- |
-| `@7n/mt` — ядро графа: CLI, claim/fenced publish, scan, wrapper | Bun + plain JS/JSDoc | існує (0.2.x) |
+| `@7n/mt` — CLI-поверхня графа: тонкий клієнт Rust-ядра (`mt-core` через napi) | Bun + plain JS/JSDoc поверх `mt-core` | існує (0.2.x) |
+| `mt-core` — ядро графа: scan, create, claim CAS, fenced publish, run wrapper | Rust crate (`serde`, `chrono`, `sha2`) | існує |
 | `agent-protocol` — Envelope/Event, підписи, версія протоколу | Rust crate (`serde`, `ed25519-dalek`; без tokio/tauri) | планується |
 | `agent-core` — ACP-клієнт (Agent Client Protocol) до зовнішніх CLI-виконавців | Rust crate (`tokio`, ACP; `notify`, `gix` feature-gated) | планується |
 | `agent-server` — хост-процес: сесії, транспорти, relay-клієнт, discovery | Rust crate (`axum`, `tokio-tungstenite`, `reqwest`) | планується |
@@ -25,11 +26,11 @@ timestamp: 2026-07-07
 
 ## Правило одного коду контракту
 
-Логіка контракту графа (claim CAS, fenced publish, scan, схеми файлів) реалізована **один раз** — у `@7n/mt`. `agent-server` (Rust) **не реімплементує** її: викликає `mt … --json` як підпроцес для graph-операцій. Rust-шар відповідає за те, чого немає в `@7n/mt`: довгоживучий процес, сесії/broadcast, транспорти, preview, підписи, ACP-сесії виконавців.
+Логіка контракту графа (claim CAS, fenced publish, scan, run wrapper, схеми файлів) реалізована **один раз** — у Rust-ядрі `mt-core`. Обидва споживачі використовують ту саму реалізацію без підпроцесів: `@7n/mt` — тонкий клієнт через napi-аддон (`crates/mt-napi`), `agent-server` — лінкує `mt-core` як crate (`graph.rs`). JS-шар **не** друга імплементація: у ньому лишаються argv, резолв конфіг-шляхів і мапінг помилок в exit-коди. Rust-шар додатково відповідає за те, чого немає в `@7n/mt`: довгоживучий процес, сесії/broadcast, транспорти, preview, підписи, ACP-сесії виконавців.
 
-- Плюс: неможлива розбіжність двох реалізацій fenced publish.
-- Мінус: залежність agent-server від Bun у PATH — фіксується в discovery/preflight (`mt doctor`-перевірка).
-- Перегляд рішення (перенесення контракту в Rust) — окремий ADR, лише після стабілізації протоколу.
+- Плюс: неможлива розбіжність двох реалізацій fenced publish і run-оркестрації.
+- Мінус: JS-поверхня потребує napi-артефакт для платформи (platform-підпакети + dev-fallback `cargo build`).
+- Історія: початково контракт жив у `@7n/mt` (JS), а agent-server мав викликати `mt … --json`; перенесення в Rust — ADR `260714-0710` (run wrapper; scan перенесено раніше, ADR `20260613-071723`).
 
 ## Контракт як пакет: `@7n/mt-contract` + conformance-suite
 

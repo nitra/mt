@@ -6,6 +6,7 @@
 //! Пріоритет ефективного конфігу вузла (спадання): `plan_NNN.md` frontmatter >
 //! `.mt-override.json` > `task.md` frontmatter > `.mt.json` > дефолти.
 
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use crate::frontmatter::parse_front_matter;
@@ -90,6 +91,81 @@ pub fn effective_config(
     Value::Object(merged)
 }
 
+/// Канонізує тир моделі: uppercase (`MIN` | `AVG` | `MAX`); порожнє → `""`
+/// (порт JS `normalizeModelTier`).
+pub fn normalize_model_tier(tier: &str) -> String {
+    tier.to_uppercase()
+}
+
+/// Конфігурація виконавців — **user-level, з ENV** (runtime.md «Підписочні
+/// CLI-виконавці»): вона спільна для всіх репозиторіїв користувача і тому НЕ
+/// живе у repo-scoped `.mt.json`. Порт JS `loadAgentCliEnv`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentCliEnv {
+    /// Дефолтний CLI (`MT_AGENT_CLI`): claude | codex | cursor | pi.
+    pub agent_cli: String,
+    /// Каскад хмарних CLI (`MT_CLOUD_AGENT_CLIS`, comma-separated).
+    pub cloud_agent_clis: Vec<String>,
+    /// JSON-мапа «CLI → тир → модель» (`MT_AGENT_CLI_MODEL_MAP`).
+    pub model_map: Value,
+}
+
+impl Default for AgentCliEnv {
+    fn default() -> Self {
+        Self {
+            agent_cli: "claude".to_string(),
+            cloud_agent_clis: Vec::new(),
+            model_map: Value::Object(Map::new()),
+        }
+    }
+}
+
+/// Будує [`AgentCliEnv`] через getter змінних середовища (ін'єкція для
+/// тестів; продакшн — [`agent_cli_env_from_process`]). Невалідний або
+/// не-об'єктний `MT_AGENT_CLI_MODEL_MAP` → порожня мапа.
+pub fn load_agent_cli_env(get: impl Fn(&str) -> Option<String>) -> AgentCliEnv {
+    let model_map = get("MT_AGENT_CLI_MODEL_MAP")
+        .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| Value::Object(Map::new()));
+    let agent_cli = get("MT_AGENT_CLI")
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| "claude".to_string())
+        .to_lowercase();
+    let cloud_agent_clis = get("MT_CLOUD_AGENT_CLIS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .filter(|s| !s.is_empty())
+        .collect();
+    AgentCliEnv {
+        agent_cli,
+        cloud_agent_clis,
+        model_map,
+    }
+}
+
+/// [`AgentCliEnv`] зі змінних середовища поточного процесу.
+pub fn agent_cli_env_from_process() -> AgentCliEnv {
+    load_agent_cli_env(|k| std::env::var(k).ok())
+}
+
+/// Резолвить конкретну модель тиру для підписочного CLI: MIN/AVG/MAX →
+/// `model_map[<cli>][<tier>]`. Немає мапінгу → `None`: CLI резолвить модель
+/// сам, тир лишається hint-ом env `MT_MODEL_TIER` (порт JS `resolveModelForCli`).
+pub fn resolve_model_for_cli(
+    cli_env: &AgentCliEnv,
+    agent_cli: &str,
+    model_tier: &str,
+) -> Option<String> {
+    cli_env
+        .model_map
+        .get(agent_cli)
+        .and_then(|m| m.get(normalize_model_tier(model_tier)))
+        .and_then(Value::as_str)
+        .map(String::from)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -123,6 +199,39 @@ mod tests {
         assert!(cfg.get("model_map").is_none());
         assert!(cfg.get("claude_model").is_none());
         assert!(cfg.get("audit_model").is_none());
+    }
+
+    #[test]
+    fn agent_cli_env_defaults_and_parsing() {
+        let env = load_agent_cli_env(|_| None);
+        assert_eq!(env.agent_cli, "claude");
+        assert!(env.cloud_agent_clis.is_empty());
+        assert!(env.model_map.as_object().unwrap().is_empty());
+
+        let env = load_agent_cli_env(|k| match k {
+            "MT_AGENT_CLI" => Some("CODEX".to_string()),
+            "MT_CLOUD_AGENT_CLIS" => Some(" Codex, cursor ,,".to_string()),
+            "MT_AGENT_CLI_MODEL_MAP" => Some(r#"{"codex":{"AVG":"gpt-5.6-terra"}}"#.to_string()),
+            _ => None,
+        });
+        assert_eq!(env.agent_cli, "codex");
+        assert_eq!(env.cloud_agent_clis, ["codex", "cursor"]);
+        assert_eq!(
+            resolve_model_for_cli(&env, "codex", "avg").as_deref(),
+            Some("gpt-5.6-terra")
+        );
+        // Немає мапінгу → None: CLI резолвить модель сам.
+        assert_eq!(resolve_model_for_cli(&env, "cursor", "AVG"), None);
+    }
+
+    #[test]
+    fn agent_cli_env_invalid_model_map_is_empty() {
+        let env = load_agent_cli_env(|k| match k {
+            "MT_AGENT_CLI_MODEL_MAP" => Some("[not an object]".to_string()),
+            _ => None,
+        });
+        assert!(env.model_map.as_object().unwrap().is_empty());
+        assert_eq!(resolve_model_for_cli(&env, "claude", "MAX"), None);
     }
 
     #[test]
