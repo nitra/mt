@@ -11,8 +11,7 @@
  * 5. ENV: MT_RUN_NNN, MT_ATTEMPT, MT_RETRY_STRATEGY, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC,
  *    MT_STARTED_AT, MT_TASK_PATH, MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER,
  *    MT_AGENT_CLI
- * 6. Спавнить subprocess: підписочний CLI-виконавець (agent_cli, див. нижче) АБО
- *    (якщо `.mt.json` `node_executor` заданий) — зовнішня команда-екзекутор (див. нижче)
+ * 6. Спавнить subprocess: підписочний CLI-виконавець (agent_cli, див. нижче)
  * 7. Після exit: fact_NNN.md є І `## Check` пройдено → result:success; else → failed
  * 8. Пише run_NNN.md
  * 9. Якщо success: git merge + delete worktree
@@ -41,28 +40,6 @@
  * не вичерпаються всі. Фактичний CLI фіксується у frontmatter run_NNN.md
  * (`agent_cli`).
  *
- * ## Точка розширення: зовнішній екзекутор вузла (`node_executor`)
- *
- * `.mt.json` `node_executor` (рядок-команда, напр. `npx n-cursor mt-run-node`)
- * замінює вбудований CLI-шлях (agent_cli) для actor=agent. Мотивація: зовнішній консюмер
- * виконує вузли ВЛАСНИМ harness-ом (свої моделі/тири, власна телеметрія) замість
- * Claude-моделей `.mt.json` model_map. MT лишає за собою всю оркестрацію
- * (claim/lease, worktree-ізоляція, budget/timeout, ## Check, fenced publish);
- * екзекутор ЛИШЕ «застосуй зміни у worktree».
- *
- * Контракт команди-екзекутора:
- * - argv: `<node_executor...> <node-dir>` — абсолютний шлях директорії вузла у worktree;
- * - env: MT_NODE_DIR, MT_WORKTREE, MT_RUN_TOKEN, MT_MODEL_TIER, MT_TASK_PATH,
- *   MT_RUN_NNN, MT_ATTEMPT, MT_RETRY_STRATEGY, MT_BUDGET_SEC, MT_HARD_BUDGET_SEC, MT_STARTED_AT;
- *   MT_ATTEMPT (= failed_streak + 1) і MT_MODEL_TIER (вже ескальований щаблем драбини) —
- *   екзекутор МОЖЕ сам врахувати ескалацію (diagnose-first/alternative-approach), а
- *   МОЖЕ й просто довіритись переданому MT_MODEL_TIER — MT вже застосував драбину;
- * - stdout: остання непорожня лінія = JSON `{ applied: bool, touchedFiles: string[] }`;
- * - exit 0 → runner ганяє ## Check (якщо є) і за успіху синтезує `fact_NNN.md`
- *   (екзекутор його НЕ пише) → штатний merge/publish; ненульовий exit → failed-run штатно.
- *
- * Зворотна сумісність: `node_executor` відсутній → поточний Claude-шлях без змін.
- *
  * --auto режим: сканує для готових задач (waiting + deps resolved), клеймить atomic mkdir.
  *
  * FS і child_process ін'єктуються для тестованості.
@@ -85,9 +62,6 @@ import {
 } from '../core/config.mjs'
 import { scanTasks, topoSort, areDepsResolved } from '../core/scanner.mjs'
 import { createWorktree, listActiveWorktrees, mergeWorktree, makeWorktreeName } from '../core/worktree.mjs'
-
-/** Розділювач токенів у рядку команди `node_executor` (whitespace). */
-const EXECUTOR_SPEC_SPLIT = /\s+/
 
 /** Маркер буліта (`-`/`*`) на початку рядка щабля `## Retry ladder` у `a.md`. */
 const LADDER_BULLET_RE = /^[-*]\s*/
@@ -349,18 +323,6 @@ function resolveExecutor(taskDir, fm, config, io, attempt, cliEnv) {
 }
 
 /**
- * Розбиває рядок команди `node_executor` на виконуваний файл і базові аргументи.
- * Проста whitespace-токенізація — очікуються прості команди без shell-метасимволів
- * (напр. `npx n-cursor mt-run-node`).
- * @param {string} spec рядок команди з `.mt.json`
- * @returns {{ cmd: string, args: string[] }} команда і базові аргументи
- */
-function parseExecutorSpec(spec) {
-  const parts = String(spec).trim().split(EXECUTOR_SPEC_SPLIT).filter(Boolean)
-  return { cmd: parts[0], args: parts.slice(1) }
-}
-
-/**
  * Витягує shell-команди секції `## Check` із task.md — кожен непорожній рядок,
  * пропускаючи HTML-коментарі. Порожній масив, якщо секції немає.
  * @param {string} taskMd вміст task.md
@@ -401,110 +363,17 @@ function runCheckGate(cmds, cwd, execSyncFn, log) {
 }
 
 /**
- * Інтерпретує результат spawnSync зовнішнього екзекутора: exit 0 = ok; парсить
- * останню непорожню лінію stdout як JSON `{ applied, touchedFiles }` (best-effort).
- * @param {{ status?: number|null, stdout?: string }} res результат spawnSync
- * @param {(m: string) => void} log лог
- * @returns {{ ok: boolean, code: number, applied: boolean, touchedFiles: string[] }} результат
- */
-function interpretExecutorResult(res, log) {
-  const ok = res?.status === 0
-  let applied = false
-  let touchedFiles = []
-  if (ok && res.stdout) {
-    const lastLine = String(res.stdout).trim().split('\n').findLast(Boolean) ?? '{}'
-    try {
-      const parsed = JSON.parse(lastLine)
-      applied = Boolean(parsed.applied)
-      touchedFiles = Array.isArray(parsed.touchedFiles) ? parsed.touchedFiles : []
-    } catch {
-      log('run: executor stdout не JSON — вважаю applied=false, touchedFiles=[]')
-    }
-  }
-  return { ok, code: ok ? 0 : (res?.status ?? 1), applied, touchedFiles }
-}
-
-/**
- * Синтезує `fact_NNN.md` для успішного зовнішнього екзекутора (сам екзекутор
- * fact НЕ пише — «лише застосуй зміни»; контракт-артефакт лишається за MT).
- * @param {string} nnn NNN рядок
- * @param {{ applied: boolean, touchedFiles: string[] }} outcome результат екзекутора
- * @param {string} cmd команда екзекутора (для трасування)
- * @param {string} nowIso ISO-час
- * @returns {string} вміст fact_NNN.md
- */
-function buildExecutorFact(nnn, outcome, cmd, nowIso) {
-  const fm = { schema_version: 1, created_at: nowIso }
-  const bullets = outcome.touchedFiles.map(f => `- ${f}`).join('\n')
-  const touched = outcome.touchedFiles.length ? `\n\n## Touched\n${bullets}` : ''
-  const summary =
-    `## Summary\n\nВузол виконано зовнішнім екзекутором (\`${cmd}\`); ` +
-    `applied=${outcome.applied}, файлів: ${outcome.touchedFiles.length}.`
-  return buildMarkdown(fm, `${summary}${touched}\n`)
-}
-
-/**
- * Спавнить зовнішній екзекутор вузла замість Claude-шляху.
- * @param {string} nodeExecutor рядок команди з `.mt.json`
- * @param {string} worktreeTaskDir директорія вузла у worktree (= cwd + argv)
- * @param {Record<string, string>} env середовище (уже містить MT_*-змінні)
- * @param {number | undefined} timeoutMs hard-timeout
- * @param {(cmd: string, args: string[], opts?: object) => object} spawnSyncFn спавнер
- * @param {(m: string) => void} log лог
- * @returns {{ ok: boolean, code: number, applied: boolean, touchedFiles: string[] }} результат
- */
-function spawnNodeExecutor(nodeExecutor, worktreeTaskDir, env, timeoutMs, spawnSyncFn, log) {
-  const { cmd, args } = parseExecutorSpec(nodeExecutor)
-  const res = spawnSyncFn(cmd, [...args, worktreeTaskDir], {
-    cwd: worktreeTaskDir,
-    env,
-    encoding: 'utf8',
-    timeout: timeoutMs
-  })
-  return interpretExecutorResult(res, log)
-}
-
-/**
- * Визначає результат зовнішнього екзекутора: ненульовий exit → `failed`;
- * інакше ганяє `## Check` (якщо є) і за успіху синтезує `fact_NNN.md`
- * (якщо екзекутор його ще не написав). MT володіє контракт-артефактом.
- * @param {{ ok: boolean, applied: boolean, touchedFiles: string[] }} outcome результат спавну
+ * Визначає результат run-у після виходу виконавця — `## Check`-гейт:
+ * агент сам пише fact; success = fact існує І Check пройдено.
  * @param {{
- *   taskMd: string, nnn: string, factPath: string, worktreeTaskDir: string,
- *   nodeExecutor: string, now: string,
+ *   taskMd: string, factPath: string, worktreeTaskDir: string,
  *   exists: (p: string) => boolean,
- *   writeFile: (p: string, c: string, enc: string) => void,
  *   execSync: (cmd: string, opts?: object) => string,
  *   log: (m: string) => void
  * }} ctx контекст
  * @returns {'success'|'failed'} результат
  */
-function resolveExecutorResult(outcome, ctx) {
-  if (!outcome.ok) {
-    ctx.log(`run: екзекутор завершився з ненульовим exit (${outcome.code})`)
-    return 'failed'
-  }
-  const checks = extractCheckCommands(ctx.taskMd)
-  if (!runCheckGate(checks, ctx.worktreeTaskDir, ctx.execSync, ctx.log)) {
-    return 'failed'
-  }
-  if (!ctx.exists(ctx.factPath)) {
-    ctx.writeFile(ctx.factPath, buildExecutorFact(ctx.nnn, outcome, ctx.nodeExecutor, ctx.now), 'utf8')
-  }
-  return 'success'
-}
-
-/**
- * Визначає результат run-у після виходу виконавця — спільний `## Check`-гейт
- * обох шляхів. node_executor-шлях: `resolveExecutorResult` (Check + синтез fact).
- * Вбудований CLI-шлях: агент сам пише fact; success = fact існує І Check пройдено.
- * @param {boolean} usedExecutor чи виконував вузол зовнішній екзекутор
- * @param {{ ok: boolean, applied: boolean, touchedFiles: string[] } | null} executorOutcome результат екзекутора
- * @param {Parameters<typeof resolveExecutorResult>[1]} ctx контекст (як у resolveExecutorResult)
- * @returns {'success'|'failed'} результат
- */
-function resolveRunResult(usedExecutor, executorOutcome, ctx) {
-  if (usedExecutor) return resolveExecutorResult(executorOutcome, ctx)
+function resolveRunResult(ctx) {
   const checksPass = runCheckGate(extractCheckCommands(ctx.taskMd), ctx.worktreeTaskDir, ctx.execSync, ctx.log)
   return ctx.exists(ctx.factPath) && checksPass ? 'success' : 'failed'
 }
@@ -563,12 +432,9 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
 
   const actor = opts.actor ?? executorType
   const isAgentActor = actor === 'agent' || actor === 'a'
-  // Точка розширення: зовнішній екзекутор замінює вбудований CLI-шлях лише для agent-actor.
-  const nodeExecutor = config.node_executor || null
-  const usedExecutor = Boolean(nodeExecutor) && isAgentActor
 
   // Валідація підписочного CLI до створення worktree (fail-fast).
-  if (!usedExecutor && isAgentActor && !AGENT_CLIS[agentCli]) {
+  if (isAgentActor && !AGENT_CLIS[agentCli]) {
     log(`run: невідомий agent_cli "${agentCli}" — підтримується: ${Object.keys(AGENT_CLIS).join(', ')}`)
     return { ok: false, code: 1 }
   }
@@ -599,6 +465,20 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
     return { ok: false, code: 2 }
   }
 
+  if (!isAgentActor) {
+    if (actor === 'human') {
+      // Людина виконує вручну — чекаємо на fact файл
+      log(`run: задача "${taskPath}" очікує ручного виконання`)
+      log(`     worktree: ${worktreePath}`)
+      log(`     MT_RUN_NNN=${nnn}`)
+      log(`     після виконання запустіть: mt done ${taskPath}`)
+      // Не чекаємо — повертаємо success без run_NNN.md
+      return { ok: true, code: 0 }
+    }
+    log(`run: невідомий actor "${actor}" — підтримується: agent, human`)
+    return { ok: false, code: 1 }
+  }
+
   // 5. ENV
   const startedAt = nowFn()
   const runToken = uuidFn()
@@ -621,52 +501,28 @@ function runTask(taskPath, taskDir, config, root, opts, deps) {
   // 6. Спавнимо subprocess (spawnSync — синхронно)
   const timeoutMs = budgetHardSec > 0 ? budgetHardSec * 1000 : undefined
 
-  let executorOutcome = null
-  let usedAgentCli = null
+  // Headless-запуск підписочного CLI у worktree (auth — локальна підписка
+  // користувача) з каскадом по хмарних провайдерах за rate-limit.
+  const usedAgentCli = spawnAgentCliCascade({
+    agentCli,
+    cliEnv,
+    modelTier,
+    prompt: buildAgentPrompt({ taskPath, worktreeTaskDir, nnn, budgetSec }),
+    cwd: worktreeTaskDir,
+    env,
+    timeoutMs,
+    spawnSync: spawnSyncFn,
+    log
+  })
 
-  if (usedExecutor) {
-    // Зовнішній екзекутор виконує вузол замість вбудованого CLI-шляху.
-    log(`run: делегуємо вузол зовнішньому екзекутору "${nodeExecutor}"`)
-    executorOutcome = spawnNodeExecutor(nodeExecutor, worktreeTaskDir, env, timeoutMs, spawnSyncFn, log)
-  } else if (isAgentActor) {
-    // Headless-запуск підписочного CLI у worktree (auth — локальна підписка
-    // користувача) з каскадом по хмарних провайдерах за rate-limit.
-    usedAgentCli = spawnAgentCliCascade({
-      agentCli,
-      cliEnv,
-      modelTier,
-      prompt: buildAgentPrompt({ taskPath, worktreeTaskDir, nnn, budgetSec }),
-      cwd: worktreeTaskDir,
-      env,
-      timeoutMs,
-      spawnSync: spawnSyncFn,
-      log
-    })
-  } else if (actor === 'human') {
-    // Людина виконує вручну — чекаємо на fact файл
-    log(`run: задача "${taskPath}" очікує ручного виконання`)
-    log(`     worktree: ${worktreePath}`)
-    log(`     MT_RUN_NNN=${nnn}`)
-    log(`     після виконання запустіть: mt done ${taskPath}`)
-    // Не чекаємо — повертаємо success без run_NNN.md
-    return { ok: true, code: 0 }
-  } else {
-    log(`run: невідомий actor "${actor}" — підтримується: agent, human`)
-    return { ok: false, code: 1 }
-  }
-
-  // 8. Після exit: визначаємо результат (спільний ## Check-гейт обох шляхів)
+  // 8. Після exit: визначаємо результат (## Check-гейт)
   const factPath = join(worktreeTaskDir, `fact_${nnn}.md`)
 
-  const result = resolveRunResult(usedExecutor, executorOutcome, {
+  const result = resolveRunResult({
     taskMd,
-    nnn,
     factPath,
     worktreeTaskDir,
-    nodeExecutor,
-    now: nowFn(),
     exists,
-    writeFile,
     execSync: execSyncFn,
     log
   })

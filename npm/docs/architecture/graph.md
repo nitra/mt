@@ -134,9 +134,9 @@ retry_ladder:          # опціонально; per-node override
 interactive: false     # НОВЕ: true → вузол очікує інтерактивну сесію (див. runtime.md)
 ```
 
-`model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` (напр. codex: MIN→luna / AVG→terra / MAX→sola); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)). Якщо `.mt.json` задає `node_executor` (зовнішній екзекутор вузла, [runtime.md](runtime.md#зовнішній-екзекутор-вузла-node_executor)), той самий tier передається екзекутору так само — консюмер мапить його на власний пул моделей (тир-канон обов'язковий і для fix-вузлів).
+`model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` (напр. codex: MIN→luna / AVG→terra / MAX→sola); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
 
-Гранулярність двох осей різна: `node_executor` (чий harness виконує граф) — **глобальне** рішення `.mt.json`, без per-node відкату; `agent_cli` (який підписочний CLI усередині вбудованого шляху) — **per-node** прапор `a.md` з user-level дефолтом env `MT_AGENT_CLI`. Per-node вибір CLI — це крос-програмковий вимір [мети](../vision.md): спеціалізований тул на вузол.
+`agent_cli` (який підписочний CLI виконує вузол) — **per-node** прапор `a.md` з user-level дефолтом env `MT_AGENT_CLI`. Per-node вибір CLI — це крос-програмковий вимір [мети](../vision.md): спеціалізований тул на вузол.
 
 #### `h.md`
 
