@@ -375,5 +375,6 @@
     "шимом",
     "юзає"
   ],
-  "useGitignore": true
+  "useGitignore": true,
+  "gitignoreRoot": "."
 }
