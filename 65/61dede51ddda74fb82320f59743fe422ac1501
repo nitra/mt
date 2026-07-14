@@ -1,0 +1,204 @@
+package.json
+  s_40764a7ac308ab::t_c11b9c9574e011 13
+  s_40764a7ac308ab::t_79e7d767452ec4 22-23
+crates/mt-core/src/docs/config.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+crates/mt-core/src/config.rs
+  s_40764a7ac308ab::t_a126250652e2d3 204-213,215-236
+  s_40764a7ac308ab::t_0856ecfb569b14 94-155,161-168
+  s_40764a7ac308ab::t_044819e720bf61 214
+  s_40764a7ac308ab::t_3051842ee322ad 156-160
+  s_40764a7ac308ab::t_d7cb42d4c87c4f 9
+npm/lib/tests/run.test.mjs
+  s_40764a7ac308ab::t_a9ffdf278dfdd6 1,12-13,16-17,20,25,35-38,49-90,92-93,95-127,130-153
+  s_40764a7ac308ab::t_bfa5b6afb52ecf 26-33
+crates/mt-napi/src/lib.rs
+  s_40764a7ac308ab::t_b8f13deb731ff8 172-198
+npm/lib/commands/run.mjs
+  s_40764a7ac308ab::t_0f11f1e071a774 79-80
+  s_40764a7ac308ab::t_fc09511a0ff31d 94-97
+  s_40764a7ac308ab::t_857103e9b93f80 2,4-8,12-16,17-19,21-23,25-26,29-30,56-62,65-74,78,81,99,106,114,129-134,137-145,147-154
+  s_40764a7ac308ab::t_b9da2cf77aa992 10-11
+crates/mt-core/src/docs/signal.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+crates/mt-napi/src/docs/lib.md
+  s_40764a7ac308ab::t_1f563b5b714eb0 6
+npm/docs/architecture/stack.md
+  s_40764a7ac308ab::t_e187008d2fc12a 16-17
+  s_40764a7ac308ab::t_b903b9d9d43a2e 29,31-33
+crates/mt-core/src/signal.rs
+  s_40764a7ac308ab::t_35109376bccd0d 257-268,273-283
+  s_40764a7ac308ab::t_e734a2d9440dc4 224
+  s_40764a7ac308ab::t_7926aebdc2e01e 203
+docs/adr/260714-0710-rust-порт-run-оркестрації-до-паритету-run-mjs-тонкий-клієнт.md
+  s_40764a7ac308ab::t_949939476ec28c 1-41
+  s_40764a7ac308ab::t_f5fe77f158fcb2 20
+crates/mt-core/src/runner.rs
+  s_40764a7ac308ab::t_174a1cbca04dcf 2-4,6-7,11,25,33-36,44-67,69,77-82,94,111-131,133-163,169-224,233-258,264-273,330-359,360,362-366,374-376,471,497-501,502-507,509-578,579-583,585-594,638,640,643-649,654-656,661-666,670,672-694,697-699,701-705,708,709-710,722,724,734-736,738,747-751,754,760,803,837-840,851-853,855-905,909-954,959,961,1022-1036,1037-1038,1044-1050,1075,1078-1114,1119-1178
+  s_40764a7ac308ab::t_108d75d7a02567 5
+  s_40764a7ac308ab::t_673ba31d1161e3 132,164-168,225-232,650-653,657-660,740,955-958,1115-1118
+  s_40764a7ac308ab::t_3d3a82be9f2ef8 260-262
+  s_40764a7ac308ab::t_f83f1493ada2c1 508
+  s_19239459d70c22::t_1406a979cbbe91 960
+  s_40764a7ac308ab::t_f8d56b1d9fe87b 962,967-972,982-985
+  s_40764a7ac308ab::t_ae367ba7dba001 668-669,671,711
+  s_40764a7ac308ab::t_aed7a5f779b1da 994-998
+  s_40764a7ac308ab::t_6c1362c66f5ee9 1039-1043
+  s_40764a7ac308ab::t_34e1b63ed118bd 1011-1016
+  s_40764a7ac308ab::t_03ceb2fa27f03a 93
+  s_40764a7ac308ab::t_a4976b49540bde 8-10,12-15
+  s_40764a7ac308ab::t_5767eece526209 361
+  s_40764a7ac308ab::t_fb6a50d64d10cc 1053
+  s_40764a7ac308ab::t_50703d728a6690 835
+  s_40764a7ac308ab::t_d6bb6281811817 833-834
+docs/adr/260606-2149-повне-переформатування-flow-під-архітектуру-mt.md
+  s_40764a7ac308ab::t_7ddd9415306cba 111-124
+docs/adr/260607-2109-zero-content-read-файловий-стан-mt.md
+  s_40764a7ac308ab::t_e355b0c03e9060 2-4,7-8,12-14,18-29,33,37-42,46-61,63,65-69,71,73-75
+docs/adr/260607-2118-видалення-n-flow-rule-та-flow-модулів-dispatcher.md
+  s_40764a7ac308ab::t_d41fe63c7d61c2 2-4,7-8,10,12,14,17-20,23-24,27-32,35-62
+.claude/commands/n-brainstorming.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-8
+.cursor/skills/n-llm-patch/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 78,200,254
+.cursor/rules/n-ga.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 125,279
+.claude/commands/n-lint.md
+  s_40764a7ac308ab::t_79e7d767452ec4 3
+.n-rules.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-33
+.cursor/rules/n-adr.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 44,48,72,80,103,105,125
+.cursor/skills/n-doc-files/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 8,20,61,68
+.cursor/rules/n-rust.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 26-27
+.cursor/rules/n-js.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 8,14,58
+.pi/extensions/n-rules-adr/tsconfig.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-17
+.pi/skills/n-lint/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 4
+.claude/hooks/capture-decisions.sh
+  s_40764a7ac308ab::t_79e7d767452ec4 23,204,209
+.cursor/rules/n-test.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 4,12,14,16,18-20,24,31-32,39,54,103,107-117,162,179-183,185,191,220,259
+.cursor/rules/n-security.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,100
+.cursor/rules/n-bun.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 111
+.cursor/rules/n-ci4.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 31,348,371-373,407-411
+hk.pkl
+  s_40764a7ac308ab::t_462b23c679e966 16
+AGENTS.md
+  s_40764a7ac308ab::t_79e7d767452ec4 31,33,40,45-46,55
+.cursor/skills/n-adr-normalize/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 9,32,37,49-50
+.licensee.json
+  s_40764a7ac308ab::t_79e7d767452ec4 1-14
+.cursor/rules/n-image-compress.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,8,10
+.cursor/rules/n-text.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 61-62,165,199-200,213-214,238,314-316
+.claude/settings.json
+  s_40764a7ac308ab::t_79e7d767452ec4 9-11,21
+.cursor/skills/n-brainstorming/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-165
+CLAUDE.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1,28,32,42-43,46
+.pi/extensions/n-rules-adr/index.ts
+  s_40764a7ac308ab::t_79e7d767452ec4 1-105
+.cursor/rules/n-npm-module.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,16-29,32,87,211-212,233,243,276,290
+.claude/hooks/normalize-decisions.sh
+  s_40764a7ac308ab::t_79e7d767452ec4 22,297,313
+.pi/skills/n-brainstorming/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 1-9
+.vscode/extensions.json
+  s_40764a7ac308ab::t_79e7d767452ec4 8-10
+.cspell.json
+  s_40764a7ac308ab::t_79e7d767452ec4 425-426
+  s_40764a7ac308ab::t_e86269c18b229d 384
+  s_40764a7ac308ab::t_3c672e7dd70259 30,140,209,306-311
+  s_40764a7ac308ab::t_0102d980d0008b 153
+  s_40764a7ac308ab::t_1394654aaceb81 95-96,105,108,110-112,136,141,144-145,149,154,159,172,179,204,206,251,276-277,292,294,297-298,386,398
+  s_40764a7ac308ab::t_ebbe3c45747fac 178
+  s_40764a7ac308ab::t_b5d6f2a7c13b0c 401-402
+  s_40764a7ac308ab::t_b9fa95f4cd21dd 403
+  s_40764a7ac308ab::t_2f5ef9acb70918 377
+  s_40764a7ac308ab::t_c9d7ad0bedbbc9 393
+  s_40764a7ac308ab::t_805620070b71f8 380
+  s_40764a7ac308ab::t_6125bd477bc23c 356
+  s_40764a7ac308ab::t_25210ad17ecd7f 164
+.cursor/skills/n-lint/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 4,8,31,36,42,56,60,64,69,124,129,135,149,151
+.cursor/rules/n-feedback.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,7,11,15,17,40,55
+.cursor/rules/n-js-run.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 12,80,87,113,136,145,152
+.cursor/skills/n-taze/SKILL.md
+  s_40764a7ac308ab::t_79e7d767452ec4 9,32,37,80,115,142
+.cursor/rules/n-doc-files.mdc
+  s_40764a7ac308ab::t_79e7d767452ec4 2,5,12,14-15,17-24,29-34,38-42,46-49
+bun.lock
+  s_40764a7ac308ab::t_f1d2ffa816b21a 8,26,37,59-60,2087-2088
+.github/workflows/lint-text.yml
+  s_40764a7ac308ab::t_1f8dbafa07e7b7 63
+.github/workflows/lint-ga.yml
+  s_40764a7ac308ab::t_75739644b63aa8 43
+.mt.json
+  s_40764a7ac308ab::t_e2b66fee6cba97 18
+npm/docs/architecture/runtime.md
+  s_40764a7ac308ab::t_e2b66fee6cba97 30,50,60
+npm/docs/architecture/graph.md
+  s_40764a7ac308ab::t_e2b66fee6cba97 137,139
+crates/mt-core/src/docs/runner.md
+  s_40764a7ac308ab::t_bb37e8ca4ab4ec 6
+npm/lib/commands/docs/run.md
+  s_40764a7ac308ab::t_bb37e8ca4ab4ec 6
+npm/docs/architecture/mandates.md
+  s_40764a7ac308ab::t_fe3d6ce5ea35ae 153,156
+crates/agent-server/tests/common/docs/mod.md
+  s_40764a7ac308ab::t_63948df8c38a85 1-49
+crates/agent-server/tests/docs/graph_wiring.md
+  s_40764a7ac308ab::t_63948df8c38a85 6
+crates/agent-server/tests/docs/handoff_ws.md
+  s_40764a7ac308ab::t_63948df8c38a85 6
+crates/agent-server/tests/common/mod.rs
+  s_40764a7ac308ab::t_fe1ce4db80f51d 14
+  s_40764a7ac308ab::t_0f6bb4f3749e78 1,4-13,15-46
+  s_40764a7ac308ab::t_e7a29d49484a0d 2-3
+crates/agent-server/tests/graph_wiring.rs
+  s_40764a7ac308ab::t_4857234697f1a0 9,12,16-17
+  s_40764a7ac308ab::t_eb5012902690c5 101-103
+crates/agent-server/tests/handoff_ws.rs
+  s_40764a7ac308ab::t_d84ec7fb57d5ab 93-94,96
+  s_40764a7ac308ab::t_462386abfb070f 11,13,17-18
+crates/agent-server/tests/common/docs/index.md
+  s_40764a7ac308ab::t_63948df8c38a85 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "6561dede51ddda74fb82320f59743fe422ac1501",
+  "prompts": {},
+  "sessions": {
+    "s_19239459d70c22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9106a573-9b36-4984-ad2e-361d624684bd",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
