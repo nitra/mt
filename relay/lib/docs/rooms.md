@@ -3,9 +3,8 @@ type: JS Module
 title: rooms.mjs
 resource: relay/lib/rooms.mjs
 docgen:
-  crc: f60f5421
+  crc: 4a793bff
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   judgeModel: openai-codex/gpt-5.4-mini
 ---

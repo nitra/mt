@@ -13,7 +13,7 @@ import { promisify } from 'node:util'
 import { WebSocketServer } from 'ws'
 
 /** Ліміт WS-кадру (stack.md: «кадр ≤ 2 MB»). */
-export const FRAME_LIMIT = 2 * 1024 * 1024
+const FRAME_LIMIT = 2 * 1024 * 1024
 
 /**
  * Обробляє один JSON-кадр клієнта.
