@@ -1,0 +1,40 @@
+crates/agent-server/tests/common/docs/mod.md
+  s_40764a7ac308ab::t_63948df8c38a85 1-49
+crates/agent-server/tests/docs/graph_wiring.md
+  s_40764a7ac308ab::t_63948df8c38a85 6
+crates/agent-server/tests/docs/handoff_ws.md
+  s_40764a7ac308ab::t_63948df8c38a85 6
+crates/agent-server/tests/common/mod.rs
+  s_40764a7ac308ab::t_fe1ce4db80f51d 14
+  s_40764a7ac308ab::t_0f6bb4f3749e78 1,4-13,15-46
+  s_40764a7ac308ab::t_e7a29d49484a0d 2-3
+crates/agent-server/tests/graph_wiring.rs
+  s_40764a7ac308ab::t_4857234697f1a0 9,12,16-17
+  s_40764a7ac308ab::t_eb5012902690c5 101-103
+.cspell.json
+  s_40764a7ac308ab::t_c9d7ad0bedbbc9 393
+  s_40764a7ac308ab::t_805620070b71f8 380
+  s_40764a7ac308ab::t_6125bd477bc23c 356
+  s_40764a7ac308ab::t_25210ad17ecd7f 164
+crates/agent-server/tests/handoff_ws.rs
+  s_40764a7ac308ab::t_d84ec7fb57d5ab 93-94,96
+  s_40764a7ac308ab::t_462386abfb070f 11,13,17-18
+crates/agent-server/tests/common/docs/index.md
+  s_40764a7ac308ab::t_63948df8c38a85 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "01a4153d427069a1f222792b1ec7b89dba85fb21",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
