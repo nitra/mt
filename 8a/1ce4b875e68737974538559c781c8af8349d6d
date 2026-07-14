@@ -1,0 +1,37 @@
+crates/mt-core/src/docs/runner.md
+  s_40764a7ac308ab::t_bb37e8ca4ab4ec 6
+docs/adr/260714-0710-rust-порт-run-оркестрації-до-паритету-run-mjs-тонкий-клієнт.md
+  s_40764a7ac308ab::t_f5fe77f158fcb2 20
+npm/lib/commands/run.mjs
+  s_40764a7ac308ab::t_b9da2cf77aa992 10-11
+npm/lib/commands/docs/run.md
+  s_40764a7ac308ab::t_bb37e8ca4ab4ec 6
+crates/mt-core/src/runner.rs
+  s_40764a7ac308ab::t_f8d56b1d9fe87b 962,967-972,982-985
+  s_40764a7ac308ab::t_ae367ba7dba001 668-669,671,711
+  s_40764a7ac308ab::t_aed7a5f779b1da 994-998
+  s_40764a7ac308ab::t_6c1362c66f5ee9 1039-1043
+  s_40764a7ac308ab::t_34e1b63ed118bd 1011-1016
+  s_40764a7ac308ab::t_03ceb2fa27f03a 93
+  s_40764a7ac308ab::t_a4976b49540bde 8-10,12-15
+  s_40764a7ac308ab::t_5767eece526209 361
+  s_40764a7ac308ab::t_fb6a50d64d10cc 1053
+  s_40764a7ac308ab::t_50703d728a6690 835
+  s_40764a7ac308ab::t_d6bb6281811817 833-834
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "8a1ce4b875e68737974538559c781c8af8349d6d",
+  "prompts": {},
+  "sessions": {
+    "s_40764a7ac308ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "583abbf8-dd8d-486b-a38f-75243718e7c2",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
