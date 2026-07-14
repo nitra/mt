@@ -7,14 +7,13 @@
  * progress-timeout) → спільний `## Check`-гейт → fenced publish в
  * `origin/main`. Вимагає git-репозиторій з push-доступом до `origin`.
  *
- * Виконавці (резолвить Rust-ядро):
+ * Виконавці (резолвить Rust-ядро; єдиний agent-шлях — підписочні CLI,
+ * `node_executor` видалено):
  * - **підписочні CLI** (`agent_cli`: claude | codex | cursor | pi) з
  *   user-level ENV-конфігом (`MT_AGENT_CLI`, `MT_CLOUD_AGENT_CLIS`,
  *   `MT_AGENT_CLI_MODEL_MAP`), per-node override — `a.md` «## Agent cli»;
  *   вичерпані ліміти підписки (rate limit / quota / 429) → каскад
  *   `MT_CLOUD_AGENT_CLIS`; фактичний CLI — у frontmatter `run_NNN.md`;
- * - **зовнішній екзекутор** (`.mt.json` `node_executor`) — замінює CLI-шлях,
- *   fact синтезує runner зі stdout-контракту `{ applied, touchedFiles }`;
  * - тир MIN/AVG/MAX і retry ladder (`## Model tier` / `## Retry ladder` в
  *   `a.md`) — ескалацію застосовує Rust-ядро (env `MT_MODEL_TIER`,
  *   `MT_RETRY_STRATEGY`, `MT_ATTEMPT`).

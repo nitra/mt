@@ -5,14 +5,14 @@
 //! і composite вгору, інакше failed із секціями з `run-draft.md`) → коміт
 //! worktree → fenced publish.
 //!
-//! Виконавці — **підписочні CLI** (`claude` | `codex` | `cursor` | `pi`,
-//! runtime.md «Підписочні CLI-виконавці»): конфіг — user-level ENV
+//! Виконавці — **підписочні CLI**, єдиний agent-шлях (`claude` | `codex` |
+//! `cursor` | `pi`, runtime.md «Підписочні CLI-виконавці»; точку розширення
+//! `node_executor` видалено — PR #48): конфіг — user-level ENV
 //! ([`crate::config::AgentCliEnv`]), per-node override — `a.md` «## Agent
-//! cli»; вичерпані ліміти підписки → каскад `MT_CLOUD_AGENT_CLIS`. Точка
-//! розширення — `.mt.json` `node_executor`: зовнішня команда замінює
-//! CLI-шлях, fact синтезує runner. Retry ladder (`## Retry ladder` у `a.md`
-//! або дефолт base/diagnose-first/alternative-approach) резолвить стратегію
-//! спроби та ескалацію model_tier MIN→AVG→MAX.
+//! cli»; вичерпані ліміти підписки → каскад `MT_CLOUD_AGENT_CLIS`. Retry
+//! ladder (`## Retry ladder` у `a.md` або дефолт
+//! base/diagnose-first/alternative-approach) резолвить стратегію спроби та
+//! ескалацію model_tier MIN→AVG→MAX.
 //!
 //! Вимагає git-репозиторій з `origin`, до якого є push-доступ (claims/publish
 //! — реальні мутації спільного remote). Rejected claim / merge-conflict /
@@ -80,8 +80,6 @@ pub struct RunPlan {
     pub retry_strategy: String,
     /// Підписочний CLI вузла: `a.md` «## Agent cli» → env `MT_AGENT_CLI` → claude.
     pub agent_cli: String,
-    /// Зовнішній екзекутор (`.mt.json` `node_executor`) — замінює CLI-шлях.
-    pub node_executor: Option<String>,
 }
 
 /// Підсумок спроби (файли вже опубліковані в `origin/main`).
@@ -92,8 +90,7 @@ pub struct RunOutcome {
     pub run_file: String,
     pub fact_file: Option<String>,
     pub wall_sec: u64,
-    /// Фактичний CLI після каскаду (None — зовнішній екзекутор або всі
-    /// кандидати вичерпали ліміти).
+    /// Фактичний CLI після каскаду (None — всі кандидати вичерпали ліміти).
     pub agent_cli: Option<String>,
     pub propagated: Vec<String>,
 }
@@ -259,50 +256,6 @@ fn build_agent_prompt(task_path: &str, node_dir: &Path, nnn: &str, budget_sec: u
     )
 }
 
-/// Останній непорожній рядок stdout екзекутора як JSON
-/// `{ applied, touchedFiles }` (best-effort; не-JSON → applied=false).
-fn parse_executor_stdout(stdout: &str) -> (bool, Vec<String>) {
-    let last = stdout
-        .lines()
-        .rev()
-        .find(|l| !l.trim().is_empty())
-        .unwrap_or("{}");
-    let Ok(v) = serde_json::from_str::<serde_json::Value>(last) else {
-        return (false, Vec::new());
-    };
-    let applied = v
-        .get("applied")
-        .and_then(serde_json::Value::as_bool)
-        .unwrap_or(false);
-    let touched = v
-        .get("touchedFiles")
-        .and_then(serde_json::Value::as_array)
-        .map(|a| {
-            a.iter()
-                .filter_map(serde_json::Value::as_str)
-                .map(String::from)
-                .collect()
-        })
-        .unwrap_or_default();
-    (applied, touched)
-}
-
-/// Синтезований `fact_NNN.md` успішного зовнішнього екзекутора (сам екзекутор
-/// fact НЕ пише — контракт-артефакт лишається за MT).
-fn build_executor_fact(cmd: &str, applied: bool, touched: &[String]) -> String {
-    let bullets: String = touched.iter().map(|f| format!("- {f}\n")).collect();
-    let touched_section = if touched.is_empty() {
-        String::new()
-    } else {
-        format!("\n## Touched\n\n{bullets}")
-    };
-    format!(
-        "---\nschema_version: 1\ncreated_at: {}\n---\n\n## Summary\n\nВузол виконано зовнішнім екзекутором (`{cmd}`); applied={applied}, файлів: {}.\n{touched_section}",
-        iso_now(),
-        touched.len()
-    )
-}
-
 /// Preflight за спекою: a.md, deps resolved, без відкритого аудиту, вузол не
 /// running; бюджети — task.md > .mt.json > дефолти; виконавець — a.md-прапори,
 /// далі ENV, далі дефолти. Суто локальні перевірки (без git) — дешевий гейт
@@ -404,13 +357,8 @@ pub fn preflight_env(
         .map(|v| v[0].clone())
         .unwrap_or_else(|| cli_env.agent_cli.clone())
         .to_lowercase();
-    let node_executor = config
-        .get("node_executor")
-        .and_then(serde_json::Value::as_str)
-        .filter(|s| !s.trim().is_empty())
-        .map(String::from);
     // Fail-fast до claim/worktree: невідомий CLI — помилка конфігурації.
-    if node_executor.is_none() && !AGENT_CLIS.contains(&agent_cli.as_str()) {
+    if !AGENT_CLIS.contains(&agent_cli.as_str()) {
         return Err(format!(
             "невідомий agent_cli \"{agent_cli}\" — підтримується: {}",
             AGENT_CLIS.join(", ")
@@ -426,7 +374,6 @@ pub fn preflight_env(
         model_tier,
         retry_strategy,
         agent_cli,
-        node_executor,
     })
 }
 
@@ -552,7 +499,6 @@ struct WatchedOutcome {
     /// budget-exceeded | progress-timeout (None — процес завершився сам).
     kill_reason: Option<&'static str>,
     exit_ok: bool,
-    stdout: String,
     /// stdout + stderr разом (для rate-limit евристики).
     combined: String,
 }
@@ -630,7 +576,6 @@ fn spawn_watched(
         kill_reason,
         exit_ok,
         combined: format!("{stdout}\n{stderr}"),
-        stdout,
     })
 }
 
@@ -720,23 +665,10 @@ pub fn run_node_env(
         ("MT_CLAIM_GENERATION".into(), "1".into()),
     ];
 
+    // Єдиний agent-шлях — підписочний CLI з каскадом по хмарних підписках
+    // за rate-limit (node_executor видалено — PR #48).
     let mut used_agent_cli: Option<String> = None;
-    let watched: Option<WatchedOutcome> = if let Some(spec) = &plan.node_executor {
-        // Зовнішній екзекутор: argv = токени + node-dir; cwd = node-dir.
-        let mut parts = spec.split_whitespace();
-        let prog = parts.next().ok_or("node_executor: порожня команда")?;
-        let mut cmd = Command::new(prog);
-        cmd.args(parts).arg(&dir_str).current_dir(&dir);
-        cmd.envs(base_envs.iter().cloned());
-        Some(spawn_watched(
-            cmd,
-            &dir,
-            &live_dir,
-            plan.budget_hard_sec,
-            plan.progress_timeout_sec,
-        )?)
-    } else {
-        // Вбудований CLI-шлях з каскадом по хмарних підписках за rate-limit.
+    let watched: Option<WatchedOutcome> = {
         let prompt = build_agent_prompt(node_path, &dir, &nnn_s, plan.budget_sec);
         let mut outcome = None;
         for cli in cascade_order(&plan.agent_cli, &cli_env.cloud_agent_clis) {
@@ -774,26 +706,9 @@ pub fn run_node_env(
 
     let fact_file = format!("fact_{nnn_s}.md");
     let kill_reason = watched.as_ref().and_then(|w| w.kill_reason);
-    let spawn_ok = watched.as_ref().map(|w| w.exit_ok).unwrap_or(false);
-
-    // Успішний екзекутор fact не пише — синтезуємо з stdout-контракту.
-    if let (Some(spec), Some(w)) = (&plan.node_executor, &watched) {
-        if kill_reason.is_none() && w.exit_ok && !dir.join(&fact_file).is_file() {
-            let (applied, touched) = parse_executor_stdout(&w.stdout);
-            fs::write(
-                dir.join(&fact_file),
-                build_executor_fact(spec, applied, &touched),
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
 
     let has_fact = dir.join(&fact_file).is_file();
-    let executor_failed = plan.node_executor.is_some() && !spawn_ok;
-    let (result, run_file, out_fact_file, propagated) = if kill_reason.is_none()
-        && has_fact
-        && !executor_failed
-    {
+    let (result, run_file, out_fact_file, propagated) = if kill_reason.is_none() && has_fact {
         let policy_required = fs::read_to_string(dir.join("task.md"))
             .map(|c| parse_front_matter(&c))
             .ok()
@@ -915,20 +830,9 @@ mod tests {
         crate::test_support::run(tmp, &["push", "-q", "origin", "main"]);
     }
 
-    /// Пише shell-скрипт-екзекутор і вмикає його через `.mt.json`
-    /// `node_executor` (закомічений у origin/main).
-    fn with_node_executor(repo: &TestRepo, script_body: &str) {
-        let script = repo.work.path().join("executor.sh");
-        fs::write(&script, format!("#!/bin/sh\n{script_body}\n")).unwrap();
-        fs::write(
-            repo.work.path().join(".mt.json"),
-            serde_json::json!({ "node_executor": format!("sh {}", script.display()) }).to_string(),
-        )
-        .unwrap();
-        crate::test_support::run(repo.work.path(), &["add", "."]);
-        crate::test_support::run(repo.work.path(), &["commit", "-q", "-m", "config"]);
-        crate::test_support::run(repo.work.path(), &["push", "-q", "origin", "main"]);
-    }
+    /// Тіло фейкового `claude`, що пише валідний fact поточної спроби
+    /// (cwd шима — директорія вузла у worktree, NNN — з env).
+    const FAKE_CLI_WRITES_FACT: &str = r#"printf -- '---\nschema_version: 1\n---\n\n## Summary\n\nok\n' > "fact_${MT_RUN_NNN}.md""#;
 
     fn env_default() -> AgentCliEnv {
         AgentCliEnv::default()
@@ -1055,18 +959,17 @@ mod tests {
     }
 
     #[test]
-    fn run_success_synthesizes_fact_and_publishes_to_origin_main() {
+    fn run_success_publishes_fact_to_origin_main() {
         let repo = TestRepo::new();
         let root = repo.work.path().join("mt");
         node(&root, "solo");
-        with_node_executor(
-            &repo,
-            r#"printf -- '{"applied":true,"touchedFiles":["demo.js"]}\n'"#,
-        );
         let r = root.to_string_lossy().into_owned();
-        let out = run_node_env(&r, "solo", &env_default()).unwrap();
-        assert_eq!(out.result, "success");
-        assert_eq!(out.fact_file.as_deref(), Some("fact_001.md"));
+        with_path_shims(&[("claude", FAKE_CLI_WRITES_FACT)], || {
+            let out = run_node_env(&r, "solo", &env_default()).unwrap();
+            assert_eq!(out.result, "success");
+            assert_eq!(out.fact_file.as_deref(), Some("fact_001.md"));
+            assert_eq!(out.agent_cli.as_deref(), Some("claude"));
+        });
         assert!(!crate::has_running_marker(&root.join("solo")));
 
         // Опубліковано в origin/main: claim/run ref прибрані, коміт на remote.
@@ -1076,10 +979,10 @@ mod tests {
         );
         assert!(claims.is_empty());
         // Локальний main (той самий work-клон) підхопив публікацію.
-        let fact = fs::read_to_string(root.join("solo/fact_001.md")).unwrap();
-        assert!(fact.contains("applied=true"));
-        assert!(fact.contains("demo.js"));
-        assert!(root.join("solo/run_001.md").is_file());
+        assert!(root.join("solo/fact_001.md").is_file());
+        let run = fs::read_to_string(root.join("solo/run_001.md")).unwrap();
+        assert!(run.contains("result: success"));
+        assert!(run.contains("agent_cli: claude"));
     }
 
     #[test]
@@ -1087,10 +990,12 @@ mod tests {
         let repo = TestRepo::new();
         let root = repo.work.path().join("mt");
         node(&root, "slow");
-        with_node_executor(&repo, "sleep 30");
         let r = root.to_string_lossy().into_owned();
-        let out = run_node_env(&r, "slow", &env_default()).unwrap();
-        assert_eq!(out.result, "budget-exceeded");
+        let mut out = None;
+        with_path_shims(&[("claude", "sleep 30")], || {
+            out = Some(run_node_env(&r, "slow", &env_default()).unwrap());
+        });
+        assert_eq!(out.unwrap().result, "budget-exceeded");
         let run = fs::read_to_string(root.join("slow/run_001.md")).unwrap();
         assert!(run.contains("result: budget-exceeded"));
         assert!(run.contains("wall_sec:"));
@@ -1102,13 +1007,13 @@ mod tests {
         let repo = TestRepo::new();
         let root = repo.work.path().join("mt");
         node(&root, "fail");
-        with_node_executor(
-            &repo,
-            r#"printf -- '## Completed\n\nполовина\n\n## Blockers\n\nнемає доступу\n\n## Next Attempt\n\nдати ключ\n' > run-draft.md; exit 1"#,
-        );
         let r = root.to_string_lossy().into_owned();
-        let out = run_node_env(&r, "fail", &env_default()).unwrap();
-        assert_eq!(out.result, "failed");
+        let draft_cli = r#"printf -- '## Completed\n\nполовина\n\n## Blockers\n\nнемає доступу\n\n## Next Attempt\n\nдати ключ\n' > run-draft.md; exit 1"#;
+        let mut result = String::new();
+        with_path_shims(&[("claude", draft_cli)], || {
+            result = run_node_env(&r, "fail", &env_default()).unwrap().result;
+        });
+        assert_eq!(result, "failed");
         let run = fs::read_to_string(root.join("fail/run_001.md")).unwrap();
         assert!(run.contains("немає доступу"));
         assert!(run.contains("дати ключ"));
@@ -1129,11 +1034,13 @@ mod tests {
         crate::test_support::run(repo.work.path(), &["add", "."]);
         crate::test_support::run(repo.work.path(), &["commit", "-q", "-m", "add gated"]);
         crate::test_support::run(repo.work.path(), &["push", "-q", "origin", "main"]);
-        with_node_executor(&repo, r#"printf -- '{"applied":true,"touchedFiles":[]}\n'"#);
 
         let r = root.to_string_lossy().into_owned();
-        let out = run_node_env(&r, "gated", &env_default()).unwrap();
-        assert_eq!(out.result, "failed");
+        let mut result = String::new();
+        with_path_shims(&[("claude", FAKE_CLI_WRITES_FACT)], || {
+            result = run_node_env(&r, "gated", &env_default()).unwrap().result;
+        });
+        assert_eq!(result, "failed");
         // Fact відкликано — вузол не стає хибно resolved.
         assert!(!root.join("gated/fact_001.md").exists());
         let run = fs::read_to_string(root.join("gated/run_001.md")).unwrap();
@@ -1143,10 +1050,10 @@ mod tests {
 
     #[test]
     fn rejected_claim_when_node_already_claimed() {
+        // Claim відхиляється ДО спавну виконавця — фейковий CLI не потрібен.
         let repo = TestRepo::new();
         let root = repo.work.path().join("mt");
         node(&root, "solo");
-        with_node_executor(&repo, "true");
         let r = root.to_string_lossy().into_owned();
 
         let hash = node_hash("mt", "solo");
