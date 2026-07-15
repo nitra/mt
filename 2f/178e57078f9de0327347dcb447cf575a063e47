@@ -1,0 +1,19 @@
+mt/m0-dogfood-smoke/note.md
+  s_6de8b5d402a4c6::t_defbfb458cf916 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2f178e57078f9de0327347dcb447cf575a063e47",
+  "prompts": {},
+  "sessions": {
+    "s_6de8b5d402a4c6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6457-812a-7f42-b8e2-b89f620f7ea5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
