@@ -97,7 +97,10 @@ pub fn check_commands(task_md: &str) -> Vec<String> {
 pub fn run_check(tasks_dir: &str, node_path: &str) -> Result<Vec<CheckResult>, String> {
     let dir = node_dir(tasks_dir, node_path)?;
     let task_md = fs::read_to_string(dir.join("task.md")).map_err(|e| e.to_string())?;
-    let cwd = Path::new(tasks_dir).parent().unwrap_or(Path::new("."));
+    // Контракт graph.md: `## Check` ганяється у директорії вузла (артефакти
+    // вузла — поряд із task.md); командам, яким потрібен корінь репо,
+    // додається власний cwd-еквівалент у самому рядку Check.
+    let cwd = dir.as_path();
     let mut results = Vec::new();
     for command in check_commands(&task_md) {
         let out = Command::new("sh")
