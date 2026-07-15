@@ -788,8 +788,19 @@ pub fn run_node_env(
         let blockers = md_section(&draft, "Blockers").unwrap_or(default_blockers);
         let next = md_section(&draft, "Next Attempt")
             .unwrap_or_else(|| "діагностувати попередній ран".into());
+        // Діагностика провалу не губиться: хвіст виводу виконавця (який уже
+        // читається для rate-limit-детекту) — у run-файл (тертя M0 №5).
+        let output_tail = watched
+            .as_ref()
+            .map(|w| {
+                let tail: Vec<&str> = w.combined.trim().lines().rev().take(15).collect();
+                tail.into_iter().rev().collect::<Vec<_>>().join("\n")
+            })
+            .filter(|t| !t.is_empty())
+            .map(|t| format!("\n## Executor output tail\n\n```text\n{t}\n```\n"))
+            .unwrap_or_default();
         let sections = format!(
-            "\n## Completed\n\n{completed}\n\n## Blockers\n\n{blockers}\n\n## Next Attempt\n\n{next}\n"
+            "\n## Completed\n\n{completed}\n\n## Blockers\n\n{blockers}\n\n## Next Attempt\n\n{next}\n{output_tail}"
         );
         let run_file = write_run_fm(&dir, &nnn_s, "agent", &result, &sections, &extra_fm)?;
         (result, run_file, None, Vec::new())
