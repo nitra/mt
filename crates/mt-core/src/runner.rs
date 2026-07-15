@@ -284,8 +284,10 @@ fn build_agent_prompt(task_path: &str, node_dir: &Path, nnn: &str, budget_sec: u
     format!(
         "You are executing task: {task_path}\nWorking directory: {}\nRun NNN: {nnn}\nBudget: {budget_sec}s\n\n\
          The task (from task.md):\n\n{task_body}\n\n\
-         Execute the task above in the current directory (read plan_*.md if present). \
-         When done, write fact_{nnn}.md with a `## Summary` section describing the result.",
+         Execute the task above in the current directory (read plan_*.md if present).\n\n\
+         MANDATORY FINAL STEP: create the file fact_{nnn}.md in the current directory. \
+         Without fact_{nnn}.md the run counts as FAILED even if everything else is done. Example content:\n\n\
+         ## Summary\n\n<one sentence describing the result>",
         node_dir.display()
     )
 }
