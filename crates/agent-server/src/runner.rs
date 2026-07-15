@@ -2,14 +2,19 @@
 //!
 //! `UserMessage` клієнта запускає хід агента; всі події ходу емітяться в
 //! сесію (Envelope збирає session host). Транспорт виконавця — **ACP (Agent
-//! Client Protocol)**: `AcpTurnRunner` (окремий milestone) підключає
-//! зовнішній підписочний CLI (claude / codex / cursor / pi) через ACP і
-//! мапить `permission-request` на `ApprovalRequest` (ADR `260713-2110`).
-//! [`EchoTurnRunner`] — заглушка для demo/CLI і тестів транспорту.
+//! Client Protocol)**: [`AcpTurnRunner`] спавнить ACP-адаптер підписочного
+//! CLI (claude / codex / cursor / pi) per-кімнату і мапить
+//! `session/request_permission` на approval-гейт (`ApprovalRequest`,
+//! ADR `260713-2110`). [`EchoTurnRunner`] — заглушка для demo/CLI і тестів
+//! транспорту.
 
+use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
+use std::process::Stdio;
+use std::sync::Arc;
 
+use agent_core::{AcpClient, PermissionHandler};
 use agent_protocol::Event;
 use async_trait::async_trait;
 
@@ -36,6 +41,110 @@ pub trait TurnRunner: Send + Sync {
         workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
     ) -> Result<String, TurnError>;
+}
+
+/// Фабрика [`PermissionHandler`] для кімнати: хост дає обробник
+/// `request_permission`, що знає вузол (роутинг `ApprovalRequest` у правильну
+/// кімнату).
+pub type PermissionFactory = Arc<dyn Fn(&str) -> PermissionHandler + Send + Sync>;
+
+/// Жива ACP-сесія кімнати: процес адаптера + клієнт + sessionId.
+struct AcpRoom {
+    /// Тримаємо процес живим на весь час кімнати (kill_on_drop).
+    _child: tokio::process::Child,
+    client: AcpClient<tokio::process::ChildStdout, tokio::process::ChildStdin>,
+    session_id: String,
+}
+
+/// Референсний виконавець: зовнішній підписочний CLI через ACP-адаптер.
+/// Per-кімнату — окремий процес адаптера (своя історія в сесії агента);
+/// `workdir` ходу стає `cwd` ACP-сесії (worktree run-а).
+pub struct AcpTurnRunner {
+    argv: Vec<String>,
+    permission_factory: Option<PermissionFactory>,
+    rooms: tokio::sync::Mutex<HashMap<String, AcpRoom>>,
+}
+
+impl AcpTurnRunner {
+    /// `command` — рядок команди ACP-адаптера (whitespace-токенізація, без
+    /// shell-метасимволів), напр. `npx claude-code-acp`.
+    pub fn new(command: &str, permission_factory: Option<PermissionFactory>) -> Self {
+        Self {
+            argv: command.split_whitespace().map(str::to_string).collect(),
+            permission_factory,
+            rooms: tokio::sync::Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Спавнить адаптер і відкриває ACP-сесію кімнати (initialize +
+    /// session/new у workdir).
+    async fn open_room(
+        &self,
+        node_hash: &str,
+        workdir: Option<&Path>,
+    ) -> Result<AcpRoom, TurnError> {
+        let program = self
+            .argv
+            .first()
+            .ok_or_else(|| TurnError("порожня команда ACP-адаптера".into()))?;
+        let mut child = tokio::process::Command::new(program)
+            .args(&self.argv[1..])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|e| TurnError(format!("spawn ACP-адаптера {program}: {e}")))?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| TurnError("stdin адаптера".into()))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| TurnError("stdout адаптера".into()))?;
+        let permission = self.permission_factory.as_ref().map(|f| f(node_hash));
+        let mut client = AcpClient::new(stdout, stdin, permission);
+        client
+            .initialize()
+            .await
+            .map_err(|e| TurnError(e.to_string()))?;
+        let cwd = workdir
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|| ".".into());
+        let session_id = client
+            .new_session(&cwd)
+            .await
+            .map_err(|e| TurnError(e.to_string()))?;
+        Ok(AcpRoom {
+            _child: child,
+            client,
+            session_id,
+        })
+    }
+}
+
+#[async_trait]
+impl TurnRunner for AcpTurnRunner {
+    async fn run_turn(
+        &self,
+        node_hash: &str,
+        user_text: &str,
+        workdir: Option<&Path>,
+        emit: &(dyn Fn(Event) + Send + Sync),
+    ) -> Result<String, TurnError> {
+        let mut rooms = self.rooms.lock().await;
+        if !rooms.contains_key(node_hash) {
+            let room = self.open_room(node_hash, workdir).await?;
+            rooms.insert(node_hash.to_string(), room);
+        }
+        let room = rooms.get_mut(node_hash).expect("щойно вставлена кімната");
+        let session_id = room.session_id.clone();
+        room.client
+            .prompt(&session_id, user_text, emit)
+            .await
+            .map_err(|e| TurnError(e.to_string()))
+    }
 }
 
 /// Скриптований виконавець для тестів транспорту/сесій: на кожен хід

@@ -3,7 +3,7 @@ type: Rust Module
 title: lib.rs
 resource: crates/mt-napi/src/lib.rs
 docgen:
-  crc: 35465203
+  crc: b07b821c
   model: omlx/gemma-4-e2b-it-4bit
   score: 95
 ---

@@ -161,6 +161,11 @@ fn bump_model_tier(tier: &str, delta: usize) -> String {
 /// argv підписочного CLI: команда + аргументи headless-запуску. Модель
 /// передається лише за наявності мапінгу (`MT_AGENT_CLI_MODEL_MAP`); без неї
 /// CLI резолвить модель сам. Невідомий CLI → None.
+///
+/// Прапори звірені живим спайком 2026-07-14 (claude 2.1.193, codex 0.142.5,
+/// cursor-agent 2026.07.01, pi 0.80.3): у claude немає `--no-session`
+/// (є `--no-session-persistence`), у codex exec немає `--full-auto`
+/// (пісочниця — `--sandbox workspace-write`, сесія — `--ephemeral`).
 fn build_agent_cli_argv(
     cli: &str,
     model: Option<&str>,
@@ -172,7 +177,11 @@ fn build_agent_cli_argv(
             if let Some(m) = model {
                 args.extend(["--model".into(), m.into()]);
             }
-            args.extend(["--no-session".into(), "-p".into(), prompt.into()]);
+            args.extend([
+                "--no-session-persistence".into(),
+                "-p".into(),
+                prompt.into(),
+            ]);
             "claude"
         }
         "codex" => {
@@ -180,7 +189,12 @@ fn build_agent_cli_argv(
             if let Some(m) = model {
                 args.extend(["-m".into(), m.into()]);
             }
-            args.extend(["--full-auto".into(), prompt.into()]);
+            args.extend([
+                "--sandbox".into(),
+                "workspace-write".into(),
+                "--ephemeral".into(),
+                prompt.into(),
+            ]);
             "codex"
         }
         "cursor" => {
@@ -194,7 +208,7 @@ fn build_agent_cli_argv(
             if let Some(m) = model {
                 args.extend(["--model".into(), m.into()]);
             }
-            args.extend(["-p".into(), prompt.into()]);
+            args.extend(["--no-session".into(), "-p".into(), prompt.into()]);
             "pi"
         }
         _ => return None,
@@ -923,19 +937,36 @@ mod tests {
     fn agent_cli_argv_per_cli_with_and_without_model() {
         let (cmd, args) = build_agent_cli_argv("codex", None, "p").unwrap();
         assert_eq!(cmd, "codex");
-        assert_eq!(args, ["exec", "--full-auto", "p"]);
+        assert_eq!(
+            args,
+            ["exec", "--sandbox", "workspace-write", "--ephemeral", "p"]
+        );
         let (cmd, args) = build_agent_cli_argv("codex", Some("gpt-5.6-terra"), "p").unwrap();
         assert_eq!(cmd, "codex");
-        assert_eq!(args, ["exec", "-m", "gpt-5.6-terra", "--full-auto", "p"]);
+        assert_eq!(
+            args,
+            [
+                "exec",
+                "-m",
+                "gpt-5.6-terra",
+                "--sandbox",
+                "workspace-write",
+                "--ephemeral",
+                "p"
+            ]
+        );
         let (cmd, args) = build_agent_cli_argv("cursor", None, "p").unwrap();
         assert_eq!(cmd, "cursor-agent");
         assert_eq!(args, ["--print", "--force", "p"]);
         let (cmd, args) = build_agent_cli_argv("claude", Some("opus"), "p").unwrap();
         assert_eq!(cmd, "claude");
-        assert_eq!(args, ["--model", "opus", "--no-session", "-p", "p"]);
+        assert_eq!(
+            args,
+            ["--model", "opus", "--no-session-persistence", "-p", "p"]
+        );
         let (cmd, args) = build_agent_cli_argv("pi", None, "p").unwrap();
         assert_eq!(cmd, "pi");
-        assert_eq!(args, ["-p", "p"]);
+        assert_eq!(args, ["--no-session", "-p", "p"]);
         assert!(build_agent_cli_argv("gemini", None, "p").is_none());
     }
 

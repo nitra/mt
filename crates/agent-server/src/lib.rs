@@ -21,6 +21,8 @@ pub use approvals_gate::ApprovalGate;
 pub use discovery::{token_hash, Discovery, PortFile};
 pub use graph::{attach, GraphConfig, InteractiveRun};
 pub use relay_client::{spawn_relay_bridge, RelayBridgeConfig};
-pub use runner::{EchoTurnRunner, ScriptedTurnRunner, TurnError, TurnRunner};
+pub use runner::{
+    AcpTurnRunner, EchoTurnRunner, PermissionFactory, ScriptedTurnRunner, TurnError, TurnRunner,
+};
 pub use session::{is_ephemeral, Session, SessionHost};
 pub use ws::{serve, AppState};

@@ -1,6 +1,6 @@
 ## Model tier
 
-AVG
+MAX
 
 ## Skills
 

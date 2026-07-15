@@ -16,7 +16,7 @@ timestamp: 2026-07-07
 | `@7n/mt` — CLI-поверхня графа: тонкий клієнт Rust-ядра (`mt-core` через napi) | Bun + plain JS/JSDoc поверх `mt-core` | існує (0.2.x) |
 | `mt-core` — ядро графа: scan, create, claim CAS, fenced publish, run wrapper | Rust crate (`serde`, `chrono`, `sha2`) | існує |
 | `agent-protocol` — Envelope/Event, підписи, версія протоколу | Rust crate (`serde`, `ed25519-dalek`; без tokio/tauri) | планується |
-| `agent-core` — ACP-клієнт (Agent Client Protocol) до зовнішніх CLI-виконавців | Rust crate (`tokio`, ACP; `notify`, `gix` feature-gated) | планується |
+| `agent-core` — ACP-клієнт (Agent Client Protocol) до зовнішніх CLI-виконавців | Rust crate (`tokio`; ndjson JSON-RPC, v1-підмножина: initialize/session/prompt/request_permission) | існує (скелет) |
 | `agent-server` — хост-процес: сесії, транспорти, relay-клієнт, discovery | Rust crate (`axum`, `tokio-tungstenite`, `reqwest`) | планується |
 | `agent-cli` — тонкий клієнт + headless (`mt serve`/`attach` фронтенд) | Rust бінарник (`clap`) | планується |
 | Desktop-додатки (macOS) | Tauri v2 — тонкий клієнт + lifecycle agent-server | планується |

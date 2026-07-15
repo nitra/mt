@@ -196,6 +196,14 @@ pub fn run_auto(tasks_dir: String, concurrency: u32) -> Result<serde_json::Value
     serde_json::to_value(results).map_err(|e| to_napi_err(e.to_string()))
 }
 
+/// `mt kill` (файловий рівень): піддерево без run-артефактів видаляється
+/// назавжди; інакше — архів у `.history/<ts>-kill-<path>/`. Повертає
+/// `deleted:<path>` або `.history/<archive>`.
+#[napi]
+pub fn kill_node(tasks_dir: String, node_path: String) -> Result<String> {
+    mt_core::lifecycle::kill(&tasks_dir, &node_path).map_err(to_napi_err)
+}
+
 // ── worktree (npm/lib/core/worktree.mjs) ──────────────────────────────────────
 
 /// Ім'я worktree для задачі: `<sanitized-path>-<epoch-сек>`.

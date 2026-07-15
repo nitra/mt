@@ -5,8 +5,6 @@
       "Bash(bun run *)",
       "Bash(bun test *)",
       "Bash(bunx *)",
-      "Bash(npx --no @nitra/cursor *)",
-      "Bash(npx @nitra/cursor *)",
       "Bash(npx --no @7n/rules *)",
       "Bash(npx @7n/rules *)"
     ]
