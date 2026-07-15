@@ -1,0 +1,21 @@
+crates/agent-server/src/bin/docs/fake-acp-agent.md
+  s_c77c6c75dbee3c::t_fe7cc381d68670 24
+.cspell.json
+  s_c77c6c75dbee3c::t_fe7cc381d68670 22-37,99-139,159,161,167,170,182-185,243-245,255,261,265,271-272,297-298,315-316,354,356,366-382,385,403-404,409,417-420,436-437,447,458-460,476-477,487-506
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5293cd07306ae2921756b45787544e15d3f8816a",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
