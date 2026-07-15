@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.26.0] - 2026-07-15
+
+### Added
+
+- ACP-клієнт (agent-core: ndjson JSON-RPC v1-підмножина initialize/session/prompt/request_permission) + AcpTurnRunner в agent-server і agent-cli serve --acp-cmd / MT_ACP_AGENT_CMD; mt kill мігровано на mt-core lifecycle::kill (вузол без run-історії видаляється, сканер більше не бачить його waiting); headless-прапори CLI звірені живим спайком (claude --no-session-persistence, codex --sandbox workspace-write --ephemeral, pi --no-session)
+
 ## [0.25.3] - 2026-07-14
 
 ### Changed
