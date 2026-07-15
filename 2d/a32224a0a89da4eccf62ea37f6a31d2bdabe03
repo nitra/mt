@@ -1,0 +1,21 @@
+mt/m0-dogfood-smoke/a.md
+  s_c77c6c75dbee3c::t_62557eba98e75d 1-8
+mt/m0-dogfood-smoke/task.md
+  s_c77c6c75dbee3c::t_097618e697a9dd 1-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2da32224a0a89da4eccf62ea37f6a31d2bdabe03",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
