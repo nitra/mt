@@ -1,0 +1,25 @@
+mt/m0-ladder-cross-cli/a.md
+  s_c77c6c75dbee3c::t_9c6ee796835457 1-8
+mt/m0-ladder-cross-cli/task.md
+  s_c77c6c75dbee3c::t_bb88e154cdc8a6 1-24
+mt/m0-nnn-origin-truth/a.md
+  s_c77c6c75dbee3c::t_d38314135660be 1-8
+mt/m0-nnn-origin-truth/task.md
+  s_c77c6c75dbee3c::t_71e37f23aadacb 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ae10ced6856268eba5736d055a3240df6851248f",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
