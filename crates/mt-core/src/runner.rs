@@ -261,11 +261,31 @@ fn is_rate_limited(exit_ok: bool, output: &str) -> bool {
     })
 }
 
-/// Headless-промпт agent-шляху — спільний для всіх підписочних CLI
-/// (порт JS `buildAgentPrompt`).
+/// Headless-промпт agent-шляху — спільний для всіх підписочних CLI.
+///
+/// Місія **вкладається** у промпт (тіло `task.md` без frontmatter): непряме
+/// «прочитай task.md» — заважке для слабких локальних моделей (тертя M0,
+/// dogfood 2026-07-15: gemma-2B через pi виконує пряму інструкцію, але
+/// губиться на meta-prompt). `plan_*.md` лишаються за посиланням — вони
+/// опційні і можуть бути великими.
 fn build_agent_prompt(task_path: &str, node_dir: &Path, nnn: &str, budget_sec: u64) -> String {
+    let task_body = fs::read_to_string(node_dir.join("task.md"))
+        .map(|content| {
+            let trimmed = content.trim_start();
+            match trimmed.strip_prefix("---") {
+                Some(rest) => rest
+                    .split_once("\n---")
+                    .map(|(_, body)| body.trim_start_matches('\n').to_string())
+                    .unwrap_or(content.clone()),
+                None => content.clone(),
+            }
+        })
+        .unwrap_or_default();
     format!(
-        "You are executing task: {task_path}\nWorking directory: {}\nRun NNN: {nnn}\nBudget: {budget_sec}s\n\nRead task.md and plan_*.md, execute the task, write fact_{nnn}.md with results.",
+        "You are executing task: {task_path}\nWorking directory: {}\nRun NNN: {nnn}\nBudget: {budget_sec}s\n\n\
+         The task (from task.md):\n\n{task_body}\n\n\
+         Execute the task above in the current directory (read plan_*.md if present). \
+         When done, write fact_{nnn}.md with a `## Summary` section describing the result.",
         node_dir.display()
     )
 }

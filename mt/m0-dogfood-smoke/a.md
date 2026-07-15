@@ -6,7 +6,3 @@ MIN
 
 - bash
 - write-files
-
-## Agent cli
-
-claude
