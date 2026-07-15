@@ -5,7 +5,7 @@
     "": {
       "name": "mono",
       "devDependencies": {
-        "@7n/rules": "^1.3.0",
+        "@7n/rules": "^1.3.1",
         "@nitra/cspell-dict": "^2.1.0",
         "@nitra/eslint-config": "^3.10.1",
         "@stryker-mutator/vitest-runner": "^9.6.1",
@@ -23,7 +23,7 @@
     },
     "npm": {
       "name": "@7n/mt",
-      "version": "0.25.2",
+      "version": "0.25.3",
       "bin": {
         "mt": "bin/mt.js",
       },
@@ -56,7 +56,7 @@
 
     "@7n/relay": ["@7n/relay@workspace:relay"],
 
-    "@7n/rules": ["@7n/rules@1.3.0", "", { "dependencies": { "@7n/llm-lib": "^2.0.0", "@7n/mt": "^0.5.1", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "eslint": "^10.4.1", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "jscpd": "^5.0.11", "knip": "^6.22.0", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "oxlint": "^1.68.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@earendil-works/pi-ai": "0.80.2", "@earendil-works/pi-coding-agent": "0.80.2" }, "bin": { "n-rules": "bin/n-rules.js", "n-cursor": "bin/n-rules.js" } }, "sha512-TmBQ97dTAtPf1ugo8p76z6MO8KcBlFSab/YqQtR+UjE/Bd4SJj5NrGuSibwZsIdOI3Uya2dndX+CRm2SklU3nA=="],
+    "@7n/rules": ["@7n/rules@1.3.1", "", { "dependencies": { "@7n/llm-lib": "^2.0.0", "@7n/mt": "^0.5.1", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "eslint": "^10.4.1", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "jscpd": "^5.0.11", "knip": "^6.22.0", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "oxlint": "^1.68.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@earendil-works/pi-ai": "0.80.2", "@earendil-works/pi-coding-agent": "0.80.2" }, "bin": { "n-rules": "bin/n-rules.js", "n-cursor": "bin/n-rules.js" } }, "sha512-67fFmsFem5grQArMG2NGcPJVdXtTvDJh0DBeYbJhKQJMTWp+9jdmAKohGnFPRM5/egBJxXG0Pe72eRwv3rc6hw=="],
 
     "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.91.1", "", { "dependencies": { "json-schema-to-ts": "^3.1.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "anthropic-ai-sdk": "bin/cli" } }, "sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw=="],
 
