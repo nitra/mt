@@ -1,0 +1,19 @@
+crates/mt-core/src/signal.rs
+  s_c77c6c75dbee3c::t_48dfd0adcf4321 100-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "9bf21d1c0ba6cb2f11e41287dd7cc7930212592b",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
