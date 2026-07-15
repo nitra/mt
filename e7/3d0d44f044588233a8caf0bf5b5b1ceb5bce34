@@ -1,0 +1,19 @@
+crates/mt-core/src/runner.rs
+  s_c77c6c75dbee3c::t_62f07fea0e8e7a 791-801,803
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "e73d0d44f044588233a8caf0bf5b5b1ceb5bce34",
+  "prompts": {},
+  "sessions": {
+    "s_c77c6c75dbee3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9716d7eb-0ef7-448a-b235-e11599ae8ba3",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
