@@ -52,7 +52,7 @@ pub type PermissionFactory = Arc<dyn Fn(&str) -> PermissionHandler + Send + Sync
 struct AcpRoom {
     /// Тримаємо процес живим на весь час кімнати (kill_on_drop).
     _child: tokio::process::Child,
-    client: AcpClient<tokio::process::ChildStdout, tokio::process::ChildStdin>,
+    client: AcpClient<tokio::process::ChildStdin>,
     session_id: String,
 }
 
