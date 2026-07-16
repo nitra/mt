@@ -9,15 +9,23 @@
 //! `session/request_permission` іде у [`PermissionHandler`] — хост мапить
 //! його на `ApprovalRequest` (Ed25519). Клієнт generic над потоками:
 //! продакшн — stdio child-процесу, тести — `tokio::io::duplex`.
+//!
+//! Читання стріму — фоновий таск на весь час життя клієнта, не прив'язаний
+//! до конкретного виклику (як у Zed): нотифікації, що приходять між
+//! викликами (напр. деякі адаптери, зокрема `pi-acp`, шлють `agent_message_chunk`
+//! з prelude-банером самого CLI одразу після `session/new`, ще до першого
+//! prompt), не приліплюються механічно до наступної відповіді.
 
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use agent_protocol::Event;
 use serde_json::{json, Value};
-use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader, Lines};
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::sync::{mpsc, Mutex as AsyncMutex};
 
 /// Помилка ACP-транспорту/протоколу.
 #[derive(Debug)]
@@ -36,25 +44,50 @@ impl std::error::Error for AcpError {}
 pub type PermissionHandler =
     Arc<dyn Fn(String, Option<String>) -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>;
 
-/// ACP-клієнт однієї агент-сесії поверх пари потоків.
-pub struct AcpClient<R, W> {
-    lines: Lines<BufReader<R>>,
-    writer: W,
-    next_id: u64,
-    permission: Option<PermissionHandler>,
+/// Скільки чекати на "осідання" нотифікацій одразу після відповіді на
+/// `session/new`, перш ніж вважати чергу порожньою — щоб prelude-банер
+/// адаптера не приліпився до першого `prompt`.
+const SETTLE_TIMEOUT: Duration = Duration::from_millis(150);
+
+/// Класифіковане повідомлення від фонового читача стріму.
+enum Incoming {
+    /// Відповідь на наш запит (`id` — наш власний лічильник).
+    Response(u64, Result<Value, AcpError>),
+    /// `session/update`-нотифікація (без `id`).
+    Notification(Value),
 }
 
-impl<R, W> AcpClient<R, W>
+/// ACP-клієнт однієї агент-сесії поверх пари потоків.
+pub struct AcpClient<W> {
+    writer: Arc<AsyncMutex<W>>,
+    next_id: u64,
+    rx: mpsc::UnboundedReceiver<Incoming>,
+    reader: tokio::task::JoinHandle<()>,
+}
+
+impl<W> Drop for AcpClient<W> {
+    fn drop(&mut self) {
+        self.reader.abort();
+    }
+}
+
+impl<W> AcpClient<W>
 where
-    R: AsyncRead + Unpin + Send,
-    W: AsyncWrite + Unpin + Send,
+    W: AsyncWrite + Unpin + Send + 'static,
 {
-    pub fn new(reader: R, writer: W, permission: Option<PermissionHandler>) -> Self {
+    /// Стартує фоновий читач стріму, живе разом із клієнтом.
+    pub fn new<R>(reader: R, writer: W, permission: Option<PermissionHandler>) -> Self
+    where
+        R: AsyncRead + Unpin + Send + 'static,
+    {
+        let writer = Arc::new(AsyncMutex::new(writer));
+        let (tx, rx) = mpsc::unbounded_channel();
+        let reader = tokio::spawn(read_loop(reader, tx, Arc::clone(&writer), permission));
         Self {
-            lines: BufReader::new(reader).lines(),
             writer,
             next_id: 0,
-            permission,
+            rx,
+            reader,
         }
     }
 
@@ -69,9 +102,13 @@ where
     }
 
     /// `session/new` у робочій директорії (worktree run-а) → sessionId.
+    /// Дренує prelude-нотифікації, що осіли одразу після відповіді
+    /// (`SETTLE_TIMEOUT`), перш ніж повернути керування — інакше вони
+    /// приліпляться до першого `prompt`.
     pub async fn new_session(&mut self, cwd: &str) -> Result<String, AcpError> {
         let params = json!({ "cwd": cwd, "mcpServers": [] });
         let result = self.call("session/new", params, &|_| {}).await?;
+        self.settle(&|_| {}).await;
         result["sessionId"]
             .as_str()
             .map(str::to_string)
@@ -98,9 +135,10 @@ where
             .to_string())
     }
 
-    /// Викликає метод і читає стрічку до відповіді на свій id, обробляючи
-    /// дорогою нотифікації (`session/update` → Event) і зустрічні запити
-    /// агента (`session/request_permission` → PermissionHandler).
+    /// Викликає метод і читає з черги фонового читача до відповіді на свій
+    /// id, обробляючи дорогою нотифікації (`session/update` → Event).
+    /// Зустрічні запити агента (`session/request_permission`) обробляє сам
+    /// фоновий читач — незалежно від того, який виклик зараз активний.
     async fn call(
         &mut self,
         method: &str,
@@ -113,31 +151,27 @@ where
             .await?;
 
         loop {
-            let line = self
-                .lines
-                .next_line()
-                .await
-                .map_err(|e| AcpError(format!("читання ACP-стріму: {e}")))?
-                .ok_or_else(|| AcpError("ACP-агент закрив стрім".into()))?;
-            if line.trim().is_empty() {
-                continue;
+            match self.rx.recv().await {
+                Some(Incoming::Response(rid, result)) if rid == id => {
+                    return result
+                        .map_err(|AcpError(error)| AcpError(format!("{method}: {error}")));
+                }
+                Some(Incoming::Response(..)) => continue,
+                Some(Incoming::Notification(message)) => self.handle_notification(&message, emit),
+                None => return Err(AcpError("ACP-агент закрив стрім".into())),
             }
-            let message: Value = serde_json::from_str(&line)
-                .map_err(|e| AcpError(format!("не-JSON кадр ACP: {e}")))?;
+        }
+    }
 
-            if message["method"].is_string() {
-                if message["id"].is_null() {
-                    self.handle_notification(&message, emit);
-                } else {
-                    self.handle_agent_request(&message).await?;
+    /// Дренує чергу, поки нотифікації надходять швидше за `SETTLE_TIMEOUT`;
+    /// тайм-аут або порожня черга — сигнал, що осідання завершилось.
+    async fn settle(&mut self, emit: &(dyn Fn(Event) + Send + Sync)) {
+        loop {
+            match tokio::time::timeout(SETTLE_TIMEOUT, self.rx.recv()).await {
+                Ok(Some(Incoming::Notification(message))) => {
+                    self.handle_notification(&message, emit)
                 }
-                continue;
-            }
-            if message["id"] == json!(id) {
-                if let Some(error) = message.get("error").filter(|e| !e.is_null()) {
-                    return Err(AcpError(format!("{method}: {error}")));
-                }
-                return Ok(message["result"].clone());
+                Ok(Some(Incoming::Response(..))) | Ok(None) | Err(_) => return,
             }
         }
     }
@@ -187,60 +221,121 @@ where
         }
     }
 
-    /// Зустрічний запит агента. `session/request_permission` → handler
-    /// (без handler-а — відмова); вибирається перший option відповідного
-    /// kind (`allow*`/`reject*`). Інші методи → JSON-RPC method not found.
-    async fn handle_agent_request(&mut self, message: &Value) -> Result<(), AcpError> {
-        let id = message["id"].clone();
-        if message["method"] != "session/request_permission" {
-            return self
-                .send(&json!({
-                    "jsonrpc": "2.0", "id": id,
-                    "error": { "code": -32601, "message": "method not found" }
-                }))
-                .await;
-        }
-        let params = &message["params"];
-        let action = params["toolCall"]["title"]
-            .as_str()
-            .or(params["toolCall"]["kind"].as_str())
-            .unwrap_or("tool")
-            .to_string();
-        let diff = params["toolCall"]["content"].as_str().map(str::to_string);
-        let approved = match &self.permission {
-            Some(handler) => handler(action, diff).await,
-            None => false,
+    async fn send(&self, message: &Value) -> Result<(), AcpError> {
+        send_frame(&self.writer, message).await
+    }
+}
+
+async fn send_frame(
+    writer: &AsyncMutex<impl AsyncWrite + Unpin>,
+    message: &Value,
+) -> Result<(), AcpError> {
+    let mut frame = message.to_string();
+    frame.push('\n');
+    let mut writer = writer.lock().await;
+    writer
+        .write_all(frame.as_bytes())
+        .await
+        .map_err(|e| AcpError(format!("запис ACP-стріму: {e}")))?;
+    writer
+        .flush()
+        .await
+        .map_err(|e| AcpError(format!("flush ACP-стріму: {e}")))
+}
+
+/// Фоновий читач стріму: класифікує кадри на відповіді/нотифікації
+/// (форвардить у канал виклику) і сам відповідає на зустрічні запити
+/// агента (`session/request_permission` → `PermissionHandler`) — доки
+/// живе клієнт, незалежно від того, який `call()` зараз читає з каналу.
+async fn read_loop(
+    reader: impl AsyncRead + Unpin,
+    tx: mpsc::UnboundedSender<Incoming>,
+    writer: Arc<AsyncMutex<impl AsyncWrite + Unpin>>,
+    permission: Option<PermissionHandler>,
+) {
+    let mut lines = BufReader::new(reader).lines();
+    loop {
+        let line = match lines.next_line().await {
+            Ok(Some(line)) => line,
+            _ => return,
         };
-        let wanted = if approved { "allow" } else { "reject" };
-        let option_id = params["options"]
-            .as_array()
-            .and_then(|options| {
-                options
-                    .iter()
-                    .find(|o| o["kind"].as_str().unwrap_or_default().starts_with(wanted))
-            })
-            .and_then(|o| o["optionId"].as_str())
-            .unwrap_or(wanted)
-            .to_string();
-        self.send(&json!({
+        if line.trim().is_empty() {
+            continue;
+        }
+        let message: Value = match serde_json::from_str(&line) {
+            Ok(value) => value,
+            Err(_) => continue,
+        };
+
+        if message["method"].is_string() {
+            if message["id"].is_null() {
+                let _ = tx.send(Incoming::Notification(message));
+            } else {
+                handle_agent_request(&writer, &permission, &message).await;
+            }
+            continue;
+        }
+        let Some(id) = message["id"].as_u64() else {
+            continue;
+        };
+        let result = match message.get("error").filter(|e| !e.is_null()) {
+            Some(error) => Err(AcpError(error.to_string())),
+            None => Ok(message["result"].clone()),
+        };
+        let _ = tx.send(Incoming::Response(id, result));
+    }
+}
+
+/// Зустрічний запит агента. `session/request_permission` → handler
+/// (без handler-а — відмова); вибирається перший option відповідного
+/// kind (`allow*`/`reject*`). Інші методи → JSON-RPC method not found.
+async fn handle_agent_request(
+    writer: &AsyncMutex<impl AsyncWrite + Unpin>,
+    permission: &Option<PermissionHandler>,
+    message: &Value,
+) {
+    let id = message["id"].clone();
+    if message["method"] != "session/request_permission" {
+        let _ = send_frame(
+            writer,
+            &json!({
+                "jsonrpc": "2.0", "id": id,
+                "error": { "code": -32601, "message": "method not found" }
+            }),
+        )
+        .await;
+        return;
+    }
+    let params = &message["params"];
+    let action = params["toolCall"]["title"]
+        .as_str()
+        .or(params["toolCall"]["kind"].as_str())
+        .unwrap_or("tool")
+        .to_string();
+    let diff = params["toolCall"]["content"].as_str().map(str::to_string);
+    let approved = match permission {
+        Some(handler) => handler(action, diff).await,
+        None => false,
+    };
+    let wanted = if approved { "allow" } else { "reject" };
+    let option_id = params["options"]
+        .as_array()
+        .and_then(|options| {
+            options
+                .iter()
+                .find(|o| o["kind"].as_str().unwrap_or_default().starts_with(wanted))
+        })
+        .and_then(|o| o["optionId"].as_str())
+        .unwrap_or(wanted)
+        .to_string();
+    let _ = send_frame(
+        writer,
+        &json!({
             "jsonrpc": "2.0", "id": id,
             "result": { "outcome": { "outcome": "selected", "optionId": option_id } }
-        }))
-        .await
-    }
-
-    async fn send(&mut self, message: &Value) -> Result<(), AcpError> {
-        let mut frame = message.to_string();
-        frame.push('\n');
-        self.writer
-            .write_all(frame.as_bytes())
-            .await
-            .map_err(|e| AcpError(format!("запис ACP-стріму: {e}")))?;
-        self.writer
-            .flush()
-            .await
-            .map_err(|e| AcpError(format!("flush ACP-стріму: {e}")))
-    }
+        }),
+    )
+    .await;
 }
 
 #[cfg(test)]
@@ -251,7 +346,9 @@ mod tests {
 
     /// Фейковий ACP-агент на другому кінці duplex: скриптує initialize,
     /// session/new і session/prompt (чанки + tool call + відповідь).
-    async fn fake_agent(stream: tokio::io::DuplexStream, request_permission: bool) {
+    /// `prelude` — імітує `pi-acp`: одразу після `session/new`, ще до
+    /// першого prompt, шле `agent_message_chunk` з банером CLI.
+    async fn fake_agent(stream: tokio::io::DuplexStream, request_permission: bool, prelude: bool) {
         let (read, mut write) = tokio::io::split(stream);
         let mut lines = BufReader::new(read).lines();
         while let Ok(Some(line)) = lines.next_line().await {
@@ -271,6 +368,18 @@ mod tests {
                         &json!({ "jsonrpc": "2.0", "id": id, "result": { "sessionId": "s1" } }),
                     )
                     .await;
+                    if prelude {
+                        respond(
+                            &mut write,
+                            &json!({
+                                "jsonrpc": "2.0", "method": "session/update",
+                                "params": { "sessionId": "s1", "update": {
+                                    "sessionUpdate": "agent_message_chunk",
+                                    "content": { "type": "text", "text": "pi v0.79.9\n---\n" } } }
+                            }),
+                        )
+                        .await;
+                    }
                 }
                 Some("session/prompt") => {
                     for text in ["при", "віт"] {
@@ -331,10 +440,7 @@ mod tests {
     fn client_for(
         stream: tokio::io::DuplexStream,
         permission: Option<PermissionHandler>,
-    ) -> AcpClient<
-        tokio::io::ReadHalf<tokio::io::DuplexStream>,
-        tokio::io::WriteHalf<tokio::io::DuplexStream>,
-    > {
+    ) -> AcpClient<tokio::io::WriteHalf<tokio::io::DuplexStream>> {
         let (read, write) = tokio::io::split(stream);
         AcpClient::new(read, write, permission)
     }
@@ -344,7 +450,7 @@ mod tests {
     #[tokio::test]
     async fn prompt_maps_updates_to_events() {
         let (local, remote) = tokio::io::duplex(64 * 1024);
-        tokio::spawn(fake_agent(remote, false));
+        tokio::spawn(fake_agent(remote, false, false));
         let mut client = client_for(local, None);
 
         client.initialize().await.unwrap();
@@ -376,7 +482,7 @@ mod tests {
     async fn permission_request_routes_through_handler() {
         for (approve, expect_ok) in [(true, true), (false, false)] {
             let (local, remote) = tokio::io::duplex(64 * 1024);
-            tokio::spawn(fake_agent(remote, true));
+            tokio::spawn(fake_agent(remote, true, false));
             let handler: PermissionHandler =
                 Arc::new(move |_action, _diff| Box::pin(async move { approve }));
             let mut client = client_for(local, Some(handler));
@@ -396,5 +502,36 @@ mod tests {
                 "{events:?}"
             );
         }
+    }
+
+    /// Prelude-банер адаптера (напр. `pi-acp`), що приходить одразу після
+    /// `session/new`, ще до першого prompt, — дренується `settle()` і не
+    /// потрапляє в події першого реального ходу (регресія на mt/pull/51).
+    #[tokio::test]
+    async fn session_new_drains_prelude_before_first_prompt() {
+        let (local, remote) = tokio::io::duplex(64 * 1024);
+        tokio::spawn(fake_agent(remote, false, true));
+        let mut client = client_for(local, None);
+
+        client.initialize().await.unwrap();
+        let session = client.new_session("/tmp").await.unwrap();
+
+        let events = Mutex::new(Vec::new());
+        let emit = |event: Event| events.lock().unwrap().push(event);
+        client.prompt(&session, "звук", &emit).await.unwrap();
+
+        assert_eq!(
+            *events.lock().unwrap(),
+            vec![
+                Event::AgentTextDelta {
+                    text: "при".into()
+                },
+                Event::AgentTextDelta {
+                    text: "віт".into()
+                },
+                Event::AgentTextDone {},
+            ],
+            "банер адаптера не мав приліпитись до першої відповіді"
+        );
     }
 }
