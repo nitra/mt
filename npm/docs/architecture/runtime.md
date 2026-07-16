@@ -55,6 +55,17 @@ export MT_AGENT_CLI_MODEL_MAP='{"codex":{"MIN":"gpt-5.6-luna","AVG":"gpt-5.6-ter
 
 **ACP — єдиний транспорт AI-викликів.** **Усі** виклики ШІ йдуть виключно через **ACP (Agent Client Protocol)**: один ACP-клієнт в agent-server, без вендорських адаптерів і без власного provider-шару; хмарні CLI підключаються своїми ACP-адаптерами, **локальні моделі — через pi.dev CLI**, який обгортає omlx-сервер і виставляє той самий ACP. `permission-request` ACP мапиться на `ApprovalRequest` (Ed25519-підписи) — mid-run гейти працюють поверх будь-якого виконавця, включно з локальним; структуровані ACP-помилки лімітів живлять каскад замість текстової евристики.
 
+**ACP-адаптери за `agent_cli` (перевірено живими сесіями 2026-07-16).** Жоден з чотирьох CLI не має вбудованого ACP-режиму у `--help`, крім Cursor:
+
+| `agent_cli` | Команда для `MT_ACP_AGENT_CMD` | Статус |
+| --- | --- | --- |
+| `cursor` | `agent acp` | нативний ACP-сервер CLI, офіційний, живою сесією ✅ |
+| `codex` | `npx -y @agentclientprotocol/codex-acp@latest` | офіційний міст (`@agentclientprotocol`), живою сесією ✅ |
+| `claude` | `npx -y @agentclientprotocol/claude-agent-acp@latest` | офіційний міст (наступник задеприкейченого `@zed-industries/claude-code-acp`), живою сесією ✅ |
+| `pi` | *(немає офіційного)* — сторонній `pi-acp` (`svkozak/pi-acp`, npm `pi-acp@0.0.31`) бриджить `pi --mode rpc` до ACP | не офіційний, версія 0.0.31 — **не перевірено живою сесією**, потребує окремого рішення про довіру перед підключенням |
+
+Виявлена й виправлена розбіжність: ACP-спека вимагає **абсолютний** `cwd` у `session/new` (`NewSessionRequest.cwd: "Must be an absolute path"`). `agent-core`/`agent-server` без `workdir` (M1 CLI без графа/worktree) підставляли літеральне `"."` — `agent acp` і `codex-acp` це прощають, `claude-agent-acp` строго валідує і відкидає запит (`Invalid params: cwd must be an absolute path`). Виправлено в `AcpTurnRunner::open_room` (`crates/agent-server/src/runner.rs`): без `workdir` тепер береться `std::env::current_dir()`.
+
 **Телеметрія.** tokens/cost із зовнішнього CLI — best-effort (що CLI віддає, те потрапляє у `run_NNN.md`); бюджети для підписочного шляху — soft-alert, hard-межа лишається `budget_hard_sec` (kill за таймаутом).
 
 Історична точка розширення «зовнішній екзекутор вузла» (`.mt.json` `node_executor`, споживалась `n-cursor mt-run-node`) видалена: після «ACP — єдиний транспорт AI-викликів» зовнішні консюмери (включно з локальними моделями) покриваються тим самим CLI-шляхом (`pi` для omlx) і user-level ENV-конфігом — паралельний виконавчий шлях більше не потрібен.

@@ -3,7 +3,7 @@ type: Rust Module
 title: runner.rs
 resource: crates/agent-server/src/runner.rs
 docgen:
-  crc: 9ab8af63
+  crc: 963e1c62
   model: openai-codex/gpt-5.4-mini
   score: 100
   issues: judge:inaccurate:0.98
