@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.26.1] - 2026-07-16
+
+### Changed
+
+- fix(agent-server): AcpTurnRunner без workdir бере абсолютний cwd поточного процесу замість "." — claude-agent-acp відкидав відносний шлях (ACP-спека вимагає абсолютний); задокументовано таблицю ACP-адаптерів (cursor/codex/claude/pi) у runtime.md, перевірено живими сесіями для трьох CLI
+
 ## [0.26.0] - 2026-07-15
 
 ### Added
