@@ -109,9 +109,16 @@ impl AcpTurnRunner {
             .initialize()
             .await
             .map_err(|e| TurnError(e.to_string()))?;
-        let cwd = workdir
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|| ".".into());
+        // ACP-спека вимагає абсолютний cwd (NewSessionRequest.cwd); без
+        // workdir (M1 CLI без графа/worktree) беремо cwd поточного процесу —
+        // деякі адаптери (claude-agent-acp) відкидають "." як невалідний.
+        let cwd = match workdir {
+            Some(p) => p.to_string_lossy().into_owned(),
+            None => std::env::current_dir()
+                .map_err(|e| TurnError(format!("cwd поточного процесу: {e}")))?
+                .to_string_lossy()
+                .into_owned(),
+        };
         let session_id = client
             .new_session(&cwd)
             .await
