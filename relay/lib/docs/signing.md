@@ -3,9 +3,8 @@ type: JS Module
 title: signing.mjs
 resource: relay/lib/signing.mjs
 docgen:
-  crc: 9228feae
+  crc: 0b7d8ba8
   model: openai-codex/gpt-5.5
-  tier: cloud-avg
   score: 100
   issues: judge:inaccurate:0.99
   judgeModel: openai-codex/gpt-5.4-mini
