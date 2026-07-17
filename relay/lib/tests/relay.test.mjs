@@ -310,7 +310,10 @@ describe('bootstrapMembers', () => {
     // Повторний прогін: без нових запрошень і без зміни ролей.
     const again = core.bootstrapMembers(accounts.owner.account_id, 'root-1', entries)
     expect(again).toEqual({ added: [], invited: ['ghost@x'], kept: ['olena@x', 'viewer@x'] })
-    const pending = store.invitations.values().filter(i => i.to_email === 'ghost@x').toArray()
+    const pending = store.invitations
+      .values()
+      .filter(i => i.to_email === 'ghost@x')
+      .toArray()
     expect(pending).toHaveLength(1)
   })
 })
