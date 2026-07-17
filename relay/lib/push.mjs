@@ -1,36 +1,18 @@
 /**
  * Push-нотифікації relay (access.md, «Push-нотифікації»): «вас запрошено»
- * (тип 2) і «задача потребує уваги» (тип 3). FCM-доставка — окрема задача;
- * тут інтерфейс sink-а і dev-реалізація з чергою в памʼяті (як magic tokens
- * в auth). Relay не парсить payload далі роутінгових полів — для push
- * роутінговими є `event.type` і адресний `event.to_account_id`.
+ * (тип 2) і «задача потребує уваги» (тип 3). Sink доставки — push-sink.mjs
+ * (dev-черга в памʼяті; FCM — за тим самим інтерфейсом). Relay не парсить
+ * payload далі роутінгових полів — для push роутінговими є `event.type`
+ * і адресний `event.to_account_id`.
  */
 
 /** Типи подій Envelope, що означають «задача потребує уваги» (тип 3). */
 const ATTENTION_TYPES = new Set(['PlanReview', 'AuditPending', 'Escalation'])
 
-/** Dev-sink: складає доставки в памʼять (реальний FCM — за тим самим інтерфейсом). */
-export class DevPushSink {
-  constructor() {
-    /** @type {{account_id: string, root: string, reason: string, ref: string | null}[]} */
-    this.deliveries = []
-  }
-
-  /**
-   * Доставляє push усім пристроям акаунта.
-   * @param {string} accountId акаунт-отримувач
-   * @param {{ root: string, reason: string, ref?: string | null }} note зміст
-   * @returns {void}
-   */
-  deliver(accountId, note) {
-    this.deliveries.push({ account_id: accountId, root: note.root, reason: note.reason, ref: note.ref ?? null })
-  }
-}
-
 /** Маршрутизатор push поверх store і sink-а. */
 export class PushRouter {
   /**
-   * @param {{ store: import('./store.mjs').InMemoryStore, sink: DevPushSink }} deps залежності
+   * @param {{ store: import('./store.mjs').InMemoryStore, sink: import('./push-sink.mjs').DevPushSink }} deps залежності
    */
   constructor({ store, sink }) {
     this.store = store

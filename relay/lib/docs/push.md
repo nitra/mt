@@ -3,7 +3,7 @@ type: JS Module
 title: push.mjs
 resource: relay/lib/push.mjs
 docgen:
-  crc: a554bd6d
+  crc: 9b56410d
   model: openai-codex/gpt-5.5
   score: 100
   issues: judge:inaccurate:0.98

@@ -3,28 +3,28 @@ type: JS Module
 title: signing.mjs
 resource: relay/lib/signing.mjs
 docgen:
-  crc: 9228feae
-  model: openai-codex/gpt-5.5
-  tier: cloud-avg
+  crc: 0b7d8ba8
+  model: openai-codex/gpt-5.4-mini
+  tier: cloud-min
   score: 100
-  issues: judge:inaccurate:0.99
+  issues: judge:inaccurate:0.98
   judgeModel: openai-codex/gpt-5.4-mini
 ---
 
 ## Огляд
 
-Файл перевіряє Ed25519-підписи передавання ownership через `node:crypto` без залежностей. Він дзеркалить canonical-формат `crates/agent-protocol`: домен-префікс і NUL-розділені поля, щоб підпис, створений Rust-клієнтом через `sign_transfer`, перевірявся на relay байт-у-байт. Pubkey пристрою приймається як hex 32 байти, валідований через `PUBKEY_RE`, і загортається у `SPKI DER` для перевірки. `transferMessage` формує повідомлення для перевірки, а `verifySignature` fail-safe відхиляє невалідні підписи без винятків назовні.
+`PUBKEY_RE`, `transferMessage` і `verifySignature` тримають перевірку Ed25519-підписів на relay без залежностей, щоб підпис Rust-клієнта зі `sign_transfer` збігався байт-у-байт із canonical-форматом із `crates/agent-protocol`: домен-префікс і NUL-розділені поля. Pubkey пристрою очікується як hex на 32 байти, загортається у SPKI DER для `node:crypto`. Файл read-only, перехоплює помилки й не кидає винятки назовні; у частині невалідних даних або помилок перевірки повертає порожнє значення замість винятку.
 
 ## Поведінка
 
-- `PUBKEY_RE` визначає, чи має pubkey пристрою очікуваний hex-формат Ed25519 для relay-перевірки.
-- `transferMessage` формує canonical-повідомлення передачі ownership, сумісне з Rust-клієнтом байт-у-байт.
-- `verifySignature` fail-safe перевіряє Ed25519-підпис пристрою для canonical-повідомлення й повертає негативний результат замість винятку для невалідних даних.
+- PUBKEY_RE — перевіряє, чи значення схоже на hex-формат Ed25519 pubkey пристрою рівно на 32 байти.
+- transferMessage — формує canonical-повідомлення для transfer ownership із доменом і NUL-розділеними полями, щоб підпис був однозначним і не переносився між контекстами.
+- verifySignature — валідуює Ed25519-підпис повідомлення проти pubkey пристрою в hex-форматі; за невалідних вхідних даних або некоректному підписі повертає false і не кидає назовні.
 
 ## Публічний API
 
-- PUBKEY_RE — визначає hex-представлення Ed25519 pubkey пристрою довжиною 32 байти.
-- transferMessage — формує canonical-повідомлення для transfer ownership з доменом і NUL-розділеними полями, щоб підпис був привʼязаний до конкретного контексту.
+- PUBKEY_RE — приймає лише hex-рядок pubkey Ed25519 пристрою довжиною 32 байти.
+- transferMessage — збирає canonical-повідомлення для transfer ownership з доменом і полями, розділеними NUL, щоб межі були однозначні й підпис не можна було перенести в інший контекст.
 - verifySignature — звіряє Ed25519-підпис повідомлення з hex-pubkey пристрою.
 
 ## Гарантії поведінки

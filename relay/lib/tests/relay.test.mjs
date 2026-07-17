@@ -3,7 +3,8 @@ import { generateKeyPairSync, sign } from 'node:crypto'
 
 import { beforeEach, describe, expect, test } from 'vitest'
 
-import { DevPushSink, PushRouter } from '../push.mjs'
+import { DevPushSink } from '../push-sink.mjs'
+import { PushRouter } from '../push.mjs'
 import { RelayCore } from '../relay.mjs'
 import { Rooms } from '../rooms.mjs'
 import { transferMessage } from '../signing.mjs'
@@ -14,6 +15,8 @@ const RE_VIEWER = /viewer/
 const RE_OWNER_ONLY = /owner/
 const RE_FOREIGN_ACCOUNT = /іншому акаунту/
 const RE_ALREADY_PROCESSED = /оброблене/
+const RE_HEX = /hex/
+const RE_SIGNATURE = /підпис/
 
 /** @type {InMemoryStore} */
 let store
@@ -183,7 +186,7 @@ describe('pubkeys', () => {
   test('registerDevice відхиляє pubkey не у hex-32 форматі', () => {
     expect(() =>
       store.registerDevice(accounts.owner.account_id, { name: 'bad', role: 'client', pubkey: 'pk-bad' })
-    ).toThrow(/hex/)
+    ).toThrow(RE_HEX)
   })
 })
 
@@ -203,7 +206,7 @@ describe('підписаний transfer ownership', () => {
     })
     return {
       device: store.deviceByToken(device_token),
-      signTransfer: payload => sign(null, transferMessage(payload), privateKey).toString('base64')
+      signTransfer: payload => sign(null, transferMessage(payload), privateKey).toBase64()
     }
   }
 
@@ -222,7 +225,7 @@ describe('підписаний transfer ownership', () => {
         device: signer,
         signature: bad
       })
-    ).toThrow(/підпис/)
+    ).toThrow(RE_SIGNATURE)
     expect(store.memberRole('root-1', accounts.owner.account_id)).toBe('owner')
 
     core.transferOwnership('root-1', accounts.owner.account_id, accounts.approver.account_id, {
@@ -307,7 +310,7 @@ describe('bootstrapMembers', () => {
     // Повторний прогін: без нових запрошень і без зміни ролей.
     const again = core.bootstrapMembers(accounts.owner.account_id, 'root-1', entries)
     expect(again).toEqual({ added: [], invited: ['ghost@x'], kept: ['olena@x', 'viewer@x'] })
-    const pending = [...store.invitations.values()].filter(i => i.to_email === 'ghost@x')
+    const pending = store.invitations.values().filter(i => i.to_email === 'ghost@x').toArray()
     expect(pending).toHaveLength(1)
   })
 })
