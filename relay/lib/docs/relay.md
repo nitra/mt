@@ -3,7 +3,7 @@ type: JS Module
 title: relay.mjs
 resource: relay/lib/relay.mjs
 docgen:
-  crc: 7dec481f
+  crc: e8fe916b
   model: openai-codex/gpt-5.4-mini
   score: 100
   issues: judge:inaccurate:0.98

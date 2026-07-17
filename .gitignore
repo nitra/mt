@@ -32,3 +32,6 @@ packages/*/*.node
 # Python bytecode (випадкові артефакти, джерел .py у репо немає)
 __pycache__/
 *.pyc
+
+# PII-мапінг handle → email (operations.md) — ніколи в git
+.mt/directory.json

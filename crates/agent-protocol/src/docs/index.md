@@ -10,3 +10,4 @@ resource: crates/agent-protocol/src/
 | [envelope.rs](envelope.md)   | Rust Module |
 | [handshake.rs](handshake.md) | Rust Module |
 | [lib.rs](lib.md)             | Rust Module |
+| [transfers.rs](transfers.md) | Rust Module |

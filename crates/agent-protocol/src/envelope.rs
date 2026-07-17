@@ -151,6 +151,19 @@ pub enum Event {
     AuditPending {
         fact_ref: String,
     },
+    /// Ескалація «вгору»: записка власника гілки замовникові вузла
+    /// (owner-app, спека 260714). `from`/`to` — handles, як у git-файлах
+    /// (`escalation_NNN.md`); `to_account_id` резолвиться емітером через
+    /// git-ignored `.mt/directory.json` (PII у стрічку не тече — account_id
+    /// непрозорий) і потрібен relay для адресного push «потребує уваги».
+    Escalation {
+        from: String,
+        to: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        to_account_id: Option<Uuid>,
+        /// Шлях записки у теці вузла, напр. `escalation_001.md`.
+        reason_ref: String,
+    },
     Error {
         message: String,
     },
@@ -276,6 +289,12 @@ mod tests {
             },
             Event::AuditPending {
                 fact_ref: "refs/mt/runs/x/fact".into(),
+            },
+            Event::Escalation {
+                from: "olena".into(),
+                to: "vkozlov".into(),
+                to_account_id: Some(Uuid::from_u128(6)),
+                reason_ref: "escalation_001.md".into(),
             },
             Event::Error {
                 message: "boom".into(),

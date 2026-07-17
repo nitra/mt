@@ -3,7 +3,7 @@ type: Rust Module
 title: envelope.rs
 resource: crates/agent-protocol/src/envelope.rs
 docgen:
-  crc: 7f5cb0ad
+  crc: 56f75017
   model: openai-codex/gpt-5.4-mini
   score: 100
   issues: judge:inaccurate:0.99

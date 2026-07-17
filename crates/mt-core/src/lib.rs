@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub mod artifacts;
 pub mod claims;
 pub mod config;
+pub mod directory;
 pub mod frontmatter;
 pub mod ledger;
 pub mod lifecycle;

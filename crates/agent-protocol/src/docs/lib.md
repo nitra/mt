@@ -3,9 +3,8 @@ type: Rust Module
 title: lib.rs
 resource: crates/agent-protocol/src/lib.rs
 docgen:
-  crc: 78efc0e6
+  crc: 4844f2b9
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.97
   judgeModel: openai-codex/gpt-5.4-mini

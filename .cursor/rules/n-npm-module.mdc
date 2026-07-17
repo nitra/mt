@@ -37,6 +37,7 @@ Rego-пакети (запускаються через `npx @7n/rules fix`):
 ```json
 { "files": ["types"] }
 ```
+
 - `npm-publish.yml`:
 
 ```yaml
@@ -90,11 +91,13 @@ jobs:
         with:
           package: npm/package.json
 ```
+
 - `package.json`:
 
 ```json
 { "workspaces": ["npm"] }
 ```
+
 - `tsconfig.emit-types.json`:
 
 ```json

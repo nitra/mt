@@ -9,6 +9,7 @@
 pub mod approvals;
 pub mod envelope;
 pub mod handshake;
+pub mod transfers;
 
 pub use approvals::{
     sign_approval, verify_approval, ApprovalError, ApprovalPayload, Signature, SigningKey,
@@ -16,6 +17,7 @@ pub use approvals::{
 };
 pub use envelope::{ClaimInfo, Envelope, Event, Rect};
 pub use handshake::{check_protocol_version, ClientHello, ProtocolError, ServerHello, SessionInfo};
+pub use transfers::{sign_transfer, verify_transfer, TransferPayload};
 
 /// Поточна версія протоколу подій. v1/v2 — історія scaffold-spec; v3 —
 /// проміжний draft без `lang`. Несумісна версія відхиляється на хендшейку
