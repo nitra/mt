@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.0] - 2026-07-17
+
+### Added
+
+- Протокол v4 для multi-owner (owner-app, спека 260714): WS-кадри membership (invite/accept/decline/transfer_ownership/bootstrap_owners), Ed25519-підписаний акт transfer (mt-transfer-v4, дзеркальні sign_transfer/verify_transfer у agent-protocol і signing.mjs relay), push-модуль (тип 2 «запрошено», тип 3 «потребує уваги» + адресна Escalation), Event::Escalation у протоколі, directory-модуль mt-core (.mt/directory.json, handle → email поза git), валідація hex-pubkey пристроїв
+
+### Changed
+
+- Зафіксовано поточні зміни npm-пакета.
+
 ## [0.26.2] - 2026-07-17
 
 ### Changed
