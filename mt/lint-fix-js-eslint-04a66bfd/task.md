@@ -21,6 +21,7 @@ npx @7n/rules lint --no-fix --cwd ../.. js
 ## Inputs
 
 Target-файли:
+
 - `relay/lib/push.mjs`
 - `relay/lib/signing.mjs`
 - `relay/lib/tests/relay.test.mjs`
