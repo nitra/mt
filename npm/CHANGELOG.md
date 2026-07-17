@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.26.2] - 2026-07-17
+
+### Changed
+
+- fix(agent-core): фоновий читач стріму AcpClient — не приліплює prelude-банер
+
 ## [0.26.1] - 2026-07-16
 
 ### Changed
