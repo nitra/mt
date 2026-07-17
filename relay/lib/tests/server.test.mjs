@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+import { generateKeyPairSync, sign } from 'node:crypto'
 import { once } from 'node:events'
 
 import { WebSocket } from 'ws'
@@ -5,7 +7,17 @@ import { afterAll, beforeAll, expect, test } from 'vitest'
 
 import { RelayCore } from '../relay.mjs'
 import { startRelayServer } from '../server.mjs'
+import { transferMessage } from '../signing.mjs'
 import { InMemoryStore } from '../store.mjs'
+
+/**
+ * Детермінований hex-pubkey (32 байти) з імені.
+ * @param {string} name імʼя пристрою
+ * @returns {string} hex-рядок 64 символи
+ */
+function fakeKey(name) {
+  return Buffer.from(name, 'utf8').toString('hex').padEnd(64, '0').slice(0, 64)
+}
 
 const RE_HELLO = /hello/
 const RE_VIEWER = /viewer/
@@ -44,20 +56,31 @@ async function roundtrip(socket, frame) {
   return JSON.parse(String(raw))
 }
 
+/** @type {object} */
+let owner
+/** @type {object} */
+let approver
+/** @type {import('node:crypto').KeyObject} */
+let ownerPrivateKey
+
 beforeAll(async () => {
-  const owner = store.createAccount({ email: 'owner@x' })
+  owner = store.createAccount({ email: 'owner@x' })
   const viewer = store.createAccount({ email: 'viewer@x' })
+  approver = store.createAccount({ email: 'approver@x' })
   store.createTask('root-1', owner.account_id)
   store.setMemberRole('root-1', viewer.account_id, 'viewer')
+  store.setMemberRole('root-1', approver.account_id, 'approver')
+  const pair = generateKeyPairSync('ed25519')
+  ownerPrivateKey = pair.privateKey
   hostToken = store.registerDevice(owner.account_id, {
     name: 'mac',
     role: 'host',
-    pubkey: 'pk-mac'
+    pubkey: pair.publicKey.export({ format: 'der', type: 'spki' }).subarray(-32).toString('hex')
   }).device_token
   viewerToken = store.registerDevice(viewer.account_id, {
     name: 'tab',
     role: 'client',
-    pubkey: 'pk-tab'
+    pubkey: fakeKey('tab')
   }).device_token
   server = await startRelayServer(new RelayCore({ store }))
 })
@@ -112,7 +135,77 @@ test('pubkeys-кадр: pubkey-и approver+ пристроїв для перев
   expect(reply.kind).toBe('pubkeys')
   expect(reply.root).toBe('root-1')
   // Owner (approver+) — так; viewer — ні.
-  expect(reply.pubkeys.map(k => k.pubkey)).toEqual(['pk-mac'])
+  expect(reply.pubkeys.map(k => k.account_id)).toEqual([owner.account_id])
+  expect(reply.pubkeys[0].pubkey).toMatch(/^[0-9a-f]{64}$/)
+  socket.close()
+})
+
+test('membership через WS: invite → accept новим акаунтом', async () => {
+  const socket = await connect()
+  await roundtrip(socket, { kind: 'hello', device_token: hostToken })
+  const invited = await roundtrip(socket, { kind: 'invite', root: 'root-1', email: 'new@x', role: 'host' })
+  expect(invited).toMatchObject({ kind: 'ok', status: 'pending' })
+
+  const newcomer = store.createAccount({ email: 'new@x' })
+  const token = store.registerDevice(newcomer.account_id, {
+    name: 'new-phone',
+    role: 'client',
+    pubkey: fakeKey('new-phone')
+  }).device_token
+  const other = await connect()
+  await roundtrip(other, { kind: 'hello', device_token: token })
+  const accepted = await roundtrip(other, { kind: 'accept', invitation_id: invited.invitation_id })
+  expect(accepted).toEqual({ kind: 'ok', root: 'root-1', role: 'host' })
+  expect(store.memberRole('root-1', newcomer.account_id)).toBe('host')
+  socket.close()
+  other.close()
+})
+
+test('transfer_ownership через WS: без підпису — error, з підписом — передано', async () => {
+  const socket = await connect()
+  await roundtrip(socket, { kind: 'hello', device_token: hostToken })
+
+  const unsigned = await roundtrip(socket, {
+    kind: 'transfer_ownership',
+    root: 'root-1',
+    to_account: approver.account_id
+  })
+  expect(unsigned.kind).toBe('error')
+  expect(unsigned.message).toMatch(/підпис/)
+
+  const signature = sign(
+    null,
+    transferMessage({ root: 'root-1', fromAccount: owner.account_id, toAccount: approver.account_id }),
+    ownerPrivateKey
+  ).toString('base64')
+  const transferred = await roundtrip(socket, {
+    kind: 'transfer_ownership',
+    root: 'root-1',
+    to_account: approver.account_id,
+    signature
+  })
+  expect(transferred).toEqual({ kind: 'ok', transferred: 'root-1', to_account: approver.account_id })
+  expect(store.memberRole('root-1', approver.account_id)).toBe('owner')
+  expect(store.memberRole('root-1', owner.account_id)).toBe('host')
+  socket.close()
+})
+
+test('bootstrap_owners через WS: сідинг з owner:-розмітки (новим owner-ом)', async () => {
+  // Після transfer вище owner кореня — approver; реєструємо його пристрій.
+  const token = store.registerDevice(approver.account_id, {
+    name: 'approver-mac',
+    role: 'client',
+    pubkey: fakeKey('approver-mac')
+  }).device_token
+  const socket = await connect()
+  await roundtrip(socket, { kind: 'hello', device_token: token })
+  const reply = await roundtrip(socket, {
+    kind: 'bootstrap_owners',
+    root: 'root-1',
+    entries: [{ email: 'viewer@x', role: 'owner' }, { email: 'ghost@x' }]
+  })
+  expect(reply.kind).toBe('ok')
+  expect(reply.bootstrap).toEqual({ added: [], invited: ['ghost@x'], kept: ['viewer@x'] })
   socket.close()
 })
 

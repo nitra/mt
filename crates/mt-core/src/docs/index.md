@@ -9,6 +9,7 @@ resource: crates/mt-core/src/
 | [artifacts.rs](artifacts.md)       | Rust Module |
 | [claims.rs](claims.md)             | Rust Module |
 | [config.rs](config.md)             | Rust Module |
+| [directory.rs](directory.md)       | Rust Module |
 | [frontmatter.rs](frontmatter.md)   | Rust Module |
 | [ledger.rs](ledger.md)             | Rust Module |
 | [lib.rs](lib.md)                   | Rust Module |

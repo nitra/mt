@@ -10,6 +10,8 @@
 import { Buffer } from 'node:buffer'
 import { randomUUID, timingSafeEqual } from 'node:crypto'
 
+import { PUBKEY_RE } from './signing.mjs'
+
 /**
  * Порівняння секретних токенів за сталий час (захист від timing-атак).
  * @param {string} a перший токен
@@ -75,11 +77,18 @@ export class InMemoryStore {
 
   /**
    * Реєструє пристрій акаунта: `{name, role, pubkey} → device_token` (access.md).
+   * Pubkey — hex 32-байтовий Ed25519 (формат, який очікує pubkey-кеш хоста
+   * в agent-server): невалідний формат відхиляється одразу, а не на першій
+   * невдалій перевірці підпису.
    * @param {string} accountId акаунт-власник
    * @param {{ name: string, role: 'host'|'client', pubkey: string }} params дані пристрою
    * @returns {{device_id: string, device_token: string}} ідентифікатор і токен пристрою
+   * @throws {Error} pubkey не hex-32
    */
   registerDevice(accountId, { name, role, pubkey }) {
+    if (!PUBKEY_RE.test(pubkey ?? '')) {
+      throw new Error('registerDevice відхилено: pubkey має бути hex Ed25519 (32 байти)')
+    }
     const device = {
       device_id: randomUUID(),
       account_id: accountId,
@@ -196,6 +205,26 @@ export class InMemoryStore {
    */
   invitationById(invitationId) {
     return this.invitations.get(invitationId) ?? null
+  }
+
+  /**
+   * Відкрите (pending) запрошення email-а у задачу — для ідемпотентного
+   * bootstrap: повторний прогін не плодить дублікати.
+   * @param {string} rootNodeHash кореневий вузол
+   * @param {string} toEmail email запрошеного
+   * @returns {object | null} pending-запрошення або null
+   */
+  pendingInvitationFor(rootNodeHash, toEmail) {
+    for (const invitation of this.invitations.values()) {
+      if (
+        invitation.root_node_hash === rootNodeHash &&
+        invitation.to_email === toEmail &&
+        invitation.status === 'pending'
+      ) {
+        return invitation
+      }
+    }
+    return null
   }
 
   /**
