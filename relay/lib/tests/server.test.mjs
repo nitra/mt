@@ -21,6 +21,8 @@ function fakeKey(name) {
 
 const RE_HELLO = /hello/
 const RE_VIEWER = /viewer/
+const RE_HEX_KEY = /^[0-9a-f]{64}$/
+const RE_SIGNATURE = /підпис/
 // Тести ходять на локальний loopback без TLS; sdl-правило про insecure-URL
 // націлене на продакшн-адреси, тому схему складаємо окремо від хоста.
 const WS_SCHEME = 'ws:'
@@ -136,7 +138,7 @@ test('pubkeys-кадр: pubkey-и approver+ пристроїв для перев
   expect(reply.root).toBe('root-1')
   // Owner (approver+) — так; viewer — ні.
   expect(reply.pubkeys.map(k => k.account_id)).toEqual([owner.account_id])
-  expect(reply.pubkeys[0].pubkey).toMatch(/^[0-9a-f]{64}$/)
+  expect(reply.pubkeys[0].pubkey).toMatch(RE_HEX_KEY)
   socket.close()
 })
 
@@ -171,13 +173,13 @@ test('transfer_ownership через WS: без підпису — error, з пі
     to_account: approver.account_id
   })
   expect(unsigned.kind).toBe('error')
-  expect(unsigned.message).toMatch(/підпис/)
+  expect(unsigned.message).toMatch(RE_SIGNATURE)
 
   const signature = sign(
     null,
     transferMessage({ root: 'root-1', fromAccount: owner.account_id, toAccount: approver.account_id }),
     ownerPrivateKey
-  ).toString('base64')
+  ).toBase64()
   const transferred = await roundtrip(socket, {
     kind: 'transfer_ownership',
     root: 'root-1',

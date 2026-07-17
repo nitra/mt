@@ -39,7 +39,7 @@ export function verifySignature(pubkeyHex, message, signatureBase64) {
   if (!PUBKEY_RE.test(pubkeyHex)) return false
   let signature
   try {
-    signature = Buffer.from(signatureBase64, 'base64')
+    signature = Uint8Array.fromBase64(signatureBase64)
   } catch {
     return false
   }
