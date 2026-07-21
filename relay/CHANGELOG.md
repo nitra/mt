@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1] - 2026-07-21
+
+### Fixed
+
+- eslint (unicorn/prefer-uint8array-base64, unicorn/prefer-iterator-to-array, max-classes-per-file) на релей-модулях v4: DevPushSink винесено у push-sink.mjs, Buffer base64 → Uint8Array.fromBase64/toBase64, regex-літерали тестів — у module-scope, iterator.toArray() замість spread
+
 ## [0.8.0] - 2026-07-17
 
 ### Added
