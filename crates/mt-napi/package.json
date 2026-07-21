@@ -10,7 +10,7 @@
     "build:debug": "napi build --platform"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.6.0",
+    "@napi-rs/cli": "^3.7.4",
     "ajv": "^8.20.0"
   },
   "engines": {
