@@ -21,9 +21,19 @@
         "ajv": "^8.20.0",
       },
     },
+    "layers": {
+      "name": "@7n/layers",
+      "version": "0.1.0",
+      "dependencies": {
+        "@7n/llm-lib": "^2.5.0",
+      },
+      "optionalDependencies": {
+        "@earendil-works/pi-ai": "0.80.2",
+      },
+    },
     "npm": {
       "name": "@7n/mt",
-      "version": "0.17.0",
+      "version": "0.19.0",
       "bin": {
         "mt": "bin/mt.js",
       },
@@ -34,7 +44,7 @@
     },
     "relay": {
       "name": "@7n/relay",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "ws": "^8.18.0",
       },
@@ -44,7 +54,9 @@
     "unrs-resolver",
   ],
   "packages": {
-    "@7n/llm-lib": ["@7n/llm-lib@2.0.1", "", { "peerDependencies": { "@earendil-works/pi-ai": "~0.80.2", "@earendil-works/pi-coding-agent": "~0.80.2" }, "optionalPeers": ["@earendil-works/pi-ai", "@earendil-works/pi-coding-agent"], "bin": { "n-llm-chains-report": "bin/chains-report.mjs" } }, "sha512-eYGN9cRGfno7BgpGJoGd6Mbm40s8jlezgaWp0b8IL44i7g+a3FuMPayljFxkCM/YkZUKcA78ssm4xFi5MsU9lQ=="],
+    "@7n/layers": ["@7n/layers@workspace:layers"],
+
+    "@7n/llm-lib": ["@7n/llm-lib@2.5.0", "", { "peerDependencies": { "@earendil-works/pi-ai": "~0.80.2", "@earendil-works/pi-coding-agent": "~0.80.2" }, "optionalPeers": ["@earendil-works/pi-ai", "@earendil-works/pi-coding-agent"], "bin": { "n-llm-chains-report": "bin/chains-report.mjs" } }, "sha512-rfaqheez1o1QlzoUra41xiK/T2CA6zaS53GyXxQGUZckRVaqCiqDSsESB8g4vCMTgGLP5E5yq+74rL0OZk3Iiw=="],
 
     "@7n/mt": ["@7n/mt@workspace:npm"],
 
@@ -2123,6 +2135,8 @@
     "@microsoft/eslint-plugin-sdl/eslint-plugin-n": ["eslint-plugin-n@17.10.3", "", { "dependencies": { "@eslint-community/eslint-utils": "^4.4.0", "enhanced-resolve": "^5.17.0", "eslint-plugin-es-x": "^7.5.0", "get-tsconfig": "^4.7.0", "globals": "^15.8.0", "ignore": "^5.2.4", "minimatch": "^9.0.5", "semver": "^7.5.3" }, "peerDependencies": { "eslint": ">=8.23.0" } }, "sha512-ySZBfKe49nQZWR1yFaA0v/GsH6Fgp8ah6XV0WDz6CN8WO0ek4McMzb7A2xnf4DCYV43frjCygvb9f/wx7UUxRw=="],
 
     "@microsoft/eslint-plugin-sdl/eslint-plugin-security": ["eslint-plugin-security@1.4.0", "", { "dependencies": { "safe-regex": "^1.1.0" } }, "sha512-xlS7P2PLMXeqfhyf3NpqbvbnW04kN8M9NtmhpR3XGyOvt/vNKS7XPXT5EDbwKW9vCjWH4PpfQvgD/+JgN0VJKA=="],
+
+    "@nitra/cursor/@7n/llm-lib": ["@7n/llm-lib@2.0.1", "", { "peerDependencies": { "@earendil-works/pi-ai": "~0.80.2", "@earendil-works/pi-coding-agent": "~0.80.2" }, "optionalPeers": ["@earendil-works/pi-ai", "@earendil-works/pi-coding-agent"], "bin": { "n-llm-chains-report": "bin/chains-report.mjs" } }, "sha512-eYGN9cRGfno7BgpGJoGd6Mbm40s8jlezgaWp0b8IL44i7g+a3FuMPayljFxkCM/YkZUKcA78ssm4xFi5MsU9lQ=="],
 
     "@nitra/cursor/@7n/mt": ["@7n/mt@0.5.1", "", { "optionalDependencies": { "@7n/mt-darwin-arm64": "0.5.1", "@7n/mt-linux-x64": "0.5.1" }, "bin": { "mt": "bin/mt.js" } }, "sha512-fIP75AODAX6ri+Geznpph0BJR0kkOWeCarSNJCibLCPH3vnfbEvHC9/MgTk3zg9cYIGEFAHd1gkCEnOekexIdg=="],
 
