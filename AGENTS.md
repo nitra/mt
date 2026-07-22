@@ -9,17 +9,12 @@ This file is the entry point for all AI agents working with this repository.
 The primary development rules are stored in the Cursor rules directory:
 
 - .cursor/rules/n-adr.mdc
-- .cursor/rules/n-bun.mdc
 - .cursor/rules/n-changelog.mdc
 - .cursor/rules/n-ci4.mdc
-- .cursor/rules/n-doc-files.mdc
 - .cursor/rules/n-feedback.mdc
 - .cursor/rules/n-ga.mdc
 - .cursor/rules/n-image-compress.mdc
-- .cursor/rules/n-js-run.mdc
-- .cursor/rules/n-js.mdc
 - .cursor/rules/n-security.mdc
-- .cursor/rules/n-test.mdc
 - .cursor/rules/n-text.mdc
 - .cursor/rules/n-worktree.mdc
 
@@ -27,7 +22,6 @@ The primary development rules are stored in the Cursor rules directory:
 
 - `.cursor/skills/n-adr-normalize/SKILL.md` — Ручний запуск ADR-нормалізації — обхід порогу й min-interval, прогон одного батчу чернеток через LLM, перегляд результату через git diff
 - `.cursor/skills/n-brainstorming/SKILL.md` — Фасилітація структурованої генерації ідей для будь-якої теми — продуктові фічі, архітектурні рішення, бізнес-стратегія, назви, маркетинг, вирішення проблем. ОБОВ'ЯЗКОВО використовуй цей skill, коли користувач каже "давай побрейнштормимо", "накидай ідей", "хочу подумати над X", "які є варіанти для...", просить допомогти придумати щось з нуля, або коли задача явно на стадії "ще не зрозуміло що робити" (на відміну від "вже зрозуміло що робити, допоможи зробити"). Не використовуй для чистого уточнення вимог до вже визначеної фічі (це просто уточнюючі питання, без техніки генерації) і не використовуй, якщо користувач вже приніс готове рішення і просить його реалізувати.
-- `.cursor/skills/n-doc-files/SKILL.md` — Обовʼязковий крок задачі (як lint): для кожного зміненого/нового кодового файлу (js/mjs/ts/vue/py) JS-оркестрована генерація лаконічної поведінкової української md-документації у теку docs/ поряд із кодом, зі звіркою застарілості за CRC у frontmatter
 - `.cursor/skills/n-lint/SKILL.md` — Запустити дельта-лінт (npx @7n/rules lint) по змінених файлах vs origin, виправити порушення й підтвердити чистий вихід
 - `.cursor/skills/n-llm-patch/SKILL.md` — Підготовка самодостатнього текстового промпта для іншого Claude/Cursor-агента — read-only аналіз CWD без жодних змін у поточному репо
 - `.cursor/skills/n-publish-telegram/SKILL.md` — Підготовка матеріалу з поточного контексту для публікації в Telegram-каналі команди
@@ -38,10 +32,8 @@ The primary development rules are stored in the Cursor rules directory:
 Generated from the root `package.json` on each `npx @7n/rules` sync. Prefer `bun run <script>` for project scripts.
 
 - **Залежності**: `bun i`
-- **test**: `bun run test`
 - **Оновити правила та AGENTS.md** (після змін у правилах/шаблоні CLI): `npx @7n/rules`
 - **Перевірки правил (programmatic)**: `npx @7n/rules lint`
-- **knip (невикористані залежності та експорти)**: `bunx knip`
 
 ## Instructions for all agents
 

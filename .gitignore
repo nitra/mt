@@ -8,14 +8,3 @@ dist/
 .claude/hooks/.normalize.lock
 .claude/worktrees/
 .worktrees/
-**/.stryker-tmp/
-
-# Stryker mutation testing (test.mdc)
-**/reports/stryker/
-
-# Test artifacts: coverage (test.mdc)
-**/coverage/
-
-# Python bytecode (випадкові артефакти, джерел .py у репо немає)
-__pycache__/
-*.pyc
