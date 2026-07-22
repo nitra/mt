@@ -26,6 +26,7 @@ docgen:
 * [Мандати й людино-центрична ескалація](architecture/mandates.md) - карта мандатів, профілі людей і моделей, decision-request, маршрутизація за важелем, прецедентний рушій
 * [Багатомовність (i18n)](architecture/i18n.md) - base-канон і derived-переклади, worktree-матеріалізація, contract-aware перекладач
 * [Мета-цикл (retro)](architecture/retro.md) - аналіз audit trail, приватні opt-in пропозиції виконавцю
+* [Повторювані задачі (recurrence)](architecture/recurrence.md) - шаблон + інстанси: розклад поза графом, кожне спрацювання — звичайний кореневий вузол
 * [Експлуатація](architecture/operations.md) - CLI, конфігурація, security model, відмовостійкість, наскрізні сценарії
 * [Референсний стек](architecture/stack.md) - технологічні рішення реалізації (Rust device-шар, Bun relay/`@7n/mt`)
 

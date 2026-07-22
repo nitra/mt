@@ -13,6 +13,7 @@
 * [Мандати й людино-центрична ескалація](mandates.md) - карта мандатів, профілі людей і моделей, decision-request, маршрутизація за важелем, прецедентний рушій
 * [Багатомовність (i18n)](i18n.md) - base-канон і derived-переклади у `refs/mt/i18n`, worktree-матеріалізація, contract-aware перекладач, authored-захист
 * [Мета-цикл (retro)](retro.md) - ретроспективний аналіз audit trail, приватні opt-in пропозиції виконавцю, застосування штатними правками
+* [Повторювані задачі (recurrence)](recurrence.md) - мутабельний шаблон у `.mt/templates/`, матеріалізація інстансів планувальником wake, політики overlap/catchup/retention
 * [Експлуатація](operations.md) - CLI-контракт, конфігурація, монорепо, security model, відмовостійкість, bootstrap, Definition of Done
 
 ## Довідково
