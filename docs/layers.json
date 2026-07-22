@@ -1,0 +1,44 @@
+{
+  "$schema": "../layers/schemas/layers.schema.json",
+  "version": 1,
+  "tier": "min",
+  "maxTokens": 4096,
+  "i18n": { "baseLang": "uk", "langs": ["en"] },
+  "docs": {
+    "overview/direction.md": {
+      "layer": "L2",
+      "title": "Мета і шлях",
+      "sources": ["vision.md", "roadmap.md"]
+    },
+    "overview/core.md": {
+      "layer": "L2",
+      "title": "Ядро: граф задач і координація через git",
+      "sources": ["architecture/overview.md", "architecture/graph.md", "architecture/git.md"]
+    },
+    "overview/runtime.md": {
+      "layer": "L2",
+      "title": "Виконання: хости, сесії, поверхні",
+      "sources": ["architecture/runtime.md", "architecture/surfaces.md", "architecture/stack.md"]
+    },
+    "overview/people.md": {
+      "layer": "L2",
+      "title": "Люди, доступ, супровід",
+      "sources": [
+        "architecture/access.md",
+        "architecture/i18n.md",
+        "architecture/retro.md",
+        "architecture/operations.md"
+      ]
+    },
+    "overview/index.md": {
+      "layer": "L1",
+      "title": "Як це працює",
+      "sources": ["overview/direction.md", "overview/core.md", "overview/runtime.md", "overview/people.md"]
+    },
+    "index.md": {
+      "layer": "L0",
+      "mode": "fragment",
+      "sources": ["overview/index.md"]
+    }
+  }
+}

@@ -1,21 +1,6 @@
 amends "package://github.com/jdx/hk/releases/download/v1.42.0/hk@1.42.0#/Config.pkl"
 
-local linters = new Mapping<String, Step> {
-    ["npm-tsc-types"] {
-        glob = List(
-            "npm/tsconfig.emit-types.json",
-            "npm/index.js",
-            "npm/types/index.d.ts"
-        )
-        check_first = false
-        fix = "cd npm && bunx -p typescript tsc -p tsconfig.emit-types.json && bunx oxfmt types"
-    }
-    ["npm-changelog"] {
-        glob = List("npm/**")
-        check_first = false
-        fix = "N_RULES_CHANGELOG_AUTOFIX=1 npx @7n/rules lint changelog"
-    }
-}
+local linters = new Mapping<String, Step> {}
 
 hooks {
     ["pre-commit"] {

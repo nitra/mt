@@ -14,9 +14,7 @@
     "*.svg",
     "**/k8s/**/*.yaml",
     "docs/adr/**",
-    "**/dist/**",
-    "target/**",
-    "Cargo.lock"
+    "**/dist/**"
   ],
   "words": [
     "aaif",
