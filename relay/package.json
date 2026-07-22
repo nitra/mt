@@ -3,6 +3,7 @@
   "version": "0.8.1",
   "private": true,
   "description": "Relay-координатор MT: кімнати Envelope, membership, pubkey-роздача (M2)",
+  "license": "ISC",
   "type": "module",
   "engines": {
     "node": ">=24",

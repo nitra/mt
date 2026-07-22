@@ -149,3 +149,5 @@ jobs:
         uses: JS-DevTools/npm-publish@v4.1.5
         with:
           package: npm/package.json
+      - name: Release (bump + CHANGELOG + tag)
+        run: bunx n-rules release

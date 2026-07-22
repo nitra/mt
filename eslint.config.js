@@ -37,6 +37,15 @@ export default [
       ]
     }
   },
+  // Grandfather: три legacy-команди перевищували поріг cognitive-complexity ще ДО появи
+  // гейта `n-rules lint js` у CI (canon-snippet lint-js.yml, mixin @7n/rules-lang-js).
+  // Рефакторинг — окрема задача; для нового коду правило діє скрізь.
+  {
+    files: ['npm/lib/commands/scan.mjs', 'npm/lib/commands/setup.mjs', 'npm/lib/commands/watch.mjs'],
+    rules: {
+      'sonarjs/cognitive-complexity': 'off'
+    }
+  },
   // Тест-хелпери не потребують JSDoc. `jsdoc/require-jsdoc` (warning) автофіксом вставляє
   // порожні `/** */` заглушки, які oxlint (`jsdoc/require-param`/`require-returns`, deny)
   // потім відхиляє → `bun run lint` неідемпотентний (oxlint --fix && eslint --fix). Вимикаємо

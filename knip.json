@@ -2,7 +2,16 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "project": ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"],
   "ignore": ["**/__fixtures__/**"],
-  "ignoreDependencies": ["@nitra/cspell-dict", "/@cspell\\/dict-.+/", "ajv", "globals", "graphql"],
+  "ignoreDependencies": [
+    "@7n/rules-ci-github",
+    "@7n/rules-lang-js",
+    "@7n/rules-lang-rust",
+    "@nitra/cspell-dict",
+    "/@cspell\\/dict-.+/",
+    "ajv",
+    "globals",
+    "graphql"
+  ],
   "ignoreBinaries": [
     "actionlint",
     "cspell",
