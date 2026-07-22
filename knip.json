@@ -28,6 +28,7 @@
         "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
         ".markdownlint-cli2.{jsonc,cjs,mjs}",
         "commitlint.config.{js,cjs,mjs}",
+        "stryker.config.mjs",
         ".pi/extensions/**/index.ts"
       ]
     },

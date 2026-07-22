@@ -23,16 +23,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "workspaces": [
-    "layers"
-  ],
   "type": "module",
   "files": [
     "docs",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "layers": "bun ./layers/lib/cli.mjs",
+    "pretest": "bun install --cwd layers",
     "test": "bunx --bun vitest run",
     "oxfmt": "oxfmt .",
     "coverage": "npx @7n/test coverage"
