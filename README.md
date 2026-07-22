@@ -9,8 +9,18 @@
 Специфікація і реалізація рознесені по трьох репозиторіях:
 
 - **[nitra/mt-rust](https://github.com/nitra/mt-rust)** — повна реалізація протоколу: crates (ядро, agent-server, agent-protocol, mt-napi, mt-scanner), relay, CI збірки бінарників.
-- **[nitra/mt-js](https://github.com/nitra/mt-js)** — npm-клієнт [`@7n/mt`](https://www.npmjs.com/package/@7n/mt).
+- **[nitra/mt-js](https://github.com/nitra/mt-js)** — JS-клієнт; наразі не публікується в npm.
 - **nitra/mt** (цей репозиторій) — тільки специфікація: протокол ([`docs/`](docs/)) і рушій шарової документації ([`layers/`](layers/)), яким вона побудована.
+
+## npm-пакет `@7n/mt`
+
+Починаючи з версії **0.29.0**, npm-пакет [`@7n/mt`](https://www.npmjs.com/package/@7n/mt) — це сама специфікація (вміст `docs/` + цей README), а не CLI. Версії **≤ 0.28.0** були CLI-утилітою; її код переїхав у [nitra/mt-js](https://github.com/nitra/mt-js) і наразі не публікується в npm.
+
+```sh
+npm i @7n/mt
+```
+
+Точка входу після встановлення — `node_modules/@7n/mt/docs/index.md`.
 
 ## `docs/`
 

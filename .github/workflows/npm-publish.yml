@@ -1,0 +1,54 @@
+name: npm-publish
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'package.json'
+    branches:
+      - main
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions: {} # deny-all за замовчуванням; job оголошує потрібне
+
+jobs:
+  # ── Release-bump + публікація @7n/mt (спека) ──────────────────────────────
+  release-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit-back версії + git-тег
+      id-token: write # OIDC + provenance
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false # токен для push — через окремий крок, не залишковий credential
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-bun-deps
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24' # includes npm@11.6.0
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Configure git identity + push auth
+        # persist-credentials лишається false (ga-rule, безпека): checkout не зберігає токен.
+        # Release робить commit-back `git push`, тож даємо job-scoped ephemeral GITHUB_TOKEN
+        # явно через remote-url (а не persisted у git config усього прогону).
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+
+      - name: Release (bump + CHANGELOG + tag)
+        run: bunx n-cursor release
+
+      - name: Publish package
+        uses: JS-DevTools/npm-publish@v4.1.5
+        with:
+          package: package.json

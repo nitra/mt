@@ -1,11 +1,36 @@
 {
-  "name": "mono",
-  "version": "1.0.0",
-  "private": true,
+  "name": "@7n/mt",
+  "version": "0.28.0",
+  "description": "Специфікація протоколу MT — граф задач, координація через git, agent-runtime. Реалізації: nitra/mt-rust (повна), nitra/mt-js (JS-клієнт, наразі не публікується)",
+  "keywords": [
+    "7n",
+    "mt",
+    "spec",
+    "protocol",
+    "agent",
+    "task-graph"
+  ],
+  "homepage": "https://github.com/nitra/mt#readme",
+  "bugs": {
+    "url": "https://github.com/nitra/mt/issues"
+  },
+  "license": "ISC",
+  "author": "vitaliytv@nitralabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitra/mt.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "workspaces": [
     "layers"
   ],
   "type": "module",
+  "files": [
+    "docs",
+    "README.md"
+  ],
   "scripts": {
     "layers": "bun ./layers/lib/cli.mjs",
     "test": "bunx --bun vitest run",
