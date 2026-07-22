@@ -1,5 +1,5 @@
 {
-  "$schema": "../layers/schemas/layers.schema.json",
+  "$schema": "https://raw.githubusercontent.com/nitra/mt-rust/main/layers/schemas/layers.schema.json",
   "version": 1,
   "tier": "min",
   "maxTokens": 4096,

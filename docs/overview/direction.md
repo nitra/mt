@@ -1,7 +1,6 @@
 ---
 type: layered-doc
 layer: L2
-title: Мета і шлях
 timestamp: 2026-07-22
 layers:
   model: omlx/gemma-4-e4b-it-OptiQ-4bit

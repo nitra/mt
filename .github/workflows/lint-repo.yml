@@ -1,19 +1,10 @@
-name: Lint JS
+name: Lint repo-wide
 
 on:
   push:
     branches:
       - dev
       - main
-    paths:
-      - '**/*.js'
-      - '**/*.mjs'
-      - '**/*.cjs'
-      - '**/*.jsx'
-      - '**/*.ts'
-      - '**/*.tsx'
-      - '**/*.vue'
-      - '**/eslint.config.*'
 
   pull_request:
     branches:
@@ -25,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  eslint:
+  lint-repo:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,9 +27,5 @@ jobs:
 
       - uses: ./.github/actions/setup-bun-deps
 
-      - name: Eslint
-        run: |
-          bunx oxlint
-          bunx eslint .
-          bunx jscpd .
-          bunx knip --no-config-hints
+      - name: Repo-wide lint
+        run: bunx n-rules lint --repo-wide --no-fix

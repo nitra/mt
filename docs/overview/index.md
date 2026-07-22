@@ -1,7 +1,6 @@
 ---
 type: layered-doc
 layer: L1
-title: Як це працює
 timestamp: 2026-07-22
 layers:
   model: openai-codex/gpt-5.5
