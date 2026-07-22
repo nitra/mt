@@ -28,19 +28,12 @@
         "markdownlint-cli2.config.{js,mjs,cjs,jsonc}",
         ".markdownlint-cli2.{jsonc,cjs,mjs}",
         "commitlint.config.{js,cjs,mjs}",
+        "stryker.config.mjs",
         ".pi/extensions/**/index.ts"
       ]
     },
-    "npm": {
-      "entry": ["bin/7.js", "index.js", "stryker.config.mjs", "**/*.test.{js,mjs}"],
-      "project": ["**/*.{js,mjs}"]
-    },
-    "crates/mt-napi": {
-      "entry": ["stryker.config.mjs", "**/*.test.{js,mjs}"],
-      "project": ["**/*.{js,mjs}"]
-    },
-    "relay": {
-      "entry": ["lib/relay.mjs", "stryker.config.mjs", "**/*.test.{js,mjs}"],
+    "layers": {
+      "entry": ["lib/cli.mjs", "stryker.config.mjs", "**/*.test.{js,mjs}"],
       "project": ["**/*.{js,mjs}"]
     }
   }

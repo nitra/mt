@@ -18,8 +18,6 @@ The primary development rules are stored in the Cursor rules directory:
 - .cursor/rules/n-image-compress.mdc
 - .cursor/rules/n-js-run.mdc
 - .cursor/rules/n-js.mdc
-- .cursor/rules/n-npm-module.mdc
-- .cursor/rules/n-rust.mdc
 - .cursor/rules/n-security.mdc
 - .cursor/rules/n-test.mdc
 - .cursor/rules/n-text.mdc
@@ -41,7 +39,6 @@ Generated from the root `package.json` on each `npx @7n/rules` sync. Prefer `bun
 
 - **Залежності**: `bun i`
 - **test**: `bun run test`
-- **start**: `bun run start`
 - **Оновити правила та AGENTS.md** (після змін у правилах/шаблоні CLI): `npx @7n/rules`
 - **Перевірки правил (programmatic)**: `npx @7n/rules lint`
 - **knip (невикористані залежності та експорти)**: `bunx knip`

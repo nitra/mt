@@ -1,26 +1,45 @@
 {
-  "name": "mono",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "npm",
-    "relay",
-    "layers",
-    "crates/mt-napi"
+  "name": "@7n/mt",
+  "version": "0.28.0",
+  "description": "Специфікація протоколу MT — граф задач, координація через git, agent-runtime. Реалізації: nitra/mt-rust (повна), nitra/mt-js (JS-клієнт, наразі не публікується)",
+  "keywords": [
+    "7n",
+    "mt",
+    "spec",
+    "protocol",
+    "agent",
+    "task-graph"
   ],
+  "homepage": "https://github.com/nitra/mt#readme",
+  "bugs": {
+    "url": "https://github.com/nitra/mt/issues"
+  },
+  "license": "ISC",
+  "author": "vitaliytv@nitralabs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nitra/mt.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
+  "files": [
+    "docs",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "start": "bun ./npm/bin/mt.js",
     "layers": "bun ./layers/lib/cli.mjs",
+    "pretest": "bun install --cwd layers",
     "test": "bunx --bun vitest run",
     "oxfmt": "oxfmt .",
     "coverage": "npx @7n/test coverage"
   },
   "devDependencies": {
-    "@7n/rules": "^1.36.1",
+    "@7n/rules": "^1.43.1",
     "@7n/rules-ci-github": "^1.9.0",
     "@7n/rules-lang-js": "^0.9.0",
-    "@7n/rules-lang-rust": "^0.6.1",
     "@nitra/cspell-dict": "^2.2.2",
     "@nitra/eslint-config": "^3.10.3",
     "@stryker-mutator/vitest-runner": "^9.6.1",

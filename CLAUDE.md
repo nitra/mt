@@ -16,8 +16,6 @@
 @.cursor/rules/n-image-compress.mdc
 @.cursor/rules/n-js-run.mdc
 @.cursor/rules/n-js.mdc
-@.cursor/rules/n-npm-module.mdc
-@.cursor/rules/n-rust.mdc
 @.cursor/rules/n-security.mdc
 @.cursor/rules/n-test.mdc
 @.cursor/rules/n-text.mdc
