@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.0] - 2026-07-22
+
+### Changed
+
+- Максимально чистий spec-репо: прибрано layers/ (переїхав у nitra/mt-rust), тести, JS-лінт-тулінг і відповідні cursor-правила/скіли; залишились лише docs/ і md-лінт-тулінг. Виправлено md-борг (cspell/markdownlint) на docs/architecture, docs/overview, docs/roadmap.en.md.
+
 ## [0.29.0] - 2026-07-22
 
 ### Changed
