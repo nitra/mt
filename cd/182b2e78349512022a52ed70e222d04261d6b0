@@ -1,0 +1,21 @@
+npm/docs/log.md
+  s_ff5b5e7c007ed5::t_fc0396b4d87085 5
+npm/docs/architecture/recurrence.md
+  s_ff5b5e7c007ed5::t_2ad79d3a768df4 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "cd182b2e78349512022a52ed70e222d04261d6b0",
+  "prompts": {},
+  "sessions": {
+    "s_ff5b5e7c007ed5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "241a7d30-87e3-4259-9deb-551aae8ba24b",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
