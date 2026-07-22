@@ -1,0 +1,43 @@
+npm/docs/log.md
+  s_ff5b5e7c007ed5::t_3b5de84f15e26e 3-4,6
+  s_ff5b5e7c007ed5::t_fc0396b4d87085 5
+npm/docs/architecture/operations.md
+  s_ff5b5e7c007ed5::t_5839d45eafbdb5 41
+  s_ff5b5e7c007ed5::t_d0beaa8c5ca4f6 33-36
+  s_ff5b5e7c007ed5::t_71d706a84c7089 83
+.cspell.json
+  s_ff5b5e7c007ed5::t_71ec75aeade54b 241-245,248-250
+  s_ff5b5e7c007ed5::t_c1e23c7f610194 232
+  s_ff5b5e7c007ed5::t_fd946e9952cf1f 246-247
+npm/docs/architecture/overview.md
+  s_ff5b5e7c007ed5::t_3cbdbf917d1929 76-77
+npm/.changes/260722-0643.md
+  s_ff5b5e7c007ed5::t_fd946e9952cf1f 1-2,4
+  s_ff5b5e7c007ed5::t_f2b09c87c17f21 3,5
+npm/docs/architecture/recurrence.md
+  s_ff5b5e7c007ed5::t_b2100989754495 38-44,46-52
+  s_ff5b5e7c007ed5::t_a1b833c02f690d 60
+  s_ff5b5e7c007ed5::t_45135a0265efb0 1-37,45,53-59,61-65,67-74,76-90
+  s_ff5b5e7c007ed5::t_4291421396e550 66
+  s_ff5b5e7c007ed5::t_2ad79d3a768df4 75
+npm/docs/index.md
+  s_ff5b5e7c007ed5::t_a97e23ddf77058 29
+npm/docs/architecture/index.md
+  s_ff5b5e7c007ed5::t_d61fd9a3c6b227 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "0092986b4c0f8006532137c6e911bb7c27247c7b",
+  "prompts": {},
+  "sessions": {
+    "s_ff5b5e7c007ed5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "241a7d30-87e3-4259-9deb-551aae8ba24b",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
