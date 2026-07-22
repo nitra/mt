@@ -1,0 +1,41 @@
+.github/workflows/lint-rust.yml
+  s_ff5b5e7c007ed5::t_a26ae7c3fd2dc2 1-42
+.vscode/settings.json
+  s_ff5b5e7c007ed5::t_a26ae7c3fd2dc2 3-26,29-34
+relay/.changes/260722-0718.md
+  s_ff5b5e7c007ed5::t_c362a853622157 5
+  s_ff5b5e7c007ed5::t_78d5c7d94a3833 1-4
+knip.json
+  s_ff5b5e7c007ed5::t_4af9a7a668a4d3 5,9-14
+  s_ff5b5e7c007ed5::t_6a9572a59cf706 6-8
+.github/workflows/lint-repo.yml
+  s_ff5b5e7c007ed5::t_cca67f52017f16 1-31
+.licensee.json
+  s_ff5b5e7c007ed5::t_791db37ce180bd 5
+.github/workflows/npm-publish.yml
+  s_ff5b5e7c007ed5::t_a26ae7c3fd2dc2 152-153
+.github/workflows/lint-js.yml
+  s_ff5b5e7c007ed5::t_a26ae7c3fd2dc2 45-46
+eslint.config.js
+  s_ff5b5e7c007ed5::t_724715a1137f19 40-48
+relay/package.json
+  s_ff5b5e7c007ed5::t_e7f1af540a3299 6
+vitest.config.mjs
+  s_ff5b5e7c007ed5::t_2e1107a0833993 6-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "c68c5961574798f5d4d24ac5d3f839ab4c78b540",
+  "prompts": {},
+  "sessions": {
+    "s_ff5b5e7c007ed5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "241a7d30-87e3-4259-9deb-551aae8ba24b",
+        "model": "claude-fable-5"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
