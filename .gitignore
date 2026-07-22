@@ -6,5 +6,8 @@ dist/
 .claude/hooks/*.log
 .claude/hooks/.normalize-state
 .claude/hooks/.normalize.lock
+.codex/hooks/*.log
+.codex/hooks/.normalize-state
+.codex/hooks/.normalize.lock
 .claude/worktrees/
 .worktrees/

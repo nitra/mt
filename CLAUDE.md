@@ -11,10 +11,8 @@
 @.cursor/rules/n-ci4.mdc
 @.cursor/rules/n-feedback.mdc
 @.cursor/rules/n-ga.mdc
-@.cursor/rules/n-image-compress.mdc
 @.cursor/rules/n-security.mdc
 @.cursor/rules/n-text.mdc
-@.cursor/rules/n-worktree.mdc
 
 ## Лінт і ESLint (паралелізм)
 

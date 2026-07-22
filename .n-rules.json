@@ -6,9 +6,11 @@
     "ci4",
     "feedback",
     "ga",
-    "image-compress",
     "security",
-    "text",
+    "text"
+  ],
+  "disable-rules": [
+    "image-compress",
     "worktree"
   ],
   "ignore": [
