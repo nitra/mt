@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.27.1] - 2026-07-22
+
+### Added
+
+- docs: глава архітектури `recurrence.md` — повторювані задачі через шаблон (`.mt/templates/`) + інстанси-кореневі вузли; політики overlap/catchup/retention, CLI `mt template list|run`; перехресні оновлення index/overview/operations/log
+
 ## [0.27.0] - 2026-07-17
 
 ### Added
