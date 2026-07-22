@@ -1,22 +1,12 @@
-//! Ядро агента (`agent-core`) — agent loop, tools, provider (спека
-//! npm/docs/architecture/stack.md, компонент `agent-core`).
+//! `agent-core` — ACP-клієнт (Agent Client Protocol).
 //!
-//! Крейт БЕЗ tauri (фізична межа зі stack.md; tokio дозволений). Емітить
-//! події `agent-protocol` через callback — Envelope (seq/ts/адресація)
-//! збирає agent-server, не ядро. Провайдер — нейтральний контракт:
-//! типи конкретного SDK не протікають у публічний API.
+//! ACP — **єдиний транспорт AI-викликів** (ADR `260713-2110`): виконавці —
+//! зовнішні підписочні CLI (claude / codex / cursor / pi для локальних
+//! omlx-моделей), кожен підключається своїм ACP-адаптером;
+//! `session/request_permission` мапиться на `ApprovalRequest` протоколу
+//! (Ed25519). Власного agent loop, реєстру tools і provider-шару тут НЕМАЄ —
+//! це свідомо видалені відхилення від ACP-норми.
 
-pub mod agent;
-pub mod fs_tools;
-pub mod provider;
-pub mod provider_openai;
-pub mod tools;
+pub mod acp;
 
-pub use agent::{Agent, AgentError};
-pub use fs_tools::register_workspace_tools;
-pub use provider::{
-    ChatMessage, Completion, CompletionRequest, MockProvider, Provider, ProviderError, Role,
-    StreamEvent, ToolCallRequest, ToolSpec,
-};
-pub use provider_openai::OpenAiProvider;
-pub use tools::{Tool, ToolError, ToolOutput, ToolRegistry};
+pub use acp::{AcpClient, AcpError, PermissionHandler};

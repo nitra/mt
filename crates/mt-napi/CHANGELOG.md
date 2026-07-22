@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.1] - 2026-07-21
+
+### Changed
+
+- chore(deps): n-taze bump — 6 minor/patch (npm), 0 major (Rust unchanged)
+
+## [0.3.0] - 2026-07-15
+
+### Added
+
+- Биндінг `killNode` — `mt kill` тепер іде через `mt-core lifecycle::kill` (одна імплементація контракту: вузол без run-історії видаляється, з історією — архів у `.history/`)
+
+## [0.2.1] - 2026-07-14
+
+### Changed
+
+- feat(mt): Rust-порт run-оркестрації до паритету; run.mjs — тонкий клієнт mt-core (#47)
+
+## [0.2.0] - 2026-07-14
+
+### Removed
+
+- Модельні ключі (model_map / claude_model / audit_model) видалені з дефолтів .mt.json — конфігурація виконавців іде з user-level ENV (ADR 260713-2110)
+
 ## [0.1.5] - 2026-07-11
 
 ### Changed

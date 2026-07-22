@@ -3,81 +3,31 @@ type: JS Module
 title: run.mjs
 resource: npm/lib/commands/run.mjs
 docgen:
-  crc: 9dd0d011
+  crc: 0b4eee0d
   model: omlx/gemma-4-e2b-it-4bit
   score: 95
 ---
 
 ## Огляд
 
-Файл відповідає за запуск задачі через інструмент `mt run` з налаштованими параметрами та керування робочими директоріями.
-
-Файл читає деталі завдання з `task.md`, включаючи `budget_sec`, `budget_hard_sec`, `deps`, `mode` та `executor`.
-
-Перевіряє, чи всі `deps` розв'язані.
-
-Обчислює `NNN` як кількість файлів `run_*.md` плюс одиниця.
-
-Створює `worktree` у директорії `.worktrees/<task-epoch>/` з атомарним блокуванням за допомогою `atomic mkdir lock` (з обробкою `EEXIST = skip`).
-
-Встановлює змінні середовища, включаючи `MT_RUN_NNN`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, та `MT_TASK_PATH`.
-
-Запускає `subprocess`, який використовує `claude` або `mt run --actor auditor`.
-
-Після завершення `subprocess`, перевіряє наявність артефакту `fact_NNN.md` для визначення `result:success` або `result:failed`.
-
-Записує артефакт `run_NNN.md` у відповідну директорію.
-
-Якщо `result` дорівнює `success`, виконує `git merge` та видаляє створений `worktree`.
-
-У режимі `--auto`, сканує для готових задач (`waiting` + `deps resolved`), клеймить атомарне створення `worktree`.
-
-Перевіряє ліміт `max_worktrees`.
-
-Сповіщає про кількість активних `worktrees`, якщо вони перевищують `warn_worktrees_above`.
-
-Якщо `taskPath` не вказано, виводить інструкцію про використання аргументів.
-
-Якщо `taskPath` вказано, перевіряє наявність `task.md` у директорії.
-
-Перевіряє залежності для поточного завдання.
-
-Якщо `actor` дорівнює `agent` або `a`, запускає `claude` у `worktree` з інструкціями про виконання.
-
-Якщо `actor` дорівнює `human`, повідомляє про необхідність ручного виконання, але повертає `success`.
-
-У разі помилок під час створення `worktree` або виконання, повертає помилку.
-
-Якщо задача завершилася з помилкою, зберігає `worktree` для діагностики.
-
-Якщо `result` дорівнює `success`, виконує `git merge` та видаляє `worktree`.
+Обробник команди `mt run [<path>] [--actor a] [--auto]` — запуск задачі (або всіх готових задач) в ізольованому git worktree з обраним виконавцем і фіксацією результату артефактами `run_NNN.md`/`fact_NNN.md`.
 
 ## Поведінка
 
-Поведінка
-
-1. Завантажує task.md для отримання `budget_sec`, `budget_hard_sec`, `deps`, `mode`, `executor`.
-2. Перевіряє, чи всі `deps` розв'язані.
-3. Обчислює `NNN` як кількість `run_*.md` плюс один.
-4. Створює `worktree` у директорії `.worktrees/<task-epoch>/` з атомарним блокуванням.
-5. Встановлює змінні середовища, включаючи `MT_RUN_NNN`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, `MT_TASK_PATH`.
-6. Запускає `subprocess`, який використовує `claude` або `mt run --actor auditor`.
-7. Після завершення `subprocess`, перевіряє наявність `fact_NNN.md` для визначення `result:success` або `result:failed`.
-8. Записує артефакт `run_NNN.md` у відповідну директорію.
-9. Якщо `result` дорівнює `success`, виконує `git merge` та видаляє створений `worktree`.
-10. У режимі `--auto`, сканує для готових задач (`waiting` + `deps resolved`), клеймить атомарне створення `worktree`.
-11. Перевіряє ліміт `max_worktrees`.
-12. Сповіщає про кількість активних `worktrees`, якщо вони перевищують `warn_worktrees_above`.
-13. Якщо `taskPath` не вказано, виводить інструкцію про використання аргументів.
-14. Якщо `taskPath` вказано, перевіряє наявність `task.md` у директорії.
-15. Перевіряє залежності для поточного завдання.
-16. Якщо `actor` дорівнює `agent` або `a`, запускає `claude` у `worktree` з інструкціями про виконання.
-17. Якщо `actor` дорівнює `human`, повідомляє про необхідність ручного виконання, але повертає `success`.
-18. У разі помилок під час створення `worktree` або виконання, повертає помилку.
-19. Якщо задача завершилася з помилкою, зберігає `worktree` для діагностики.
-20. Якщо `result` дорівнює `success`, виконує `git merge` та видаляє `worktree`.
+1. Читає `task.md` вузла: `budget_sec`, `budget_hard_sec`, `deps`, `mode`, `executor`; для конкретного шляху перевіряє, що всі `deps` розв'язані.
+2. Обчислює `NNN` наступного run і номер спроби `MT_ATTEMPT = failed_streak + 1`; резолвить щабель драбини ретраїв (`## Retry ladder` з `a.md` або дефолт base → diagnose-first → alternative-approach) у стратегію `MT_RETRY_STRATEGY` та ескалацію `model_tier` (MIN→AVG→MAX, cap на MAX).
+3. Резолвить виконавця: `model_tier` — секція `## Model tier` у `a.md` → frontmatter → `default_model_tier`; підписочний CLI — секція `## Agent cli` у `a.md` (per-node) → user-level env `MT_AGENT_CLI` → `claude`. Невідомий `agent_cli` → відмова fail-fast ще до створення worktree.
+4. Створює worktree `.worktrees/<task-epoch>/` (атомарний mkdir-lock; існує → задача вже запущена, skip).
+5. Передає контекст env-змінними: `MT_RUN_NNN`, `MT_ATTEMPT`, `MT_RETRY_STRATEGY`, `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, `MT_TASK_PATH`, `MT_NODE_DIR`, `MT_WORKTREE`, `MT_RUN_TOKEN`, `MT_MODEL_TIER`, `MT_AGENT_CLI`.
+6. Спавнить виконавця (синхронно, з hard-timeout за `budget_hard_sec`):
+   - **підписочний CLI** (єдиний agent-шлях) — headless-запуск за таблицею `AGENT_CLIS`: `claude --model … --no-session-persistence -p`, `codex exec -m … --sandbox workspace-write --ephemeral`, `cursor-agent --model … --print --force`, `pi --model … --no-session -p` (локальні omlx-моделі через pi.dev CLI); конкретну модель тиру резолвить user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]`; без мапінгу прапор моделі не передається — CLI резолвить сам за підпискою користувача, тир завжди йде hint-ом `MT_MODEL_TIER`. Якщо результат схожий на вичерпані ліміти підписки (rate limit / quota / 429 у виводі), спрацьовує **каскад** env `MT_CLOUD_AGENT_CLIS`: наступний хмарний CLI у порядку `[обраний, ...каскад]` без дублів, модель — per-кандидат; фактичний CLI пишеться у frontmatter `run_NNN.md` (`agent_cli`); не-лімітні помилки каскад не запускають;
+   - **human** — виводить інструкції для ручного виконання і завершується без run-артефакту.
+7. Визначає результат: success = `fact_NNN.md` існує **і** всі команди секції `## Check` завершились exit 0; інакше failed.
+8. Пише `run_NNN.md` (success — у worktree, failed — у main-checkout, бо діагностичний worktree лишається незмердженим); за success мержить worktree у main і видаляє його, за failed зберігає worktree для діагностики.
+9. Режим `--auto` сканує граф на готові задачі (`waiting` + resolved deps, топологічний порядок) і запускає кожну; перед запуском діють ліміт `max_worktrees` і попередження `warn_worktrees_above`.
 
 ## Гарантії поведінки
 
-- Перехоплює помилки і не пропускає винятків назовні (fail-safe).
-- За певних помилок повертає порожнє значення (напр. `null`) замість винятку.
+- ФС і `child_process` ін'єктуються залежностями — модуль тестований без реального диска і процесів.
+- Помилки читання/створення worktree/запису артефактів не пропускаються назовні винятками: логуються і повертається код помилки.
+- Невідомий actor або `agent_cli` — явна відмова з підказкою підтримуваних значень.

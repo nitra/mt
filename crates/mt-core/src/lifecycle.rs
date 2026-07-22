@@ -4,8 +4,11 @@
 //! - invalidate: архівує version chain у `history/<ts>-invalidate/`, нова
 //!   chain стартує з NNN=001; каскад вниз по нащадках; без sentinel-файлів —
 //!   стан derived з відсутності `fact_*.md`.
-//! - kill: архівує весь вузол у `<tasks-root>/.history/<ts>-kill-<path>/`
-//!   і прибирає директорію; каскад повний за визначенням (піддерево).
+//! - kill: якщо піддерево вузла (сам вузол + нащадки) не має жодного
+//!   run-артефакту (chain-файли, `run-summary.md`, `history/`) — вузол
+//!   видаляється назавжди (не було що архівувати, помилково створений
+//!   вузол); інакше архівується у `<tasks-root>/.history/<ts>-kill-<path>/`
+//!   і прибирається директорія; каскад повний за визначенням (піддерево).
 
 use std::fs;
 use std::path::Path;
@@ -118,15 +121,44 @@ fn invalidate_rec(
     Ok(())
 }
 
-/// `mt kill <path>` (файловий рівень): архівує весь вузол з нащадками у
-/// `<tasks-root>/.history/<ts>-kill-<path>/` і прибирає директорію.
-/// Повертає шлях архіву відносно tasks root.
+/// Чи має вузол (без рекурсії в нащадків) артефакти запуску: chain-файли,
+/// `run-summary.md`, або `history/` (архів попередніх invalidate).
+fn has_run_artifacts_here(dir: &Path) -> bool {
+    if dir.join("run-summary.md").is_file() || dir.join("history").is_dir() {
+        return true;
+    }
+    let Ok(entries) = fs::read_dir(dir) else {
+        return false;
+    };
+    entries.flatten().any(|entry| {
+        entry.file_type().map(|t| t.is_file()).unwrap_or(false)
+            && is_chain_file(&entry.file_name().to_string_lossy())
+    })
+}
+
+/// Чи має піддерево вузла (сам вузол + всі нащадки) бодай один run-артефакт.
+fn has_run_artifacts(dir: &Path) -> bool {
+    has_run_artifacts_here(dir)
+        || child_nodes(dir)
+            .iter()
+            .any(|c| has_run_artifacts(&dir.join(c)))
+}
+
+/// `mt kill <path>` (файловий рівень): якщо піддерево вузла ще не мало
+/// жодного запуску — видаляє його назавжди; інакше архівує весь вузол
+/// з нащадками у `<tasks-root>/.history/<ts>-kill-<path>/` і прибирає
+/// директорію. Повертає `.history/<archive>` (архівовано) або
+/// `deleted:<node_path>` (видалено без історії).
 pub fn kill(tasks_dir: &str, node_path: &str) -> Result<String, String> {
     validate_name(node_path)?;
     let root = Path::new(tasks_dir);
     let dir = root.join(node_path);
     if !dir.join("task.md").is_file() {
         return Err(format!("node not found: {node_path}"));
+    }
+    if !has_run_artifacts(&dir) {
+        fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+        return Ok(format!("deleted:{node_path}"));
     }
     let archive_name = format!("{}-kill-{}", timestamp(), node_path.replace('/', "-"));
     let history = root.join(".history");
@@ -228,5 +260,37 @@ mod tests {
         let root = tmp.path().to_string_lossy().into_owned();
         assert!(kill(&root, "nope").is_err());
         assert!(kill(&root, "../escape").is_err());
+    }
+
+    #[test]
+    fn kill_deletes_fresh_node_without_run_history() {
+        let tmp = tempfile::tempdir().unwrap();
+        let node = tmp.path().join("draft");
+        fs::create_dir_all(&node).unwrap();
+        fs::write(node.join("task.md"), "x").unwrap();
+        fs::write(node.join("plan_001.md"), "x").unwrap();
+
+        let root = tmp.path().to_string_lossy().into_owned();
+        let result = kill(&root, "draft").unwrap();
+        assert_eq!(result, "deleted:draft");
+        assert!(!node.exists());
+        assert!(!tmp.path().join(".history").exists());
+    }
+
+    #[test]
+    fn kill_archives_when_only_a_descendant_has_run_history() {
+        let tmp = tempfile::tempdir().unwrap();
+        let node = tmp.path().join("draft");
+        let child = node.join("sub");
+        fs::create_dir_all(&child).unwrap();
+        fs::write(node.join("task.md"), "x").unwrap();
+        fs::write(child.join("task.md"), "x").unwrap();
+        fs::write(child.join("run_001.md"), "x").unwrap();
+
+        let root = tmp.path().to_string_lossy().into_owned();
+        let archive = kill(&root, "draft").unwrap();
+        assert!(archive.starts_with(".history/"));
+        assert!(!node.exists());
+        assert!(tmp.path().join(&archive).join("sub/run_001.md").is_file());
     }
 }

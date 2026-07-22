@@ -4,8 +4,9 @@
  * 1. Знаходить worktree задачі
  * 2. Видаляє worktree (force)
  * 3. Видаляє plan_*.md (скидає планування)
- * 4. Записує invalidated sentinel
- * 5. Каскадно інвалідує всі залежні задачі
+ * 4. Файловий рівень — mt-core::lifecycle::kill: без run-артефактів вузол
+ *    видаляється назавжди, інакше архівується у `.history/`
+ * 5. Каскадно інвалідує всі залежні задачі (sentinel `invalidated`)
  *
  * FS і child_process ін'єктуються для тестованості.
  */
@@ -15,6 +16,7 @@ import { join } from 'node:path'
 import { cwd as processCwd } from 'node:process'
 
 import { loadConfig, resolveMtDir, resolveWorktreesDir } from '../core/config.mjs'
+import { loadNative } from '../core/native.mjs'
 import { scanTasks } from '../core/scanner.mjs'
 import { findTaskWorktree, listActiveWorktrees, removeWorktree } from '../core/worktree.mjs'
 
@@ -111,12 +113,18 @@ export default function kill(args, deps = {}) {
     log(`kill: видалено ${planCount} plan_*.md файл(ів)`)
   }
 
-  // 3. Записуємо invalidated sentinel
+  // 3. Файловий рівень — mt-core::lifecycle::kill (одна імплементація
+  // контракту): без run-артефактів вузол видаляється назавжди, інакше
+  // архівується у `.history/`.
   try {
-    writeInvalidated(taskDir, writeFile)
-    log(`kill: задача "${taskPath}" інвалідована`)
+    const outcome = loadNative().killNode(mtDir, taskPath)
+    if (outcome.startsWith('deleted:')) {
+      log(`kill: задача "${taskPath}" видалена (run-історії не було)`)
+    } else {
+      log(`kill: задача "${taskPath}" архівована → ${outcome}`)
+    }
   } catch (error) {
-    log(`kill: не вдалося записати invalidated — ${error.message ?? String(error)}`)
+    log(`kill: не вдалося вбити вузол — ${error.message ?? String(error)}`)
     return 1
   }
 

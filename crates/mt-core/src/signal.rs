@@ -51,7 +51,7 @@ fn now_iso() -> String {
 }
 
 /// NNN наступної спроби: `count(run_*.md) + 1` (спека, «NNN source»).
-pub(crate) fn next_run_nnn(dir: &Path) -> u64 {
+pub fn next_run_nnn(dir: &Path) -> u64 {
     let count = fs::read_dir(dir)
         .map(|entries| {
             entries
@@ -97,7 +97,10 @@ pub fn check_commands(task_md: &str) -> Vec<String> {
 pub fn run_check(tasks_dir: &str, node_path: &str) -> Result<Vec<CheckResult>, String> {
     let dir = node_dir(tasks_dir, node_path)?;
     let task_md = fs::read_to_string(dir.join("task.md")).map_err(|e| e.to_string())?;
-    let cwd = Path::new(tasks_dir).parent().unwrap_or(Path::new("."));
+    // Контракт graph.md: `## Check` ганяється у директорії вузла (артефакти
+    // вузла — поряд із task.md); командам, яким потрібен корінь репо,
+    // додається власний cwd-еквівалент у самому рядку Check.
+    let cwd = dir.as_path();
     let mut results = Vec::new();
     for command in check_commands(&task_md) {
         let out = Command::new("sh")
@@ -165,7 +168,7 @@ pub(crate) fn write_run(
 }
 
 /// Як [`write_run`], але з додатковими frontmatter-рядками (wall_sec тощо).
-pub(crate) fn write_run_fm(
+pub fn write_run_fm(
     dir: &Path,
     nnn: &str,
     actor: &str,
@@ -200,6 +203,7 @@ fn signal_success(
     node_path: &str,
     actor: &str,
     with_audit: bool,
+    extra_fm: &str,
 ) -> Result<SignalOutcome, String> {
     let dir = node_dir(tasks_dir, node_path)?;
     let policy = audit_policy(&dir);
@@ -220,7 +224,7 @@ fn signal_success(
     run_check(tasks_dir, node_path)?;
 
     let sections = format!("\n## Ref\n\nref: {fact_file}\n");
-    let run_file = write_run(&dir, &nnn, actor, "success", &sections)?;
+    let run_file = write_run_fm(&dir, &nnn, actor, "success", &sections, extra_fm)?;
 
     let pending_audit_file = if with_audit {
         let pa = format!("pending-audit_{nnn}.md");
@@ -253,12 +257,33 @@ fn signal_success(
 
 /// `mt done`: fact існує → `## Check` → `run_NNN (success)` → агрегація вгору.
 pub fn done(tasks_dir: &str, node_path: &str, actor: &str) -> Result<SignalOutcome, String> {
-    signal_success(tasks_dir, node_path, actor, false)
+    signal_success(tasks_dir, node_path, actor, false, "")
+}
+
+/// Як [`done`], але з додатковими frontmatter-рядками `run_NNN.md`
+/// (runner фіксує `agent_cli`, `wall_sec` тощо).
+pub fn done_fm(
+    tasks_dir: &str,
+    node_path: &str,
+    actor: &str,
+    extra_fm: &str,
+) -> Result<SignalOutcome, String> {
+    signal_success(tasks_dir, node_path, actor, false, extra_fm)
 }
 
 /// `mt audit`: як done, але відкриває аудит-цикл (`pending-audit_NNN.md`).
 pub fn audit(tasks_dir: &str, node_path: &str, actor: &str) -> Result<SignalOutcome, String> {
-    signal_success(tasks_dir, node_path, actor, true)
+    signal_success(tasks_dir, node_path, actor, true, "")
+}
+
+/// Як [`audit`], але з додатковими frontmatter-рядками `run_NNN.md`.
+pub fn audit_fm(
+    tasks_dir: &str,
+    node_path: &str,
+    actor: &str,
+    extra_fm: &str,
+) -> Result<SignalOutcome, String> {
+    signal_success(tasks_dir, node_path, actor, true, extra_fm)
 }
 
 /// `mt failed`: `run_NNN (failed)` без fact; секції Completed/Blockers/Next

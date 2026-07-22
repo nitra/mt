@@ -3,7 +3,7 @@ type: Rust Module
 title: ws_integration.rs
 resource: crates/agent-server/tests/ws_integration.rs
 docgen:
-  crc: edade319
+  crc: 0fe0a571
   model: openai-codex/gpt-5.5
   score: 100
   issues: judge:inaccurate:0.99

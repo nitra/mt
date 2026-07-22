@@ -3,7 +3,7 @@ type: Rust Module
 title: main.rs
 resource: crates/mt-cli/src/main.rs
 docgen:
-  crc: 3066b36c
+  crc: b93cd9a2
   model: omlx/gemma-4-e2b-it-4bit
   score: 90
 ---

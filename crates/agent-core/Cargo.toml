@@ -1,6 +1,6 @@
 [package]
 name = "agent-core"
-description = "Ядро агента: agent loop, реєстр tools зі schemars-схемами, нейтральний provider-контракт"
+description = "ACP-клієнт (Agent Client Protocol) — єдиний транспорт AI-викликів до зовнішніх підписочних CLI"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,13 +11,8 @@ name = "agent_core"
 
 [dependencies]
 agent-protocol = { path = "../agent-protocol" }
-serde.workspace = true
 serde_json.workspace = true
-async-trait.workspace = true
-schemars.workspace = true
-tokio = { workspace = true, features = ["macros", "rt", "sync"] }
-async-openai = { version = "0.41", default-features = false, features = ["chat-completion", "rustls"] }
-futures = "0.3.32"
+tokio = { workspace = true, features = ["io-util", "rt", "sync", "time"] }
 
 [dev-dependencies]
-tempfile.workspace = true
+tokio = { workspace = true, features = ["io-util", "macros", "rt-multi-thread", "sync"] }

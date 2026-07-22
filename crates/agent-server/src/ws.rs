@@ -23,6 +23,7 @@ use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
+use crate::approvals_gate::ApprovalGate;
 use crate::graph::{self, GraphConfig, InteractiveRun};
 use crate::runner::TurnRunner;
 use crate::session::{Session, SessionHost};
@@ -31,10 +32,12 @@ use crate::session::{Session, SessionHost};
 /// опційний graph-міст (без нього — транспортний режим, кімнати не
 /// прив'язані до вузлів графа).
 pub struct AppState {
-    pub sessions: SessionHost,
+    pub sessions: Arc<SessionHost>,
     pub runner: Arc<dyn TurnRunner>,
     /// `None` — без перевірки (embedded/in-process клієнт).
     pub token: Option<String>,
+    /// Гейт підписаних approvals (access.md); pubkey-кеш наповнює relay-міст.
+    pub approvals: Arc<ApprovalGate>,
     graph: Option<GraphConfig>,
     /// Активні інтерактивні run-и за node-ключем кімнати. Git-операції
     /// швидкі й локальні — виконуються під локом (spawn_blocking — TODO
@@ -44,19 +47,100 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(sessions: SessionHost, runner: Arc<dyn TurnRunner>, token: Option<String>) -> Self {
+        Self::from_parts(
+            Arc::new(sessions),
+            Arc::new(ApprovalGate::default()),
+            runner,
+            token,
+        )
+    }
+
+    /// Конструктор зі спільними частинами — коли sessions/gate потрібні
+    /// runner-фабриці ДО створення AppState (approval-гейт тулів).
+    pub fn from_parts(
+        sessions: Arc<SessionHost>,
+        approvals: Arc<ApprovalGate>,
+        runner: Arc<dyn TurnRunner>,
+        token: Option<String>,
+    ) -> Self {
         Self {
             sessions,
             runner,
             token,
+            approvals,
             graph: None,
             runs: tokio::sync::Mutex::new(HashMap::new()),
         }
+    }
+
+    /// Mid-run approval-гейт: шле `ApprovalRequest` у кімнату і повертає
+    /// one-shot із підписаним вердиктом (access.md, перший гейт).
+    pub fn request_approval(
+        &self,
+        node: &str,
+        action: String,
+        diff: Option<String>,
+    ) -> std::io::Result<tokio::sync::oneshot::Receiver<bool>> {
+        crate::approvals_gate::request_approval(&self.sessions, &self.approvals, node, action, diff)
     }
 
     /// Увімкнути graph-міст: кімната = вузол, UserMessage веде claim/worktree.
     pub fn with_graph(mut self, config: GraphConfig) -> Self {
         self.graph = Some(config);
         self
+    }
+
+    /// Кооперативний handoff вузла (runtime.md, «Міграція сесії між
+    /// хостами», крок 2): знімає run з обліку, `InteractiveRun::handoff`
+    /// пише `run_NNN.md (result: handoff)` і CAS-delete claim; сповіщає
+    /// сесію `ClaimChanged { holder: None }` — той самий сигнал, що й
+    /// release (деталь «це handoff, не пауза» лишається в run-файлі).
+    pub async fn handoff_node(&self, node: &str) -> Result<graph::HandoffTicket, String> {
+        let Some(run) = self.runs.lock().await.remove(node) else {
+            return Err(format!("handoff: вузол {node} без активного run"));
+        };
+        let generation = run.generation();
+        let ticket = run.handoff()?;
+        if let Ok(session) = self.sessions.get_or_open(node) {
+            self.sessions.publish(
+                &session,
+                Event::ClaimChanged {
+                    node_hash: node.to_string(),
+                    holder_device_id: None,
+                    lease_until: None,
+                    generation,
+                },
+                None,
+                None,
+            );
+        }
+        Ok(ticket)
+    }
+
+    /// Відновлення на цьому хості після кооперативного handoff (runtime.md,
+    /// крок 3): `attach_resume` матеріалізує worktree зі стану старого run
+    /// ref → журнал `.nitra/session.jsonl` засіває локальну сесію (best
+    /// effort: помилка сіву не валить resume — сесія просто почне з
+    /// чистого seq) → run під обліком, renewal запущено.
+    pub async fn resume_node(
+        self: &Arc<Self>,
+        node: &str,
+        ticket: &graph::HandoffTicket,
+    ) -> Result<(), String> {
+        let config = self
+            .graph
+            .as_ref()
+            .ok_or_else(|| "resume: graph-міст не увімкнено".to_string())?;
+        let run = graph::attach_resume(config, node, ticket)?;
+
+        if let Ok(jsonl) = std::fs::read_to_string(run.worktree.join(".nitra/session.jsonl")) {
+            let _ = self.sessions.seed_journal(node, &jsonl);
+        }
+
+        let lease_sec = config.lease_sec;
+        self.runs.lock().await.insert(node.to_string(), run);
+        spawn_renewal(Arc::clone(self), node.to_string(), lease_sec);
+        Ok(())
     }
 }
 
@@ -163,7 +247,14 @@ async fn client_connection(mut socket: WebSocket, state: Arc<AppState>) {
         tokio::select! {
             incoming = socket.recv() => match incoming {
                 Some(Ok(Message::Text(text))) => {
-                    handle_client_frame(&state, text.as_str(), Some(hello.device_id)).await;
+                    // Кадр обробляється у окремій задачі: хід агента може
+                    // чекати ApprovalResponse із ЦЬОГО Ж зʼєднання —
+                    // інлайн-обробка дала б deadlock.
+                    let state = Arc::clone(&state);
+                    let device_id = hello.device_id;
+                    tokio::spawn(async move {
+                        handle_client_frame(&state, text.as_str(), Some(device_id)).await;
+                    });
                 }
                 Some(Ok(Message::Close(_))) | None => break,
                 Some(Ok(_)) => {}
@@ -189,7 +280,11 @@ async fn client_connection(mut socket: WebSocket, state: Arc<AppState>) {
 /// (з graph-мостом — попередньо attach вузла); `DoneSession`/
 /// `ReleaseSession` завершують run; невідомі події ігноруються
 /// (forward-compatibility).
-async fn handle_client_frame(state: &Arc<AppState>, frame: &str, device_id: Option<Uuid>) {
+pub(crate) async fn handle_client_frame(
+    state: &Arc<AppState>,
+    frame: &str,
+    device_id: Option<Uuid>,
+) {
     let Ok(envelope) = serde_json::from_str::<Envelope>(frame) else {
         return;
     };
@@ -211,6 +306,46 @@ async fn handle_client_frame(state: &Arc<AppState>, frame: &str, device_id: Opti
         }
         Event::DoneSession {} => handle_done(state, &session, &node).await,
         Event::ReleaseSession {} => handle_release(state, &session, &node).await,
+        Event::ApprovalResponse {
+            request_id,
+            approved,
+            signature,
+        } => {
+            match state
+                .approvals
+                .resolve(&request_id, approved, &signature, device_id)
+            {
+                // Верифікований вердикт журналюється у сесію (аудит-трейл)
+                // і матеріалізується у run вузла (## Approvals при done).
+                Ok(verdict) => {
+                    let line = format!(
+                        "- {} device={} approved={verdict} request={request_id} signature={}",
+                        chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                        device_id
+                            .map(|id| id.to_string())
+                            .unwrap_or_else(|| "local".into()),
+                        signature
+                            .iter()
+                            .map(|byte| format!("{byte:02x}"))
+                            .collect::<String>(),
+                    );
+                    if let Some(run) = state.runs.lock().await.get_mut(&node) {
+                        run.add_approval(line);
+                    }
+                    state.sessions.publish(
+                        &session,
+                        Event::ApprovalResponse {
+                            request_id,
+                            approved,
+                            signature,
+                        },
+                        device_id,
+                        envelope.account_id,
+                    );
+                }
+                Err(message) => publish_error(state, &session, message),
+            }
+        }
         _ => {}
     }
 }

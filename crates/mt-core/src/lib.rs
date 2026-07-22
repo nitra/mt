@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub mod artifacts;
 pub mod claims;
 pub mod config;
+pub mod directory;
 pub mod frontmatter;
 pub mod ledger;
 pub mod lifecycle;
@@ -1612,14 +1613,14 @@ mod tests {
     #[test]
     fn create_resolves_defaults_from_mt_json() {
         let (root, mt) = create_repo(Some(
-            "{\"default_mode\":\"agent\",\"default_model_tier\":\"MIM\",\"default_budget_sec\":42}",
+            "{\"default_mode\":\"agent\",\"default_model_tier\":\"MIN\",\"default_budget_sec\":42}",
         ));
         let outcome = create_task(mt, "d".to_string(), CreateOpts::default()).unwrap();
         assert!(matches!(&outcome, CreateOutcome::Created { flag, .. } if flag == "a.md"));
         let task_md = fs::read_to_string(root.path().join("mt/d/task.md")).unwrap();
         assert!(task_md.contains("\nbudget_sec: 42\n"));
         let a = fs::read_to_string(root.path().join("mt/d/a.md")).unwrap();
-        assert!(a.contains("MIM"));
+        assert!(a.contains("MIN"));
     }
 
     // ── shared name-validation vectors (Rust ↔ JS, see name-vectors.json) ──

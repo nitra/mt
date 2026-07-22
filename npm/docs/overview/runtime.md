@@ -5,9 +5,9 @@ timestamp: 2026-07-12
 layers:
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
   sources:
-    - architecture/runtime.md 76a84409 4551fb36
-    - architecture/surfaces.md 50a9d61a 15a2ec02
-    - architecture/stack.md e3a8cd08 7b05785f
+    - architecture/runtime.md 76a84409 55bd153b
+    - architecture/surfaces.md 50a9d61a 7dec8cab
+    - architecture/stack.md e3a8cd08 27ebbe5f
 ---
 
 # Виконання: хости, сесії, поверхні

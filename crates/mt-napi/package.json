@@ -1,6 +1,6 @@
 {
   "name": "@7n/mt-napi",
-  "version": "0.1.5",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Build-обгортка napi-аддона mt (артефакти йдуть у платформні підпакети @7n/mt-*)",
@@ -10,7 +10,7 @@
     "build:debug": "napi build --platform"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.6.0",
+    "@napi-rs/cli": "^3.7.4",
     "ajv": "^8.20.0"
   },
   "engines": {

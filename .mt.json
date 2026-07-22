@@ -13,13 +13,6 @@
   "claim_grace_sec": 60,
   "publish_retry_max": 8,
   "publish_retry_base_ms": 250,
-  "claude_model": "claude-sonnet-4-6",
-  "audit_model": "claude-haiku-4-5-20251001",
-  "model_map": {
-    "MIM": "claude-haiku-4-5-20251001",
-    "AVG": "claude-sonnet-4-6",
-    "MAX": "claude-opus-4-8"
-  },
   "stale_worktree_min": 30,
   "system_prompt": ".mt/system-prompt.md"
 }

@@ -3,9 +3,8 @@ type: JS Module
 title: store.mjs
 resource: relay/lib/store.mjs
 docgen:
-  crc: 8082cbc3
+  crc: c3b0fdd5
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.97
   judgeModel: openai-codex/gpt-5.4-mini

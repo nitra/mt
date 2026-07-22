@@ -3,7 +3,7 @@ type: Rust Module
 title: lifecycle.rs
 resource: crates/mt-core/src/lifecycle.rs
 docgen:
-  crc: f62f5b5c
+  crc: 58b5fe2f
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---

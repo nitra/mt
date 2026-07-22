@@ -147,7 +147,7 @@ pub fn config_defaults() -> serde_json::Value {
     mt_core::config::config_defaults()
 }
 
-/// Зливає сирий текст `.mt.json` (або null) з дефолтами; `model_map` — deep merge.
+/// Зливає сирий текст `.mt.json` (або null) з дефолтами
 #[napi]
 pub fn merge_config(raw: Option<String>) -> serde_json::Value {
     mt_core::config::merge_config(raw.as_deref())
@@ -167,6 +167,41 @@ pub fn effective_config(
         mt_override_json.as_deref(),
         plan_md.as_deref(),
     )
+}
+
+// ── runner (npm/lib/commands/run.mjs — тонкий клієнт) ─────────────────────────
+
+/// Preflight вузла (бюджети, NNN/attempt, тир/драбина, agent_cli) — план
+/// запуску або помилка-відмова. Конфіг виконавців — ENV процесу.
+#[napi]
+pub fn run_preflight(tasks_dir: String, node_path: String) -> Result<serde_json::Value> {
+    let plan = mt_core::runner::preflight(&tasks_dir, &node_path).map_err(to_napi_err)?;
+    serde_json::to_value(plan).map_err(|e| to_napi_err(e.to_string()))
+}
+
+/// Запускає вузол: CAS claim → worktree → виконавець (підписочний CLI з
+/// каскадом або node_executor) → `## Check` → fenced publish. **Блокуючий.**
+#[napi]
+pub fn run_node(tasks_dir: String, node_path: String) -> Result<serde_json::Value> {
+    let outcome = mt_core::runner::run_node(&tasks_dir, &node_path).map_err(to_napi_err)?;
+    serde_json::to_value(outcome).map_err(|e| to_napi_err(e.to_string()))
+}
+
+/// Оркестраторний прохід `run --auto`: waiting-агентські вузли чергами по
+/// `concurrency` через run_node. **Блокуючий.**
+#[napi]
+pub fn run_auto(tasks_dir: String, concurrency: u32) -> Result<serde_json::Value> {
+    let results =
+        mt_core::orchestrate::run_auto(&tasks_dir, concurrency as usize).map_err(to_napi_err)?;
+    serde_json::to_value(results).map_err(|e| to_napi_err(e.to_string()))
+}
+
+/// `mt kill` (файловий рівень): піддерево без run-артефактів видаляється
+/// назавжди; інакше — архів у `.history/<ts>-kill-<path>/`. Повертає
+/// `deleted:<path>` або `.history/<archive>`.
+#[napi]
+pub fn kill_node(tasks_dir: String, node_path: String) -> Result<String> {
+    mt_core::lifecycle::kill(&tasks_dir, &node_path).map_err(to_napi_err)
 }
 
 // ── worktree (npm/lib/core/worktree.mjs) ──────────────────────────────────────

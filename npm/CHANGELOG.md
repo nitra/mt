@@ -1,5 +1,124 @@
 # Changelog
 
+## [0.27.1] - 2026-07-22
+
+### Added
+
+- docs: глава архітектури `recurrence.md` — повторювані задачі через шаблон (`.mt/templates/`) + інстанси-кореневі вузли; політики overlap/catchup/retention, CLI `mt template list|run`; перехресні оновлення index/overview/operations/log
+
+## [0.27.0] - 2026-07-17
+
+### Added
+
+- Протокол v4 для multi-owner (owner-app, спека 260714): WS-кадри membership (invite/accept/decline/transfer_ownership/bootstrap_owners), Ed25519-підписаний акт transfer (mt-transfer-v4, дзеркальні sign_transfer/verify_transfer у agent-protocol і signing.mjs relay), push-модуль (тип 2 «запрошено», тип 3 «потребує уваги» + адресна Escalation), Event::Escalation у протоколі, directory-модуль mt-core (.mt/directory.json, handle → email поза git), валідація hex-pubkey пристроїв
+
+### Changed
+
+- Зафіксовано поточні зміни npm-пакета.
+
+## [0.26.2] - 2026-07-17
+
+### Changed
+
+- fix(agent-core): фоновий читач стріму AcpClient — не приліплює prelude-банер
+
+## [0.26.1] - 2026-07-16
+
+### Changed
+
+- fix(agent-server): AcpTurnRunner без workdir бере абсолютний cwd поточного процесу замість "." — claude-agent-acp відкидав відносний шлях (ACP-спека вимагає абсолютний); задокументовано таблицю ACP-адаптерів (cursor/codex/claude/pi) у runtime.md, перевірено живими сесіями для трьох CLI
+
+## [0.26.0] - 2026-07-15
+
+### Added
+
+- ACP-клієнт (agent-core: ndjson JSON-RPC v1-підмножина initialize/session/prompt/request_permission) + AcpTurnRunner в agent-server і agent-cli serve --acp-cmd / MT_ACP_AGENT_CMD; mt kill мігровано на mt-core lifecycle::kill (вузол без run-історії видаляється, сканер більше не бачить його waiting); headless-прапори CLI звірені живим спайком (claude --no-session-persistence, codex --sandbox workspace-write --ephemeral, pi --no-session)
+
+## [0.25.3] - 2026-07-14
+
+### Changed
+
+- Прибрано мертвий ключ `node_executor` із `.mt.json` (точку розширення видалено у PR #48; `mt-run-node` видалено з @7n/rules) і згадку зовнішнього екзекутора з файлової доки run
+
+## [0.25.2] - 2026-07-14
+
+### Changed
+
+- run.mjs — тонкий клієнт Rust-раннера (mt-core/napi run_node/run_auto); makeWorktreeName видалено з core/worktree.mjs (іменування run-worktree — у Rust)
+
+## [0.25.1] - 2026-07-14
+
+### Changed
+
+- feat(mt): Rust-порт run-оркестрації до паритету; run.mjs — тонкий клієнт mt-core (#47)
+
+## [0.25.0] - 2026-07-14
+
+### Added
+
+- docs: нова глава architecture/mandates.md (карта мандатів, профілі людей/моделей, decision-request, ескалація за важелем) + оновлені vision/roadmap/index/overview
+
+### Changed
+
+- docs: профілі людей — синтез C+E: org-репо people-profiles (читання колективу, пише лише агрегатор), positive-only досьє підтверджень з evidence, dispute через підпис власника мандата
+- docs: інверсія делегування в тезі vision.md + пакетна межа contract/napi/mt у stack.md (інтеграція spec-ів з PR #22/#23 у канон)
+- docs: stack.md — пакетний поділ contract/napi/mt прибрано (YAGNI без зовнішніх споживачів); лишається @7n/mt-contract + conformance-suite двома add-only PR
+- ACP — єдиний транспорт AI-викликів: конфіг виконавців user-level ENV (MT_AGENT_CLI / MT_CLOUD_AGENT_CLIS / MT_AGENT_CLI_MODEL_MAP), каскад хмарних підписок за rate-limit, канон тирів MIN/AVG/MAX без legacy, підписочні CLI claude|codex|cursor|pi, спільний ## Check-гейт
+
+### Removed
+
+- Точку розширення `node_executor` видалено (`.mt.json`-ключ, `spawnNodeExecutor`/`resolveExecutorResult`/`parseExecutorSpec` у `mt run`, розділ «Зовнішній екзекутор вузла» runtime.md): останній консюмер `n-cursor mt-run-node` мігрував на вбудований шлях підписочних CLI (`claude|codex|cursor|pi`, user-level ENV-конфіг) за ADR `260713-2110` «ACP — єдиний транспорт AI-викликів» — паралельний виконавчий шлях більше не потрібен
+
+## [0.24.1] - 2026-07-12
+
+### Changed
+
+- feat(M2): ws-рівень кооперативного handoff — seed_journal + AppState API (#40)
+
+## [0.24.0] - 2026-07-12
+
+### Changed
+
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+
+## [0.23.0] - 2026-07-12
+
+### Changed
+
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+
+## [0.22.0] - 2026-07-12
+
+### Changed
+
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+
+## [0.21.0] - 2026-07-12
+
+### Changed
+
+- Нема змін у коді
+- Нема змін у коді
+- Нема змін у коді
+
+## [0.20.0] - 2026-07-12
+
+### Changed
+
+- Нема змін у коді
+- Нема змін у коді
+
 ## [0.19.0] - 2026-07-12
 
 ### Changed

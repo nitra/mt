@@ -3,9 +3,8 @@ type: Rust Module
 title: session.rs
 resource: crates/agent-server/src/session.rs
 docgen:
-  crc: e10a3d5f
+  crc: a5f3196b
   model: openai-codex/gpt-5.4-mini
-  tier: cloud-min
   score: 100
   issues: judge:inaccurate:0.97
   judgeModel: openai-codex/gpt-5.4-mini

@@ -1,7 +1,9 @@
 //! Тонкий клієнт agent-server (M1-заділ `mt serve`/`mt attach`).
 //!
 //! `serve` — стартує хост-процес: WS на 127.0.0.1, discovery port-file +
-//! токен; runner — `OpenAiProvider` (якщо задано `--base-url`) або echo.
+//! токен; runner — ACP-адаптер підписочного CLI (`--acp-cmd` або env
+//! `MT_ACP_AGENT_CMD`; ADR `260713-2110`: ACP — єдиний транспорт
+//! AI-викликів), без нього — echo-заглушка транспорту.
 //! `attach <node>` — читає discovery, хендшейк v4, REPL: stdin →
 //! `UserMessage`, стрічка подій → термінал. M1-заділ адресує кімнату
 //! рядком вузла; hash-адресація і graph-операції (claim/publish через
@@ -11,11 +13,12 @@ use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use agent_core::{register_workspace_tools, Agent, OpenAiProvider, ToolRegistry};
+use agent_core::PermissionHandler;
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
+use agent_server::approvals_gate::request_approval;
 use agent_server::{
-    serve, AgentTurnRunner, AppState, Discovery, EchoTurnRunner, GraphConfig, SessionHost,
-    TurnRunner,
+    serve, spawn_relay_bridge, AcpTurnRunner, AppState, ApprovalGate, Discovery, EchoTurnRunner,
+    GraphConfig, PermissionFactory, RelayBridgeConfig, SessionHost, TurnRunner,
 };
 use clap::{Parser, Subcommand};
 use futures::{SinkExt, StreamExt};
@@ -40,16 +43,19 @@ enum Command {
         /// Порт (0 — ефемерний).
         #[arg(long, default_value_t = 0)]
         port: u16,
-        /// base_url OpenAI-compatible провайдера (omlx/Ollama/LiteLLM);
-        /// без нього — echo-заглушка.
+        /// Команда ACP-адаптера підписочного CLI (напр. `npx claude-code-acp`);
+        /// без прапора береться env `MT_ACP_AGENT_CMD`, без обох — echo-заглушка.
+        #[arg(long, env = "MT_ACP_AGENT_CMD")]
+        acp_cmd: Option<String>,
+        /// Адреса relay (`ws://…`/`wss://…`) — вмикає міст до relay.
         #[arg(long)]
-        base_url: Option<String>,
-        /// Модель провайдера.
-        #[arg(long, default_value = "default")]
-        model: String,
-        /// API-ключ (для локальних серверів — порожній).
+        relay_url: Option<String>,
+        /// device_token host-пристрою на relay.
         #[arg(long, default_value = "")]
-        api_key: String,
+        relay_token: String,
+        /// Кімната relay (кореневий вузол задачі).
+        #[arg(long, default_value = "")]
+        relay_root: String,
     },
     /// Підключитись до вузла інтерактивною сесією.
     Attach {
@@ -73,10 +79,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Command::Serve {
             port,
-            base_url,
-            model,
-            api_key,
-        } => run_serve(state_dir(cli.state_dir), port, base_url, model, api_key).await,
+            acp_cmd,
+            relay_url,
+            relay_token,
+            relay_root,
+        } => {
+            let relay = relay_url.map(|url| RelayBridgeConfig {
+                url,
+                device_token: relay_token,
+                root: relay_root,
+            });
+            run_serve(state_dir(cli.state_dir), port, acp_cmd, relay).await
+        }
         Command::Attach { node, lang } => run_attach(state_dir(cli.state_dir), node, lang).await,
     }
 }
@@ -84,33 +98,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn run_serve(
     dir: PathBuf,
     port: u16,
-    base_url: Option<String>,
-    model: String,
-    api_key: String,
+    acp_cmd: Option<String>,
+    relay: Option<RelayBridgeConfig>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let runner: Arc<dyn TurnRunner> = match base_url {
-        Some(base_url) => Arc::new(AgentTurnRunner::new(move |workdir| {
-            // Файлові тули пісковані до worktree run-а (workdir є лише
-            // з graph-мостом).
-            let mut tools = ToolRegistry::new();
-            if let Some(root) = workdir {
-                register_workspace_tools(&mut tools, root.to_path_buf());
-            }
-            Agent::new(
-                OpenAiProvider::new(base_url.clone(), api_key.clone()),
-                tools,
-                model.clone(),
-                "Ти — виконавець вузла графа задач MT.",
-            )
-        })),
+    let sessions = Arc::new(SessionHost::new(dir.join("sessions"))?);
+    let gate = Arc::new(ApprovalGate::default());
+    // Виконавець ходу — ACP-адаптер підписочного CLI; request_permission
+    // мапиться на approval-гейт (ApprovalRequest у кімнату вузла, таймаут
+    // 120s → відмова). Без адаптера — echo-заглушка транспорту.
+    let runner: Arc<dyn TurnRunner> = match acp_cmd {
+        Some(command) => {
+            let approval_sessions = Arc::clone(&sessions);
+            let approval_gate = Arc::clone(&gate);
+            let factory: PermissionFactory = Arc::new(move |node: &str| {
+                let sessions = Arc::clone(&approval_sessions);
+                let gate = Arc::clone(&approval_gate);
+                let node = node.to_string();
+                let handler: PermissionHandler = Arc::new(move |action, diff| {
+                    let sessions = Arc::clone(&sessions);
+                    let gate = Arc::clone(&gate);
+                    let node = node.clone();
+                    Box::pin(async move {
+                        let Ok(receiver) = request_approval(&sessions, &gate, &node, action, diff)
+                        else {
+                            return false;
+                        };
+                        matches!(
+                            tokio::time::timeout(std::time::Duration::from_secs(120), receiver)
+                                .await,
+                            Ok(Ok(true))
+                        )
+                    })
+                });
+                handler
+            });
+            println!("ACP-адаптер: {command}");
+            Arc::new(AcpTurnRunner::new(&command, Some(factory)))
+        }
         None => Arc::new(EchoTurnRunner),
     };
     let token = Uuid::new_v4().to_string();
-    let mut state = AppState::new(
-        SessionHost::new(dir.join("sessions"))?,
-        runner,
-        Some(token.clone()),
-    );
+    let mut state = AppState::from_parts(sessions, gate, runner, Some(token.clone()));
     // Кімната = вузол графа, якщо запущено з кореня MT-проєкту (tasks-дир
     // `mt/` поряд): UserMessage веде claim/worktree, /done — fenced publish.
     let tasks_dir = std::env::current_dir()?.join("mt");
@@ -118,13 +146,21 @@ async fn run_serve(
         state = state.with_graph(GraphConfig::new(tasks_dir));
     }
     let state = Arc::new(state);
-    let (addr, handle) = serve(state, format!("127.0.0.1:{port}").parse()?).await?;
+    let (addr, handle) = serve(Arc::clone(&state), format!("127.0.0.1:{port}").parse()?).await?;
     let discovery = Discovery::new(dir);
     discovery.write(addr.port(), &token)?;
     println!("agent-server: ws://{addr}/ws (protocol v{PROTOCOL_VERSION})");
+    // Міст до relay: віддалені пристрої бачать стрічку і шлють команди.
+    let relay_bridge = relay.map(|config| {
+        println!("relay-міст: {} (кімната {})", config.url, config.root);
+        spawn_relay_bridge(Arc::clone(&state), config)
+    });
 
     tokio::signal::ctrl_c().await?;
     discovery.remove()?;
+    if let Some(bridge) = relay_bridge {
+        bridge.abort();
+    }
     handle.abort();
     Ok(())
 }

@@ -1,6 +1,6 @@
 {
   "name": "@7n/relay",
-  "version": "0.2.0",
+  "version": "0.8.1",
   "private": true,
   "description": "Relay-координатор MT: кімнати Envelope, membership, pubkey-роздача (M2)",
   "type": "module",
@@ -13,6 +13,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.21.1"
   }
 }

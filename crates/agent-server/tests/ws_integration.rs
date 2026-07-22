@@ -1,12 +1,10 @@
 //! Інтеграційні тести WS-транспорту: реальний сервер на ефемерному порту,
-//! tungstenite-клієнт, хід через AgentTurnRunner + MockProvider (офлайн).
+//! tungstenite-клієнт, хід через скриптований runner (офлайн).
 
 use std::sync::Arc;
 
-use agent_core::provider::{Completion, MockProvider};
-use agent_core::{Agent, ToolRegistry};
 use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::{serve, AgentTurnRunner, AppState, SessionHost};
+use agent_server::{serve, AppState, ScriptedTurnRunner, SessionHost};
 use chrono::Utc;
 use futures::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
@@ -15,20 +13,9 @@ use uuid::Uuid;
 type WsStream =
     tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
 
-/// Сервер із MockProvider, який на кожен хід відповідає одним текстом.
+/// Сервер зі скриптованим runner-ом: на кожен хід — наступний текст.
 async fn start_server(dir: &tempfile::TempDir, responses: Vec<&str>) -> String {
-    let responses: Vec<String> = responses.into_iter().map(String::from).collect();
-    let runner = AgentTurnRunner::new(move |_workdir| {
-        Agent::new(
-            MockProvider::scripted(responses.iter().map(|text| Completion {
-                text: text.clone(),
-                tool_calls: vec![],
-            })),
-            ToolRegistry::new(),
-            "mock",
-            "system",
-        )
-    });
+    let runner = ScriptedTurnRunner::new(responses);
     let state = Arc::new(AppState::new(
         SessionHost::new(dir.path().to_path_buf()).unwrap(),
         Arc::new(runner),

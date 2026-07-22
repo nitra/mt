@@ -6,9 +6,9 @@ layers:
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
   sources:
     - architecture/access.md ce2b0bbd 46f2e33d
-    - architecture/i18n.md fef048da 685a317d
-    - architecture/retro.md a7ccba87 e1802362
-    - architecture/operations.md 79bcbf49 d34602c7
+    - architecture/i18n.md fef048da 7569c56f
+    - architecture/retro.md a7ccba87 a56203cf
+    - architecture/operations.md 79bcbf49 df7b6592
 ---
 
 # Люди, доступ, супровід

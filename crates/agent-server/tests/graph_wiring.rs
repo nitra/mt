@@ -1,22 +1,20 @@
 //! Інтеграція WS-сесій із graph-мостом: attach на першому UserMessage,
 //! журнал у run ref, DoneSession → fenced publish, ReleaseSession → пауза.
-//! Все герметично: bare-репо як origin, MockProvider-агент, реальний WS.
+//! Все герметично: bare-репо як origin, скриптований runner, реальний WS.
 
 use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use agent_core::provider::{Completion, MockProvider};
-use agent_core::{Agent, ToolRegistry};
-use agent_protocol::{ClientHello, Envelope, Event, ServerHello, PROTOCOL_VERSION};
-use agent_server::{serve, AgentTurnRunner, AppState, GraphConfig, SessionHost};
+use agent_protocol::{Envelope, Event};
+use agent_server::{serve, AppState, ApprovalGate, GraphConfig, ScriptedTurnRunner, SessionHost};
 use chrono::Utc;
-use futures::{SinkExt, StreamExt};
+use futures::SinkExt;
 use tokio_tungstenite::tungstenite::Message;
 use uuid::Uuid;
 
-type WsStream =
-    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+mod common;
+use common::next_json;
 
 fn sh(dir: &Path, args: &[&str]) {
     let out = Command::new("git")
@@ -62,7 +60,7 @@ struct Fixture {
 
 impl Fixture {
     /// bare-origin + робочий клон із вузлом `mt/demo` + WS-сервер із
-    /// graph-мостом і MockProvider-агентом (по одній відповіді на хід).
+    /// graph-мостом і скриптованим runner-ом (по одній відповіді на хід).
     async fn start(responses: Vec<&str>) -> Self {
         let origin = tempfile::tempdir().unwrap();
         sh(origin.path(), &["init", "--bare", "-q", "-b", "main"]);
@@ -78,26 +76,13 @@ impl Fixture {
         );
         sh(work.path(), &["push", "-q", "origin", "main"]);
 
-        let responses: Vec<String> = responses.into_iter().map(String::from).collect();
-        let runner = AgentTurnRunner::new(move |_workdir| {
-            Agent::new(
-                MockProvider::scripted(responses.iter().map(|text| Completion {
-                    text: text.clone(),
-                    tool_calls: vec![],
-                })),
-                ToolRegistry::new(),
-                "mock",
-                "system",
-            )
-        });
         let state_dir = tempfile::tempdir().unwrap();
+        let sessions = Arc::new(SessionHost::new(state_dir.path().to_path_buf()).unwrap());
+        let approvals = Arc::new(ApprovalGate::default());
+        let runner = ScriptedTurnRunner::new(responses);
         let state = Arc::new(
-            AppState::new(
-                SessionHost::new(state_dir.path().to_path_buf()).unwrap(),
-                Arc::new(runner),
-                None,
-            )
-            .with_graph(GraphConfig::new(work.path().join("mt"))),
+            AppState::from_parts(sessions, approvals, Arc::new(runner), None)
+                .with_graph(GraphConfig::new(work.path().join("mt"))),
         );
         let (addr, _handle) = serve(state, "127.0.0.1:0".parse().unwrap()).await.unwrap();
         Self {
@@ -113,36 +98,9 @@ impl Fixture {
     }
 }
 
-async fn connect(url: &str) -> WsStream {
-    let hello = ClientHello {
-        protocol_version: PROTOCOL_VERSION,
-        device_id: Uuid::from_u128(7),
-        device_token: String::new(),
-        client_kind: "cli".into(),
-        client_capabilities: vec![],
-        lang: "uk".into(),
-        want_replay_from: None,
-    };
-    let (mut stream, _) = tokio_tungstenite::connect_async(url).await.unwrap();
-    stream
-        .send(Message::text(serde_json::to_string(&hello).unwrap()))
-        .await
-        .unwrap();
-    let _: ServerHello = next_json(&mut stream).await;
-    stream
-}
-
-async fn next_json<T: serde::de::DeserializeOwned>(stream: &mut WsStream) -> T {
-    loop {
-        let message = tokio::time::timeout(std::time::Duration::from_secs(10), stream.next())
-            .await
-            .expect("timeout очікування кадру")
-            .expect("стрім закрито")
-            .unwrap();
-        if let Message::Text(text) = message {
-            return serde_json::from_str(text.as_str()).unwrap();
-        }
-    }
+/// WS-клієнт цього тест-бінарника (device_id — довільна константа).
+async fn connect(url: &str) -> common::WsStream {
+    common::connect(url, 7).await
 }
 
 fn client_event(node: &str, event: Event) -> Message {
@@ -169,6 +127,10 @@ fn user_message(node: &str, text: &str) -> Message {
     )
 }
 
+// Mid-run approval-гейт тулів пішов разом із власним agent loop
+// (ADR 260713-2110): у ACP-виконавців approvals ідуть через
+// `permission-request` → `ApprovalRequest` — тести повернуться з ACP-клієнтом.
+
 /// Повний M1-цикл: UserMessage → attach (claim ref) → хід → журнал у run
 /// ref → DoneSession → fenced publish (main без .nitra/, refs прибрані).
 #[tokio::test(flavor = "multi_thread")]
@@ -183,21 +145,31 @@ async fn user_message_attaches_and_done_publishes() {
     assert_eq!(done_event.event, Event::AgentTextDone {});
 
     // Attach відбувся: claim ref і run ref на remote, журнал у run ref.
+    // Кадри обробляються у spawned-тасках — коміт журналу завершується
+    // ПІСЛЯ стріму подій ходу, тому чекаємо з ретраєм.
+    let mut journal = String::new();
+    for _ in 0..50 {
+        let refs = fixture.remote_refs();
+        if let Some(run_ref) = refs
+            .lines()
+            .find(|line| line.contains("refs/mt/runs/"))
+            .and_then(|line| line.split_whitespace().nth(1))
+        {
+            let out = Command::new("git")
+                .arg("-C")
+                .arg(fixture.origin.path())
+                .args(["show", &format!("{run_ref}:.nitra/session.jsonl")])
+                .output()
+                .unwrap();
+            if out.status.success() {
+                journal = String::from_utf8_lossy(&out.stdout).into_owned();
+                break;
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
     let refs = fixture.remote_refs();
     assert!(refs.contains("refs/mt/claims/"), "{refs}");
-    assert!(refs.contains("refs/mt/runs/"), "{refs}");
-    let run_ref = refs
-        .lines()
-        .find(|line| line.contains("refs/mt/runs/"))
-        .unwrap()
-        .split_whitespace()
-        .nth(1)
-        .unwrap()
-        .to_string();
-    let journal = sh_out(
-        fixture.origin.path(),
-        &["show", &format!("{run_ref}:.nitra/session.jsonl")],
-    );
     assert!(
         journal.contains("почни"),
         "журнал сесії у run ref: {journal}"
@@ -221,6 +193,9 @@ async fn user_message_attaches_and_done_publishes() {
         &["ls-tree", "-r", "--name-only", "main"],
     );
     assert!(!main_files.contains(".nitra"), "{main_files}");
+    // Контрактні артефакти спроби синтезовано (graph.md).
+    assert!(main_files.contains("mt/demo/run_001.md"), "{main_files}");
+    assert!(main_files.contains("mt/demo/fact_001.md"), "{main_files}");
 }
 
 /// ReleaseSession: пауза — claim знято (ClaimChanged без holder-а),

@@ -3,56 +3,25 @@ type: JS Module
 title: config.mjs
 resource: npm/lib/core/config.mjs
 docgen:
-  crc: 80dcd549
+  crc: 81739452
   model: omlx/gemma-4-e2b-it-4bit
   score: 100
 ---
 
 ## Огляд
 
-**Огляд**
-Файл відповідає за завантаження конфігурації `.mt.json` та її злиття з дефолтними значеннями. Його роль полягає у визначенні базових налаштувань та шляхів для роботи з mt-командами.
-
-**Поведінка**
-CONFIG_DEFAULTS
-Надає дефолтні значення конфігурації з Rust-ядра
-
-loadConfig
-Завантажує конфігурацію з файлу `.mt.json` і зливає її з дефолтними значеннями
-
-resolveMtDir
-Повертає абсолютний шлях до `mt_dir`
-
-resolveWorktreesDir
-Повертає абсолютний шлях до `worktrees_dir`
-
-resolveModelByTier
-Визначає модель за `model_tier` через `model_map` або повертає `claude_model` як за замовчуванням
-
-## Поведінка
-
-Поведінка
-CONFIG_DEFAULTS
-Забезпечує дефолтні значення конфігурації з Rust-ядра
-
-loadConfig
-Завантажує конфігурацію з файлу .mt.json і мержить із дефолтними значеннями
-
-resolveMtDir
-Повертає абсолютний шлях до mt_dir
-
-resolveWorktreesDir
-Повертає абсолютний шлях до worktrees_dir
-
-resolveModelByTier
-Резолвить модель за model_tier із model_map або повертає claude_model як дефолт
+Завантаження конфігурації `.mt.json` для mt-команд (читання файлу з ін'єктованою ФС, злиття з дефолтами у Rust-ядрі `mt-core` через napi-аддон) плюс **user-level конфіг виконавців з ENV** — він спільний для всіх репозиторіїв користувача і тому не живе у repo-scoped `.mt.json`.
 
 ## Публічний API
 
-Зрозумів. Я готовий писати лаконічну ПОВЕДІНКОВУ документацію до коду українською, використовуючи вказані конвенції та ключові терміни.
-
-Надайте мені код, який потрібно прокоментувати.
+- `CONFIG_DEFAULTS` — дефолтні значення конфігурації (джерело істини — Rust `config_defaults`); модельних ключів не містить.
+- `loadConfig({ root, readFile, exists })` — читає `<root>/.mt.json` (якщо існує) і повертає злиту з дефолтами конфігурацію.
+- `resolveMtDir(config, root)` / `resolveWorktreesDir(config, root)` — абсолютні шляхи до `mt_dir` / `worktrees_dir` (відносні — від `root`).
+- `normalizeModelTier(tier)` — канонізація тиру (uppercase: `MIN` | `AVG` | `MAX`).
+- `loadAgentCliEnv(env)` — конфіг виконавців з ENV: `MT_AGENT_CLI` (дефолтний CLI, fallback `claude`), `MT_CLOUD_AGENT_CLIS` (каскад хмарних CLI, comma-separated), `MT_AGENT_CLI_MODEL_MAP` (JSON-мапа «CLI → тир → модель»; невалідний JSON → порожня мапа без винятку).
+- `resolveModelForCli(cliEnv, agentCli, modelTier)` — конкретна модель тиру для підписочного CLI з мапи; немає мапінгу → `null` (CLI резолвить модель сам, тир лишається hint-ом `MT_MODEL_TIER`).
 
 ## Гарантії поведінки
 
 - Read-only: не виконує операцій запису (ФС/БД).
+- ФС і ENV ін'єктуються — модуль тестований без диска й реального оточення; відсутній `.mt.json` → чисті дефолти.

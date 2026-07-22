@@ -1,5 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -9,67 +8,35 @@ import run from '../commands/run.mjs'
 
 const createdDirs = []
 
-function createTaskRepo() {
-  const root = mkdtempSync(join(tmpdir(), 'mt-run-'))
-  createdDirs.push(root)
-  execFileSync('git', ['init', '-q', '--initial-branch=main'], { cwd: root })
-  execFileSync('git', ['config', 'user.email', 'mt-test@example.test'], { cwd: root })
-  execFileSync('git', ['config', 'user.name', 'MT Test'], { cwd: root })
-  mkdirSync(join(root, 'mt', 'demo'), { recursive: true })
-  writeFileSync(
-    join(root, 'mt', 'demo', 'task.md'),
-    '---\nmode: agent\nbudget_sec: 60\nexecutor:\n  type: agent\n  model_tier: AVG\n---\n\n## Mission\n\nDemo\n',
-    'utf8'
-  )
-  execFileSync('git', ['add', '.'], { cwd: root })
-  execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: root })
-  return root
-}
-
-function spawnAgentFixture(_command, _args, options) {
-  expect(options.cwd.endsWith('/mt/demo')).toBe(true)
-  writeFileSync(join(options.cwd, 'fact_001.md'), '## Result\n\nready\n', 'utf8')
-  return { status: 0 }
-}
-
 /**
- * Екзекутор із ненульовим exit — runner має трактувати як failed-run.
- * @returns {{ status: number, stdout: string }} результат spawnSync
- */
-function spawnExecutorFail() {
-  return { status: 1, stdout: '' }
-}
-
-/**
- * Екзекутор із exit 0 (для перевірки гейта `## Check`, який має провалити run).
- * @returns {{ status: number, stdout: string }} результат spawnSync
- */
-function spawnExecutorOk() {
-  return { status: 0, stdout: '{"applied":true,"touchedFiles":[]}' }
-}
-
-/**
- * Репозиторій із заданим `.mt.json` `node_executor` і task.md (опційно з `## Check`).
- * @param {{ check?: string }} [opts] опції фікстури
+ * Мінімальна фікстура тонкого клієнта: task.md на диску (git не потрібен —
+ * claim/worktree/publish живуть у Rust-раннері, який тут мокається).
  * @returns {string} корінь тимчасового репо
  */
-function createExecutorRepo(opts = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'mt-run-exec-'))
+function createTaskFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'mt-run-'))
   createdDirs.push(root)
-  execFileSync('git', ['init', '-q', '--initial-branch=main'], { cwd: root })
-  execFileSync('git', ['config', 'user.email', 'mt-test@example.test'], { cwd: root })
-  execFileSync('git', ['config', 'user.name', 'MT Test'], { cwd: root })
-  writeFileSync(join(root, '.mt.json'), JSON.stringify({ node_executor: 'my-executor --flag' }), 'utf8')
   mkdirSync(join(root, 'mt', 'demo'), { recursive: true })
-  const check = opts.check ? `\n## Check\n\n${opts.check}\n` : ''
-  writeFileSync(
-    join(root, 'mt', 'demo', 'task.md'),
-    `---\nmode: agent\nbudget_sec: 60\nexecutor:\n  type: agent\n  model_tier: AVG\n---\n\n## Task\n\nDemo\n${check}`,
-    'utf8'
-  )
-  execFileSync('git', ['add', '.'], { cwd: root })
-  execFileSync('git', ['commit', '-qm', 'fixture'], { cwd: root })
+  writeFileSync(join(root, 'mt', 'demo', 'task.md'), '---\nmode: agent\n---\n\n## Mission\n\nDemo\n', 'utf8')
   return root
+}
+
+/**
+ * Мок napi-аддона: runNode/runAuto підміняються тестом.
+ * @param {{
+ *   runNode?: (mtDir: string, taskPath: string) => object,
+ *   runAuto?: (mtDir: string, concurrency: number) => object[]
+ * }} [impl] реалізації
+ * @returns {{
+ *   runNode: (mtDir: string, taskPath: string) => object,
+ *   runAuto: (mtDir: string, concurrency: number) => object[]
+ * }} native-мок
+ */
+function nativeMock(impl = {}) {
+  return {
+    runNode: impl.runNode ?? vi.fn(),
+    runAuto: impl.runAuto ?? vi.fn(() => [])
+  }
 }
 
 afterEach(() => {
@@ -79,61 +46,109 @@ afterEach(() => {
   createdDirs.length = 0
 })
 
-describe('mt run', () => {
-  // Реальні git init/worktree/merge у tmp — під навантаженою машиною не влазить у default 5s
-  test('виконує agent у mt/<task> worktree та мерджить artifacts у main', () => {
-    const root = createTaskRepo()
+describe('mt run — тонкий клієнт Rust-раннера', () => {
+  test('agent-шлях делегує native.runNode(mtDir, path); success → 0', () => {
+    const root = createTaskFixture()
+    const runNode = vi.fn(() => ({
+      result: 'success',
+      run_file: 'run_001.md',
+      fact_file: 'fact_001.md',
+      wall_sec: 3,
+      agent_cli: 'codex',
+      propagated: []
+    }))
+    const log = vi.fn()
 
-    expect(run(['demo'], { cwd: root, spawnSync: spawnAgentFixture, log: vi.fn() })).toBe(0)
-    expect(existsSync(join(root, 'mt', 'demo', 'fact_001.md'))).toBe(true)
-    expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: success')
-    expect(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' })).toBe('')
-  }, 30_000)
+    expect(run(['demo'], { cwd: root, native: nativeMock({ runNode }), log })).toBe(0)
+
+    expect(runNode).toHaveBeenCalledWith(join(root, 'mt'), 'demo')
+    const logged = log.mock.calls.flat().join('\n')
+    expect(logged).toContain('success')
+    expect(logged).toContain('agent_cli=codex')
+  })
+
+  test('failed-результат раннера → exit 1 із вказівкою на run_NNN.md', () => {
+    const root = createTaskFixture()
+    const runNode = vi.fn(() => ({
+      result: 'failed',
+      run_file: 'run_002.md',
+      fact_file: null,
+      wall_sec: 7,
+      agent_cli: null,
+      propagated: []
+    }))
+    const log = vi.fn()
+
+    expect(run(['demo'], { cwd: root, native: nativeMock({ runNode }), log })).toBe(1)
+    expect(log.mock.calls.flat().join('\n')).toContain('run_002.md')
+  })
+
+  test('claim-lost («інший runner виграв») → exit 2; інша помилка → 1', () => {
+    const root = createTaskFixture()
+    const claimLost = nativeMock({
+      runNode: vi.fn(() => {
+        throw new Error('claim-lost: інший runner уже володіє цим вузлом')
+      })
+    })
+    expect(run(['demo'], { cwd: root, native: claimLost, log: vi.fn() })).toBe(2)
+
+    const noOrigin = nativeMock({
+      runNode: vi.fn(() => {
+        throw new Error("git fetch origin: no such remote 'origin'")
+      })
+    })
+    expect(run(['demo'], { cwd: root, native: noOrigin, log: vi.fn() })).toBe(1)
+  })
+
+  test('невідома задача → 1 без виклику раннера', () => {
+    const root = createTaskFixture()
+    const native = nativeMock()
+
+    expect(run(['missing'], { cwd: root, native, log: vi.fn() })).toBe(1)
+    expect(native.runNode).not.toHaveBeenCalled()
+  })
+
+  test('без <path> і без --auto → 1 з usage', () => {
+    const root = createTaskFixture()
+    const log = vi.fn()
+    expect(run([], { cwd: root, native: nativeMock(), log })).toBe(1)
+    expect(log.mock.calls.flat().join('\n')).toContain('Usage')
+  })
+
+  test('--actor human — інструкції без спавну і без claim', () => {
+    const root = createTaskFixture()
+    const native = nativeMock()
+    const log = vi.fn()
+
+    expect(run(['demo', '--actor', 'human'], { cwd: root, native, log })).toBe(0)
+
+    expect(native.runNode).not.toHaveBeenCalled()
+    expect(log.mock.calls.flat().join('\n')).toContain('mt done demo')
+  })
 })
 
-describe('mt run — зовнішній екзекутор (node_executor)', () => {
-  test('делегує вузол екзекутору, синтезує fact і мерджить (## Check пройдено)', () => {
-    const root = createExecutorRepo({ check: 'true' })
-    const seen = {}
-    // Екзекутор fact НЕ пише — його синтезує runner зі stdout {applied, touchedFiles}.
-    const spawnExecutor = (command, args, options) => {
-      seen.command = command
-      seen.args = args
-      seen.env = options.env
-      return { status: 0, stdout: 'noise line\n{"applied":true,"touchedFiles":["demo.js"]}' }
-    }
+describe('mt run --auto — оркестраторний прохід у Rust-ядрі', () => {
+  test('делегує runAuto(mtDir, agent_concurrency); claim-lost — skip, не провал', () => {
+    const root = createTaskFixture()
+    const runAuto = vi.fn(() => [
+      { path: 'a', result: 'success', error: null },
+      { path: 'b', result: 'error', error: 'claim-lost: інший runner уже володіє цим вузлом' }
+    ])
 
-    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutor, log: vi.fn() })).toBe(0)
+    expect(run(['--auto'], { cwd: root, native: nativeMock({ runAuto }), log: vi.fn() })).toBe(0)
+    // agent_concurrency — з CONFIG_DEFAULTS (5), .mt.json відсутній.
+    expect(runAuto).toHaveBeenCalledWith(join(root, 'mt'), 5)
+  })
 
-    // Спавнено саме екзекутор (не claude), node-dir — останній argv.
-    expect(seen.command).toBe('my-executor')
-    expect(seen.args[0]).toBe('--flag')
-    expect(seen.args.at(-1).endsWith('/mt/demo')).toBe(true)
-    // Контракт env: тир і run-token передані для harness консюмера.
-    expect(seen.env.MT_MODEL_TIER).toBe('AVG')
-    expect(seen.env.MT_RUN_TOKEN).toBeTruthy()
-    expect(seen.env.MT_NODE_DIR.endsWith('/mt/demo')).toBe(true)
+  test('реальний провал вузла у прогоні → 1; порожній прогін → 0', () => {
+    const root = createTaskFixture()
+    const failed = nativeMock({
+      runAuto: vi.fn(() => [{ path: 'a', result: 'budget-exceeded', error: null }])
+    })
+    expect(run(['--auto'], { cwd: root, native: failed, log: vi.fn() })).toBe(1)
 
-    const fact = readFileSync(join(root, 'mt', 'demo', 'fact_001.md'), 'utf8')
-    expect(fact).toContain('applied=true')
-    expect(fact).toContain('demo.js')
-    expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: success')
-    expect(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' })).toBe('')
-  }, 30_000)
-
-  test('ненульовий exit екзекутора → failed-run, без fact', () => {
-    const root = createExecutorRepo()
-
-    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutorFail, log: vi.fn() })).toBe(1)
-    expect(existsSync(join(root, 'mt', 'demo', 'fact_001.md'))).toBe(false)
-    expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: failed')
-  }, 30_000)
-
-  test('exit 0 але ## Check провалюється → failed-run, без fact', () => {
-    const root = createExecutorRepo({ check: 'false' })
-
-    expect(run(['demo'], { cwd: root, spawnSync: spawnExecutorOk, log: vi.fn() })).toBe(1)
-    expect(existsSync(join(root, 'mt', 'demo', 'fact_001.md'))).toBe(false)
-    expect(readFileSync(join(root, 'mt', 'demo', 'run_001.md'), 'utf8')).toContain('result: failed')
-  }, 30_000)
+    const log = vi.fn()
+    expect(run(['--auto'], { cwd: root, native: nativeMock(), log })).toBe(0)
+    expect(log.mock.calls.flat().join('\n')).toContain('немає готових задач')
+  })
 })

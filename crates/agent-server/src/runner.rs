@@ -1,18 +1,34 @@
-//! Виконавці ходу: міст між сесією і `agent-core`.
+//! Виконавці ходу інтерактивної сесії.
 //!
 //! `UserMessage` клієнта запускає хід агента; всі події ходу емітяться в
-//! сесію (Envelope збирає session host). Референсна реалізація —
-//! [`AgentTurnRunner`] поверх `agent_core::Agent` (будь-який `Provider`);
-//! [`EchoTurnRunner`] — заглушка для demo/CLI без налаштованого провайдера.
+//! сесію (Envelope збирає session host). Транспорт виконавця — **ACP (Agent
+//! Client Protocol)**: [`AcpTurnRunner`] спавнить ACP-адаптер підписочного
+//! CLI (claude / codex / cursor / pi) per-кімнату і мапить
+//! `session/request_permission` на approval-гейт (`ApprovalRequest`,
+//! ADR `260713-2110`). [`EchoTurnRunner`] — заглушка для demo/CLI і тестів
+//! транспорту.
 
 use std::collections::HashMap;
+use std::fmt;
 use std::path::Path;
+use std::process::Stdio;
 use std::sync::Arc;
 
-use agent_core::provider::Provider;
-use agent_core::{Agent, AgentError};
+use agent_core::{AcpClient, PermissionHandler};
 use agent_protocol::Event;
 use async_trait::async_trait;
+
+/// Помилка ходу виконавця (текстова: транспорт/виконавець повідомляє причину).
+#[derive(Debug)]
+pub struct TurnError(pub String);
+
+impl fmt::Display for TurnError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for TurnError {}
 
 /// Виконавець одного ходу кімнати. `workdir` — робоча директорія ходу
 /// (worktree інтерактивного run-а); runner-и без файлових тулів її ігнорують.
@@ -24,61 +40,163 @@ pub trait TurnRunner: Send + Sync {
         user_text: &str,
         workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
-    ) -> Result<String, AgentError>;
+    ) -> Result<String, TurnError>;
 }
 
-/// Фабрика агента кімнати: отримує workdir run-а (worktree run-а).
-type AgentFactory<P> = Box<dyn Fn(Option<&Path>) -> Agent<P> + Send + Sync>;
+/// Фабрика [`PermissionHandler`] для кімнати: хост дає обробник
+/// `request_permission`, що знає вузол (роутинг `ApprovalRequest` у правильну
+/// кімнату).
+pub type PermissionFactory = Arc<dyn Fn(&str) -> PermissionHandler + Send + Sync>;
 
-/// Референсний runner: окремий `Agent` (своя історія) на кожну кімнату.
-/// Фабрика отримує workdir run-а (worktree) — агент кімнати будується з
-/// тулами, піскованими до нього.
-pub struct AgentTurnRunner<P: Provider> {
-    agents: tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<Agent<P>>>>>,
-    factory: AgentFactory<P>,
+/// Жива ACP-сесія кімнати: процес адаптера + клієнт + sessionId.
+struct AcpRoom {
+    /// Тримаємо процес живим на весь час кімнати (kill_on_drop).
+    _child: tokio::process::Child,
+    client: AcpClient<tokio::process::ChildStdin>,
+    session_id: String,
 }
 
-impl<P: Provider> AgentTurnRunner<P> {
-    /// `factory` створює агента кімнати (system prompt, tools за workdir,
-    /// модель).
-    pub fn new(factory: impl Fn(Option<&Path>) -> Agent<P> + Send + Sync + 'static) -> Self {
+/// Референсний виконавець: зовнішній підписочний CLI через ACP-адаптер.
+/// Per-кімнату — окремий процес адаптера (своя історія в сесії агента);
+/// `workdir` ходу стає `cwd` ACP-сесії (worktree run-а).
+pub struct AcpTurnRunner {
+    argv: Vec<String>,
+    permission_factory: Option<PermissionFactory>,
+    rooms: tokio::sync::Mutex<HashMap<String, AcpRoom>>,
+}
+
+impl AcpTurnRunner {
+    /// `command` — рядок команди ACP-адаптера (whitespace-токенізація, без
+    /// shell-метасимволів), напр. `npx claude-code-acp`.
+    pub fn new(command: &str, permission_factory: Option<PermissionFactory>) -> Self {
         Self {
-            agents: tokio::sync::Mutex::new(HashMap::new()),
-            factory: Box::new(factory),
+            argv: command.split_whitespace().map(str::to_string).collect(),
+            permission_factory,
+            rooms: tokio::sync::Mutex::new(HashMap::new()),
         }
     }
 
-    async fn agent_for(
+    /// Спавнить адаптер і відкриває ACP-сесію кімнати (initialize +
+    /// session/new у workdir).
+    async fn open_room(
         &self,
         node_hash: &str,
         workdir: Option<&Path>,
-    ) -> Arc<tokio::sync::Mutex<Agent<P>>> {
-        let mut agents = self.agents.lock().await;
-        Arc::clone(
-            agents
-                .entry(node_hash.to_string())
-                .or_insert_with(|| Arc::new(tokio::sync::Mutex::new((self.factory)(workdir)))),
-        )
+    ) -> Result<AcpRoom, TurnError> {
+        let program = self
+            .argv
+            .first()
+            .ok_or_else(|| TurnError("порожня команда ACP-адаптера".into()))?;
+        let mut child = tokio::process::Command::new(program)
+            .args(&self.argv[1..])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .kill_on_drop(true)
+            .spawn()
+            .map_err(|e| TurnError(format!("spawn ACP-адаптера {program}: {e}")))?;
+        let stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| TurnError("stdin адаптера".into()))?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| TurnError("stdout адаптера".into()))?;
+        let permission = self.permission_factory.as_ref().map(|f| f(node_hash));
+        let mut client = AcpClient::new(stdout, stdin, permission);
+        client
+            .initialize()
+            .await
+            .map_err(|e| TurnError(e.to_string()))?;
+        // ACP-спека вимагає абсолютний cwd (NewSessionRequest.cwd); без
+        // workdir (M1 CLI без графа/worktree) беремо cwd поточного процесу —
+        // деякі адаптери (claude-agent-acp) відкидають "." як невалідний.
+        let cwd = match workdir {
+            Some(p) => p.to_string_lossy().into_owned(),
+            None => std::env::current_dir()
+                .map_err(|e| TurnError(format!("cwd поточного процесу: {e}")))?
+                .to_string_lossy()
+                .into_owned(),
+        };
+        let session_id = client
+            .new_session(&cwd)
+            .await
+            .map_err(|e| TurnError(e.to_string()))?;
+        Ok(AcpRoom {
+            _child: child,
+            client,
+            session_id,
+        })
     }
 }
 
 #[async_trait]
-impl<P: Provider> TurnRunner for AgentTurnRunner<P> {
+impl TurnRunner for AcpTurnRunner {
     async fn run_turn(
         &self,
         node_hash: &str,
         user_text: &str,
         workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
-    ) -> Result<String, AgentError> {
-        let agent = self.agent_for(node_hash, workdir).await;
-        let mut agent = agent.lock().await;
-        agent.run_turn(user_text, emit).await
+    ) -> Result<String, TurnError> {
+        let mut rooms = self.rooms.lock().await;
+        if !rooms.contains_key(node_hash) {
+            let room = self.open_room(node_hash, workdir).await?;
+            rooms.insert(node_hash.to_string(), room);
+        }
+        let room = rooms.get_mut(node_hash).expect("щойно вставлена кімната");
+        let session_id = room.session_id.clone();
+        room.client
+            .prompt(&session_id, user_text, emit)
+            .await
+            .map_err(|e| TurnError(e.to_string()))
+    }
+}
+
+/// Скриптований виконавець для тестів транспорту/сесій: на кожен хід
+/// віддає наступний текст зі скрипту (емітить `AgentTextDelta` +
+/// `AgentTextDone`), не викликаючи жодного LLM.
+pub struct ScriptedTurnRunner {
+    responses: std::sync::Mutex<std::collections::VecDeque<String>>,
+}
+
+impl ScriptedTurnRunner {
+    /// Створює runner зі списком відповідей (по одній на хід).
+    pub fn new<I, S>(responses: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        Self {
+            responses: std::sync::Mutex::new(responses.into_iter().map(Into::into).collect()),
+        }
+    }
+}
+
+#[async_trait]
+impl TurnRunner for ScriptedTurnRunner {
+    async fn run_turn(
+        &self,
+        _node_hash: &str,
+        _user_text: &str,
+        _workdir: Option<&Path>,
+        emit: &(dyn Fn(Event) + Send + Sync),
+    ) -> Result<String, TurnError> {
+        let text = self
+            .responses
+            .lock()
+            .expect("responses mutex")
+            .pop_front()
+            .unwrap_or_default();
+        emit(Event::AgentTextDelta { text: text.clone() });
+        emit(Event::AgentTextDone {});
+        Ok(text)
     }
 }
 
 /// Заглушка без LLM: віддзеркалює текст користувача. Для demo `attach`
-/// без налаштованого провайдера і для тестів транспорту.
+/// без підключеного ACP-виконавця і для тестів транспорту.
 pub struct EchoTurnRunner;
 
 #[async_trait]
@@ -89,110 +207,10 @@ impl TurnRunner for EchoTurnRunner {
         user_text: &str,
         _workdir: Option<&Path>,
         emit: &(dyn Fn(Event) + Send + Sync),
-    ) -> Result<String, AgentError> {
+    ) -> Result<String, TurnError> {
         let text = format!("echo: {user_text}");
         emit(Event::AgentTextDelta { text: text.clone() });
         emit(Event::AgentTextDone {});
         Ok(text)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::Mutex;
-
-    use agent_core::provider::{Completion, MockProvider};
-    use agent_core::ToolRegistry;
-
-    use super::*;
-
-    /// Реальна звʼязка з agent-core: скриптований MockProvider через
-    /// AgentTurnRunner дає події ходу; історія кімнати зберігається між ходами.
-    #[tokio::test]
-    async fn agent_turn_runner_keeps_per_room_history() {
-        let runner = AgentTurnRunner::new(|_workdir| {
-            Agent::new(
-                MockProvider::scripted([
-                    Completion {
-                        text: "перший".into(),
-                        tool_calls: vec![],
-                    },
-                    Completion {
-                        text: "другий".into(),
-                        tool_calls: vec![],
-                    },
-                ]),
-                ToolRegistry::new(),
-                "mock",
-                "system",
-            )
-        });
-        let events = Mutex::new(Vec::new());
-        let emit = |event: Event| events.lock().unwrap().push(event);
-
-        let first = runner.run_turn("room-1", "раз", None, &emit).await.unwrap();
-        let second = runner.run_turn("room-1", "два", None, &emit).await.unwrap();
-
-        assert_eq!((first.as_str(), second.as_str()), ("перший", "другий"));
-        assert_eq!(
-            *events.lock().unwrap(),
-            vec![
-                Event::AgentTextDelta {
-                    text: "перший".into()
-                },
-                Event::AgentTextDone {},
-                Event::AgentTextDelta {
-                    text: "другий".into()
-                },
-                Event::AgentTextDone {},
-            ]
-        );
-    }
-
-    /// Фабрика з workdir: скриптований tool call `write_file` через
-    /// AgentTurnRunner реально створює файл у workdir (worktree run-а).
-    #[tokio::test]
-    async fn workdir_factory_gives_agent_sandboxed_file_tools() {
-        use agent_core::provider::ToolCallRequest;
-        use agent_core::register_workspace_tools;
-
-        let workdir = tempfile::tempdir().unwrap();
-        let runner = AgentTurnRunner::new(|workdir: Option<&Path>| {
-            let mut tools = ToolRegistry::new();
-            if let Some(root) = workdir {
-                register_workspace_tools(&mut tools, root.to_path_buf());
-            }
-            Agent::new(
-                MockProvider::scripted([
-                    Completion {
-                        text: String::new(),
-                        tool_calls: vec![ToolCallRequest {
-                            call_id: "c1".into(),
-                            name: "write_file".into(),
-                            args: serde_json::json!({
-                                "path": "mt/demo/fact_001.md",
-                                "content": "## Summary\nok\n"
-                            }),
-                        }],
-                    },
-                    Completion {
-                        text: "записав".into(),
-                        tool_calls: vec![],
-                    },
-                ]),
-                tools,
-                "mock",
-                "system",
-            )
-        });
-
-        let text = runner
-            .run_turn("room-1", "запиши fact", Some(workdir.path()), &|_| {})
-            .await
-            .unwrap();
-
-        assert_eq!(text, "записав");
-        let written = std::fs::read_to_string(workdir.path().join("mt/demo/fact_001.md")).unwrap();
-        assert_eq!(written, "## Summary\nok\n");
     }
 }

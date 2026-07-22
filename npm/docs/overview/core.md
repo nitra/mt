@@ -5,8 +5,8 @@ timestamp: 2026-07-12
 layers:
   model: omlx/gemma-4-e4b-it-OptiQ-4bit
   sources:
-    - architecture/overview.md 663823ed 13f0cae6
-    - architecture/graph.md e2cd5fcd 0d66e614
+    - architecture/overview.md 663823ed 410525c6
+    - architecture/graph.md e2cd5fcd 2fc68691
     - architecture/git.md 8827d5f1 9c75bbe1
 ---
 

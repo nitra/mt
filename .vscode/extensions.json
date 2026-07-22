@@ -5,6 +5,8 @@
     "oxc.oxc-vscode",
     "DavidAnson.vscode-markdownlint",
     "timonwong.shellcheck",
-    "arr.marksman"
+    "arr.marksman",
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml"
   ]
 }
