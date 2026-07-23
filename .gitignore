@@ -11,3 +11,5 @@ dist/
 .codex/hooks/.normalize.lock
 .claude/worktrees/
 .worktrees/
+# @7n/rules (adr) — локальні артефакти Stop-hook, не коміти
+.claude/scheduled_tasks.lock

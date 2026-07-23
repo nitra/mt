@@ -5,8 +5,8 @@
     "": {
       "name": "mono",
       "devDependencies": {
-        "@7n/rules": "^1.43.1",
-        "@7n/rules-ci-github": "^1.9.0",
+        "@7n/rules": "^1.44.1",
+        "@7n/rules-ci-github": "^1.9.2",
         "@nitra/cspell-dict": "^2.2.2",
       },
     },
@@ -24,9 +24,9 @@
 
     "@7n/mt-linux-x64": ["@7n/mt-linux-x64@0.5.1", "", { "os": "linux", "cpu": "x64" }, "sha512-c4b1c435vfGZcRKkLnWcoKs8O6KTATFFx6gPGnid4ee+JDqzyhtxb5kzxYkcTQySO8iBHPAtUMEOBCHDrF1UjQ=="],
 
-    "@7n/rules": ["@7n/rules@1.43.1", "", { "dependencies": { "@7n/llm-lib": "^2.8.2", "@7n/mt": "^0.5.1", "@zed-industries/agent-client-protocol": "^0.4.5", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@agentclientprotocol/claude-agent-acp": "^0.59.0", "@earendil-works/pi-ai": "0.80.10", "@earendil-works/pi-coding-agent": "0.80.10" }, "bin": { "n-rules": "bin/n-rules.js", "n-cursor": "bin/n-rules.js" } }, "sha512-vsZyaEYwePoibaCmh0UQDpb93qMOjL7m76+GvBdxTCopj0Ej2A34iS58wQ4jLL+NPh26R5/xWLJKcT4WqGSPaw=="],
+    "@7n/rules": ["@7n/rules@1.44.1", "", { "dependencies": { "@7n/llm-lib": "^2.8.2", "@7n/mt": "^0.5.1", "@zed-industries/agent-client-protocol": "^0.4.5", "ajv": "^8.20.0", "cli-progress": "^3.12.0", "github-actionlint": "^1.7.12", "globby": "^16.0.0", "ignore": "^7.0.5", "markdownlint-cli2": "^0.22.1", "oxc-parser": "^0.137.0", "picomatch": "^4.0.4", "smol-toml": "^1.7.0", "v8r": "^6.1.0", "yaml": "^2.9.0", "zod": "^4.4.3" }, "optionalDependencies": { "@agentclientprotocol/claude-agent-acp": "^0.59.0", "@earendil-works/pi-ai": "0.80.10", "@earendil-works/pi-coding-agent": "0.80.10" }, "bin": { "n-rules": "bin/n-rules.js", "n-cursor": "bin/n-rules.js" } }, "sha512-s7I57g5vFQkXrYeTxugwdTR/AVTrsWuRUfOaavhIWP6gdmhbwE5eMzLNLLCpelfbkO41Ae3SmhwmiTzHSYzlAQ=="],
 
-    "@7n/rules-ci-github": ["@7n/rules-ci-github@1.9.0", "", { "dependencies": { "yaml": "^2.9.0" }, "peerDependencies": { "@7n/rules": ">=1.2.0" } }, "sha512-X/f2qKb1XT/QDryJXgK2L/vzpJY8lsBLUTazK8p3L9M5pyGYYY3edkRnz9WgavrYi0TXVE6pzhZcOZUagvocYA=="],
+    "@7n/rules-ci-github": ["@7n/rules-ci-github@1.9.2", "", { "dependencies": { "yaml": "^2.9.0" }, "peerDependencies": { "@7n/rules": ">=1.2.0" } }, "sha512-fPPbwixa/VjSnp6zD7qBWeTAp3CNDEh9CoB0jSo9duUH/w4Kqu1CU1txNYA/QR2iCr88rtjWWwRvGOg3D1Poug=="],
 
     "@agentclientprotocol/claude-agent-acp": ["@agentclientprotocol/claude-agent-acp@0.59.0", "", { "dependencies": { "@agentclientprotocol/sdk": "1.2.1", "@anthropic-ai/claude-agent-sdk": "0.3.207", "zod": "^3.25.0 || ^4.0.0" }, "bin": { "claude-agent-acp": "dist/index.js" } }, "sha512-GejLH5qxsI5IoSDfhyOVDEsRNxqi6y0Rcj5FstVeOwMACSht/bUXII0HILbzOQNoA5qlyZle3FRvf+CAjD7Rpg=="],
 
