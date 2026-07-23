@@ -31,3 +31,7 @@ npm i @7n/mt
 ## Генерація шарів
 
 `docs/layers.json` — конфіг і CRC-маркери (`<!-- layers:... -->`) для рушія шарової документації (подвійний CRC суть/файл, LLM-генерація верхніх шарів, derived-переклади). Сам рушій живе в [nitra/mt-rust](https://github.com/nitra/mt-rust) і запускається звідти проти цього репозиторію.
+
+## Крейт `mt-protocol` (Rust)
+
+Поряд із `docs/` у цьому репозиторії живе невеликий Rust-крейт **`mt-protocol`** ([`Cargo.toml`](Cargo.toml), [`src/lib.rs`](src/lib.rs)): він вшиває каталог `docs/` у бінарник через [`include_dir`](https://docs.rs/include_dir) й дає доступ до вмісту специфікації без ручного копіювання файлів. Споживається як git-залежність у [nitra/mt-rust](https://github.com/nitra/mt-rust) — крейт наразі **не публікується в crates.io**, лише через `git`-dependency. npm-пакет `@7n/mt` лишається суто docs-only — Rust-файли в його публікований архів не входять.

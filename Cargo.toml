@@ -1,0 +1,11 @@
+[package]
+name = "mt-protocol"
+version = "0.1.0"
+edition = "2021"
+description = "Специфікація протоколу MT, вбудована як Rust-крейт — docs/ корпус доступний без ручного копіювання"
+license = "ISC"
+repository = "https://github.com/nitra/mt"
+keywords = ["mt", "protocol", "spec", "docs", "agent"]
+
+[dependencies]
+include_dir = { version = "0.7.4", features = ["glob"] }
