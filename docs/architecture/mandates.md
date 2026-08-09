@@ -102,6 +102,7 @@ retry_history:
   - {agent: executor-sonnet, attempt: 1, outcome: failed-tests}
 leverage_facets: {irreversible: true, blast_radius: repo, divergence: high}
 deadline_cost: "затримка блокує 3 залежні задачі"
+recommended_by: escalation-intake-fable-5   # ідентифікатор агента-рекомендувальника (нормативний контракт нижче)
 ---
 ## Контекст
 ## Варіанти
@@ -205,17 +206,105 @@ ephemeral_mandate:
 
 | Механізм | Було | Стає |
 | --- | --- | --- |
-| `ApprovalResponse` ([access.md](access.md)) | підпис «людини» | підпис *обчисленого власника мандата*; + поле `chosen_option`; на розвилках валідний лише з пройденим квіз-гейтом |
-| `mandates.yaml` | власники — люди | + моделі як першокласні власники (`kind: model`, `audacity`); розширення ШІ-мандата підписує лише людина |
+| `ApprovalResponse` ([access.md](access.md)) | підпис «людини» | підпис *обчисленого власника мандата*; + поля `chosen_option` і `quiz_ref` (шлях до квіз-файлу); на `decision-request`-гейті валідний лише з `quiz_ref` на завершений квіз |
+| `mandates.yaml` | власники — люди | + моделі як першокласні власники (`kind: model`, `audacity`); розширення ШІ-мандата підписує лише людина; + top-level `generation` файлу |
 | Generation fencing ([git.md](git.md)) | фенсить застарілі claim-и | + фенсить `decision-request` за застарілим generation карти мандатів |
 | `unresolvable` / push тип 3 ([graph.md](graph.md), [access.md](access.md)) | алерт власнику «streak вичерпано» | збагачується escalation-intake у `decision-request` перед доставкою |
-| Run branches | `session.jsonl` | + `decisions/` — аудит-трейл людських рішень |
+| `decision-request` (мандати вище) | без ідентифікатора агента-рекомендувальника | + поле `recommended_by` (agent id) — потрібне, щоб `generated_by` квізу перевірено відрізнявся |
+| Run branches | `session.jsonl` | + `decisions/` — аудит-трейл людських рішень, включно з квіз-файлами (`NNNN-quiz.md`) |
 | Derived-стани ([graph.md](graph.md)) | `unresolvable` — термінал | + `awaiting-decision`: вузол з відкритим `decision-request` без відповіді; блокує залежні (як `pending-audit`), видимий у `mt status` |
 | Retro-рушій ([retro.md](retro.md)) | приватні пропозиції виконавцю | + другий вихід того самого прогону: агрегатор компетенцій |
 | Retry policy | неявна | явний інваріант retry-before-escalate: до людини — лише розвилки |
 | CI ([stack.md](stack.md)) | boundary для `agent-core` | + перевірка підпису делегатора на змінах `mandates.yaml` і секції `mandate` профілів |
 
 Нових сервісів не потрібно — watcher і агрегатор такі самі node actors, як решта; substrate-first зберігається, усі нові сутності — файли в git.
+
+## Нормативний контракт (M6 фаза 0)
+
+> **Контракт-перший:** цей розділ фіксує нормативні схеми для двох незалежних реалізацій — застосунку `delta` (репо `task`) і crate мандатів (репо `mt-rust`). До готовності crate `delta` мокає за цими схемами й сигнатурами; жодна сторона не блокує іншу. Джерело задачі — spec brainstorming-сесії `260809-delta-app` (репо `task`).
+
+### Схема `.mt/mandates.yaml`
+
+Документ — об'єкт із двома полями верхнього рівня: `generation` (скаляр, стосується **всього файлу**) і `mandates` (масив записів). Кожна зміна файлу — будь-якого поля будь-якого запису — інкрементує `generation` на 1; це той самий fencing-механізм, що claim generation ([git.md](git.md)), тільки прив'язаний до файлу, не до вузла.
+
+| Поле | Тип | Обов'язкове | Дефолт | Хто змінює |
+| --- | --- | --- | --- | --- |
+| `generation` | ціле ≥ 1 | так (керує тулінг, не людина) | `1` при створенні файлу | лише інструмент (`mt mandates`/CI); ручна правка відхиляється — CI приймає лише `+1` за коміт, що чіпає `mandates.yaml` |
+| `mandates[]` | масив записів | так | `[]` неприпустимий (файл без кореневого мандата — invalid) | підписаний акт делегування (додавання/видалення запису) |
+| `mandates[].owner` | рядок: handle людини або ім'я моделі (`.mt/models/{model}.yaml`, без розширення) | так | — | підписаний акт делегування власника рівня вище (переприв'язка мандата новому owner — це новий акт, не редагування) |
+| `mandates[].kind` | enum `person` \| `model` | ні | `person` | зміна `person` ↔ `model` = новий запис (delete + create), не редагування на місці; в обох напрямках підписує людина |
+| `mandates[].scope.refs` | масив git-glob патернів (`refs/mt/**`-простір) | так | — (порожній масив = порожній scope, **не** «усе») | розширення — лише підписаний акт делегування власника рівня вище; звуження власник підписує сам собі (не додає прав нікому) |
+| `mandates[].scope.decision_types` | масив рядків; `"*"` дозволено як «усі типи» | так | — (порожній масив = порожній scope) | той самий режим, що `refs` |
+| `mandates[].thresholds.budget_eur` | число ≥ 0 (EUR) | ні | відсутнє = без верхньої межі по бюджету (як у кореневого мандата) | розширення — підписаний акт делегування; звуження — сам власник |
+| `mandates[].thresholds.risk` | enum `low` \| `medium` \| `high` | ні | відсутнє = без обмеження за рівнем ризику | той самий режим, що `budget_eur` |
+| `mandates[].thresholds.irreversible` | bool | ні | `false` — за замовчуванням мандат **не** покриває незворотні рішення (консервативний дефолт, узгоджений з інваріантом reversible нижче) | розширення до `true` — підписаний акт делегування; звуження до `false` — сам власник |
+| `mandates[].thresholds.audacity` | enum `low` \| `medium` \| `high`; **лише для `kind: model`** — для `kind: person` поле неприпустиме (validate-помилка, якщо присутнє) | ні (для `kind: model`) | `low` | розширення — **лише людина**, завжди («остання константа», [vision.md](../vision.md) «Дельта») |
+| `mandates[].escalates_to` | handle власника-адресата ескалації, або `null` лише для рівно одного кореневого мандата | так | — | зміна маршруту ескалації — підписаний акт **нового** `escalates_to`-власника (він приймає на себе роль ескалаційної точки; це своя згода, не чужий підпис) |
+
+Валідатор (частина `validate_mandate_change` нижче) додатково відхиляє: більше нуля мандатів з `escalates_to: null` або дерево, де від будь-якого `owner` неможливо дійти до кореня скінченним ланцюгом `escalates_to` (цикл або висячий handle).
+
+### Формат квіз-файлів
+
+Квіз-файл — сусід свого `decision-request` у тому самому run branch, з тим самим `NNNN`, що й пара:
+
+```
+refs/mt/runs/{run-id}/decisions/0001-decision-request.md
+refs/mt/runs/{run-id}/decisions/0001-quiz.md
+```
+
+Frontmatter (перше поле — `schema_version`, як в усіх файлах контракту — [graph.md](graph.md)):
+
+```markdown
+---
+schema_version: 1
+type: quiz
+decision_ref: 0001-decision-request.md
+depth: one-tap                    # one-tap | standard | teach-back
+generated_by: quiz-gen-fable-5    # ЗОБОВ'ЯЗАНО ≠ decision-request.recommended_by
+time_to_understanding_sec: 47
+iterations: 1                     # заходів до розуміння; НЕ "спроби" — фейл нічого не карає
+---
+
+## Питання 1
+Що станеться з бюджетом задачі, якщо обереш варіант B?
+
+### Відповідь
+B — тому що ...
+
+### Мікроурок
+Що ще варто знати: ...
+
+<!-- лише для depth: teach-back -->
+## Переказ (teach-back)
+Транскрипт переказу рішення й наслідків своїми словами.
+
+### Оцінка локальної моделі
+Вердикт розуміння + обґрунтування.
+```
+
+- **`depth`** мапиться з `leverage_facets` (секція «Артефакт `decision-request`» вище) детермінованою таблицею: `reversible` + низькі фасети → `one-tap` (одне контрольне питання, картка підпису); середні фасети й **лише** `reversible` → `standard` (кілька контрольних питань, без переказу); `irreversible` або широкий `blast_radius` → `teach-back`. Та сама таблиця, що мапить фасети на режим ескалації (ask-and-wait/decide-and-inform/local) — один джерело істини в `mandates.yaml`.
+- **`generated_by` ≠ рекомендувальник**: квіз генерує окремий агент від того, що писав `## Рекомендація агента` в decision-request (конфлікт інтересів у промпті) — це вимагає нового поля `recommended_by` у фронтматері `decision-request` (таблиця «Зміни в існуючих механізмах» нижче); валідатор порівнює рядки і відхиляє збіг.
+- **Фейл ≠ «незданий».** Схема свідомо не має поля `passed`/`failed`: є лише `iterations` (скільки заходів до розуміння) і `time_to_understanding_sec`. Невдала відповідь дописує ще один блок «Питання N (спроба 2)» з розгорнутим контекстом у тому самому файлі — квіз мутабельний до моменту, коли `iterations` фіксується підписаним `ApprovalResponse` (принцип «фейл ≠ покарання», секція квіз-гейта вище).
+
+### Розширення `ApprovalResponse`
+
+Нове поле `quiz_ref` (шлях до квіз-файлу, той самий run branch) — поруч із наявним `chosen_option` ([access.md](access.md), секція «Артефакт `decision-request`» вище):
+
+```json
+{ "request_id": "...", "approved": true, "node_hash": "...", "run_token": "...",
+  "chosen_option": "B", "quiz_ref": "decisions/0001-quiz.md" }
+```
+
+**Інваріант:** `ApprovalResponse` на `decision-request` без `quiz_ref`, або з `quiz_ref` на квіз без завершеного проходження (немає фіксованого `iterations`/`time_to_understanding_sec` на момент підпису), — **невалідний**; хост відхиляє публікацію до `main`/run ref. Інваріант діє лише для гейту `decision-request` — інші два гейти ([access.md](access.md): mid-run tool approval, plan-review) `quiz_ref` не вимагають, поле для них відсутнє.
+
+### napi-API поверхня mandate-crate
+
+Crate живе в `mt-rust` (той самий патерн, що `crates/mt-napi` для `mt-core` — [stack.md](stack.md)): одна реалізація, `delta` споживає через napi-аддон, `agent-server` лінкує crate напряму. До готовності crate `delta` мокає рівно за цими сигнатурами (спека, не код):
+
+- **`parse_mandates(path) → MandatesFile`** — парсить `.mt/mandates.yaml`, повертає `{ generation, mandates[] }` або помилку валідації (порожній scope, більше/менше одного кореневого мандата, цикл ескалації, `audacity` на `kind: person`).
+- **`effective_owner(node_ref, decision_type, facets) → { owner, kind, escalation_chain[] }`** — lookup за `refs`×`decision_types`×`thresholds` (крок 1 маршрутизатора вище); повертає обчисленого власника і повний ланцюг `escalates_to` до кореня для автопідйому по SLA.
+- **`validate_mandate_change(diff, signature) → Verdict`** — `Verdict = Valid | Invalid(reason)`. Перевіряє: `generation` файлу зріс рівно на 1; будь-яке розширення `scope`/`thresholds` підписане делегатором рівня вище (окрім звуження — самопідпис); розширення `kind: model` мандата (включно з підняттям `audacity`) підписане **лише** людським ключем — модельний підпис на такому дифі відхиляється безумовно («остання константа»).
+- **`validate_approval(response, quiz) → Verdict`** — перевіряє наявність і завершеність `quiz_ref` для `decision-request`-гейту, відповідність `quiz.decision_ref` вузлу з `response`, `quiz.depth` — мапінгу з `leverage_facets`, і сам Ed25519-підпис проти pubkey-кешу (той самий шлях, що інші два гейти — [access.md](access.md)).
 
 ## Місце в roadmap
 
