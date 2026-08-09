@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.4] - 2026-08-09
+
+### Changed
+
+- docs(graph): a.md/h.md — YAML-фронтматер у markdown, не голий YAML (#65)
+
 ## [0.30.3] - 2026-08-09
 
 ### Added
