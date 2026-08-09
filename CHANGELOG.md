@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.6] - 2026-08-09
+
+### Added
+
+- docs(mandates): нормативний контракт M6 фаза 0 — схеми mandates.yaml, квіз-файлів, ApprovalResponse, napi-API
+
 ## [0.30.5] - 2026-08-09
 
 ### Added
