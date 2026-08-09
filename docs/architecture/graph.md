@@ -125,7 +125,10 @@ parent: research/collect-data # відносно mt/; відсутній у ко
 
 #### `a.md`
 
-```yaml
+Як і решта `.md`-артефактів вузла — YAML-фронтматер у markdown-файлі: дані в `---`-блоці, тіло вільне (нотатка людини, чому саме такий виконавець). Голий YAML без `---` — контракт `.yml`-файлів (`.mt-claim.yml`), не `.md`.
+
+```markdown
+---
 schema_version: 1
 created_at: ISO8601
 model_tier: AVG        # MIN | AVG | MAX; default AVG
@@ -136,6 +139,7 @@ retry_ladder:          # опціонально; per-node override
   - {}
   - strategy: diagnose-first
 interactive: false     # НОВЕ: true → вузол очікує інтерактивну сесію (див. runtime.md)
+---
 ```
 
 `model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` (напр. codex: MIN→luna / AVG→terra / MAX→sola); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
@@ -144,12 +148,16 @@ interactive: false     # НОВЕ: true → вузол очікує інтера
 
 #### `h.md`
 
-```yaml
+Той самий контракт, що й `a.md`: фронтматер + вільне тіло (розгорнутий опис кваліфікації прозою).
+
+```markdown
+---
 schema_version: 1
 created_at: ISO8601
 assignee: vkozlov          # handle; мапінг на account_id relay — .mt/directory.json (git-ignored)
 notify: true               # relay шле push на пристрої assignee
 qualification: 'senior backend engineer'
+---
 ```
 
 #### `plan_NNN.md`
