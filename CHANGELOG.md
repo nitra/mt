@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.2] - 2026-08-09
+
+### Changed
+
+- docs(adr): brainstorm session delta-ai-human-orchestration (#63)
+
 ## [0.30.1] - 2026-07-23
 
 ### Removed
