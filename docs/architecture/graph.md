@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Вузли й ОАГ, файловий контракт, derived-стани, два етапи виконання, retry ladder і аудит'
 tags: [graph, contract, states, audit]
 timestamp: 2026-07-07
@@ -131,7 +132,7 @@ parent: research/collect-data # відносно mt/; відсутній у ко
 ---
 schema_version: 1
 created_at: ISO8601
-model_tier: AVG        # MIN | AVG | MAX; default AVG
+model_tier: AVG        # MIN | AVG | MAX; дефолт — довідник operations.md
 agent_cli: codex       # опціонально; claude | codex | cursor | pi — підписочний CLI (runtime.md)
 skills: [bash, write-files]
 secrets: [STRIPE_KEY]  # опціонально; wrapper інжектить через ENV
@@ -142,7 +143,7 @@ interactive: false     # НОВЕ: true → вузол очікує інтера
 ---
 ```
 
-`model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` (напр. codex: MIN→luna / AVG→terra / MAX→sola); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
+`model_tier` — джерело істини виконавця. Runner резолвить tier у **конкретну модель обраного CLI** через user-level env `MT_AGENT_CLI_MODEL_MAP[<cli>][tier]` ([operations.md](operations.md#конфігурація-mtjson)); CLI без мапінгу резолвить модель сам за підпискою користувача, tier завжди передається hint-ом env `MT_MODEL_TIER` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)).
 
 `agent_cli` (який підписочний CLI виконує вузол) — **per-node** прапор `a.md` з user-level дефолтом env `MT_AGENT_CLI`. Per-node вибір CLI — це крос-програмковий вимір [мети](../vision.md): спеціалізований тул на вузол.
 
@@ -331,7 +332,9 @@ context = [task.md] + [a.md|h.md] + [deps/] + [plan_*.md] +
 
 ## Retry ladder, engineer, unresolvable
 
-До `agent_retry_max` (3) вузол лишається `waiting`; агент ретраїть за драбиною (`MT_ATTEMPT` = failed_streak + 1): 1 — базова; 2 — diagnose-first; 3 — alternative-approach (`model_tier: +1`, `skills_add`). Коротша драбина → останній щабель повторюється.
+> **Реалізація (не контракт).** Контрактні тут — механізм драбини, лічильник `failed_streak` і три умови `unresolvable`. Значення `agent_retry_max` і склад щаблів `retry_ladder` — референсні: реалізація може мати інші, лишаючись сумісною. Дефолти — [довідник](operations.md#дефолти-на-які-посилаються-глави).
+
+До `agent_retry_max` вузол лишається `waiting`; агент ретраїть за драбиною `retry_ladder` (`MT_ATTEMPT` = failed_streak + 1). Щабель може змінювати стратегію промпта, `model_tier` і `skills_add`; коротша драбина → останній щабель повторюється.
 
 **EngineerAgent:** `failed_streak ≥ agent_retry_max` → `mt run --actor engineer`: отримує task + deps + повний run-history + `.mt/engineer-prompt.md`; може `mt stop`/`invalidate`/`kill`/GraphPatch.
 

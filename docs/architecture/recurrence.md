@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Повторювані задачі: мутабельний шаблон поза графом, матеріалізація інстансів планувальником wake, політики overlap/catchup/retention'
 tags: [recurrence, templates, scheduler]
 timestamp: 2026-07-22

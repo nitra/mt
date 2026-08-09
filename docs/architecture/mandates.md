@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Карта мандатів, профілі людей і моделей, decision-request, ескалація за важелем, прецедентний рушій — людина як власник рішень свого горизонту, не exception-handler'
 tags: [mandates, escalation, decision-request, competencies, human-in-the-loop]
 timestamp: 2026-07-12

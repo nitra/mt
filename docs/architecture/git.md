@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'CAS claim як єдине «перо», run ref із журналом сесії, fenced publish і паралельне виконання'
 tags: [git, claim, lease, publish]
 timestamp: 2026-07-07
@@ -68,6 +69,8 @@ Run ref: `refs/mt/runs/<node-hash>/<token>` — гілка робочого ст
 ## Wrapper: запуск агента
 
 **Wrapper** (`mt run`; у цільовій картині — роль Runner всередині agent-server): перевіряє deps resolved + відсутність pending-audit → CAS claim → detached worktree від `base_sha` → run ref → запускає агента → watchdog → пише `run_NNN.md` → publish.
+
+> **Реалізація (не контракт).** Імена ENV нижче — інтерфейс усередині однієї реалізації (wrapper → агент), а не межа між реалізаціями: інша реалізація може назвати їх інакше, не порушивши сумісності git-стану. Нормативна тут лише семантика `generation` як fencing token.
 
 **ENV-контракт wrapper → агент:** `MT_BUDGET_SEC`, `MT_HARD_BUDGET_SEC`, `MT_STARTED_AT`, `MT_RUN_NNN`, `MT_ATTEMPT`, `MT_CLAIM_TOKEN`, `MT_CLAIM_GENERATION`. `MT_CLAIM_GENERATION` — fencing token для non-idempotent side effects: single publish owner гарантує лише один запис результату в `main`, не mutual exclusion виконання.
 
