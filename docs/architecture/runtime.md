@@ -36,23 +36,16 @@ Runner виконує agent-вузол **єдиним** шляхом — headles
 
 | `agent_cli` | Виконавець | Модель тиру |
 | --- | --- | --- |
-| `claude` (дефолт) | Claude Code (підписка Anthropic) | `MT_AGENT_CLI_MODEL_MAP.claude[tier]` |
+| `claude` | Claude Code (підписка Anthropic) | `MT_AGENT_CLI_MODEL_MAP.claude[tier]` |
 | `codex` | Codex CLI (підписка OpenAI) | `MT_AGENT_CLI_MODEL_MAP.codex[tier]` |
 | `cursor` | Cursor CLI (підписка Cursor) | `MT_AGENT_CLI_MODEL_MAP.cursor[tier]` |
 | `pi` | pi.dev CLI — **локальні моделі**: обгортає omlx-сервер | `MT_AGENT_CLI_MODEL_MAP.pi[tier]` |
 
-**Конфігурація виконавців — user-level, через ENV.** Підписки, CLI і мапи моделей — властивість **користувача**, спільна для всіх його репозиторіїв, тому вона живе в оточенні користувача, а не в repo-scoped `.mt.json`:
-
-```bash
-# ~/.zshenv (рівень користувача — усі репозиторії)
-export MT_AGENT_CLI="claude"                       # дефолтний виконавець
-export MT_CLOUD_AGENT_CLIS="codex,cursor"          # каскад хмарних підписок (порядок = пріоритет)
-export MT_AGENT_CLI_MODEL_MAP='{"codex":{"MIN":"gpt-5.6-luna","AVG":"gpt-5.6-terra","MAX":"gpt-5.6-sola"},"pi":{"MIN":"omlx/gemma-4-e2b-it-4bit"}}'
-```
+**Конфігурація виконавців — user-level, через ENV.** Підписки, CLI і мапи моделей — властивість **користувача**, спільна для всіх його репозиторіїв, тому вона живе в оточенні користувача (`MT_AGENT_CLI`, `MT_CLOUD_AGENT_CLIS`, `MT_AGENT_CLI_MODEL_MAP`), а не в repo-scoped `.mt.json`. Значення і приклад запису — [operations.md](operations.md#конфігурація-mtjson).
 
 **Тир-алгоритм резолвить конкретну модель per-CLI.** Канон MIN/AVG/MAX — спільний для всіх виконавців; мапу «тир → модель CLI» задає `MT_AGENT_CLI_MODEL_MAP`. Retry ladder ескалює тир — отже, і конкретну модель — тією самою мапою. Без мапінгу прапор моделі не передається (CLI резолвить сам за підпискою), тир завжди йде hint-ом env `MT_MODEL_TIER`. Правило однакове для всіх транспортів: headless-виклик і ACP-сесія отримують ту саму резолвнуту модель.
 
-Вибір CLI: `a.md` секція `## Agent cli` (per-node — крос-програмковий вимір [мети](../vision.md)) → env `MT_AGENT_CLI` → `claude`. Невідоме значення → fail-fast до створення worktree. Обраний CLI повідомляється у env run-а як `MT_AGENT_CLI`. Success = `fact_NNN.md` існує **і** `## Check` пройдено.
+Вибір CLI: `a.md` секція `## Agent cli` (per-node — крос-програмковий вимір [мети](../vision.md)) → env `MT_AGENT_CLI` → дефолт із [довідника](operations.md#дефолти-на-які-посилаються-глави). Невідоме значення → fail-fast до створення worktree. Обраний CLI повідомляється у env run-а як `MT_AGENT_CLI`. Success = `fact_NNN.md` існує **і** `## Check` пройдено.
 
 **Правило підписки (нормативне).** Run виконується **на хості, де owner вузла сам авторизував CLI**. Підписки не пулюються і не проксюються через relay чи сервер — relay передає лише події та approvals; міграція сесії «перенести сюди» — це перенесення виконання на девайс із підпискою її власника. Rate limits підписки — зовнішній ресурс: оркестратор при них робить backoff, а не паралелить глибше.
 
@@ -168,7 +161,7 @@ ClientHello {
 ### Помилкові гілки і backpressure
 
 - **Reconnect:** клієнт зберігає останній оброблений `seq` і реконектиться з `want_replay_from`; `seq` монотонний — розривів у журнальованих подіях не буває. Глибина поза буфером → хост дочитує з `session.jsonl` run ref-а.
-- **Backpressure:** для повільного клієнта хост **скидає лише ефемерні** події (`AgentTextDelta`, `PreviewScreenshot`) — журнальовані доставляються завжди; переповнення черги надсилання → примусовий disconnect з `Error`, клієнт повертається реплеєм. Ліміт кадру — 2 MB (спільний з relay).
+- **Backpressure:** для повільного клієнта хост **скидає лише ефемерні** події (`AgentTextDelta`, `PreviewScreenshot`) — журнальовані доставляються завжди; переповнення черги надсилання → примусовий disconnect з `Error`, клієнт повертається реплеєм. Ліміт кадру — спільний з relay; значення — [довідник](operations.md#дефолти-на-які-посилаються-глави).
 - **`PreviewScreenshot` байти:** подія несе лише `ref_id`; байти клієнт тягне окремим запитом до хоста (локальний HTTP preview-модуля або бінарний WS-кадр за `ref_id`) — великі бінарі не проходять крізь стрічку подій і relay-буфер.
 - **Невідомий `Event`-варіант** у межах сумісної мажорної версії клієнт **ігнорує** (forward-compatibility мінорних розширень); несумісна `protocol_version` → відмова на хендшейку.
 

@@ -66,7 +66,14 @@ mt template run <name>            ← позачергова матеріалі�
 }
 ```
 
-Конфігурація **виконавців** (провайдери/моделі) — не тут: вона user-level, спільна для всіх репозиторіїв, і живе в ENV (`MT_AGENT_CLI`, `MT_CLOUD_AGENT_CLIS`, `MT_AGENT_CLI_MODEL_MAP` — [runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)). `.mt.json` — виключно repo-scoped.
+Конфігурація **виконавців** (провайдери/моделі) — не тут: вона user-level, спільна для всіх репозиторіїв, і живе в ENV. Семантику цих змінних задає [runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli); значення — тут. `.mt.json` — виключно repo-scoped.
+
+```bash
+# ~/.zshenv (рівень користувача — усі репозиторії)
+export MT_AGENT_CLI="claude"                       # дефолтний виконавець
+export MT_CLOUD_AGENT_CLIS="codex,cursor"          # каскад хмарних підписок (порядок = пріоритет)
+export MT_AGENT_CLI_MODEL_MAP='{"codex":{"MIN":"gpt-5.6-luna","AVG":"gpt-5.6-terra","MAX":"gpt-5.6-sola"},"pi":{"MIN":"omlx/gemma-4-e2b-it-4bit"}}'
+```
 
 **Модель виконавця:** канон тирів MIN/AVG/MAX резолвиться у конкретну модель обраного CLI через env `MT_AGENT_CLI_MODEL_MAP` ([runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli)). Автономні run-и обирають за `model_tier` з `a.md`; інтерактивні можуть перевизначати CLI per-turn за `surface`-hint (`surface_profiles`). Транспорт AI-викликів — виключно **ACP** (конкретика — у [stack.md](stack.md)).
 
@@ -91,6 +98,18 @@ Baseline-ключі 0.2.0 з конкретними дефолт-значенн�
 | Безпека | `skill_profiles` (sandbox), `secrets` (у `a.md`), `require_signed_approvals`, `device_key_path` | тут, [access.md](access.md) |
 | Relay/хост | `relay_url`, `server_port_file` | тут, [runtime.md](runtime.md) |
 | i18n | `i18n.{base_lang, eager, publish_langs, include, exclude, model_tier, ttl_days}` | [i18n.md](i18n.md) |
+
+### Дефолти, на які посилаються глави
+
+Глави описують **семантику** ключа й посилаються на його ім'я; конкретне значення живе тут. Канонічне джерело baseline-дефолтів — `CONFIG_DEFAULTS` у коді (вище); таблиця нижче — довідкове дзеркало для читача спеки, і як усе в шарі `reference` розбіжність із нею не є порушенням контракту.
+
+| Ключ / параметр | Дефолт | Семантику описує |
+| --- | --- | --- |
+| `model_tier` (`a.md`) | `AVG` | [graph.md](graph.md) |
+| `agent_cli` (`a.md`) / `MT_AGENT_CLI` | `claude` | [runtime.md](runtime.md#підписочні-cli-виконавці-agent_cli) |
+| `agent_retry_max` | `3` | [graph.md](graph.md) |
+| `retry_ladder` | три щаблі: базова спроба → `diagnose-first` → `alternative-approach` (`model_tier: +1`, `skills_add`) | [graph.md](graph.md) |
+| Ліміт кадру протоколу подій | 2 MB (спільний з relay) | [runtime.md](runtime.md), [access.md](access.md) |
 
 ## Монорепо: множинні `mt/`
 
