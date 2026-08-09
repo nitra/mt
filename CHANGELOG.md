@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.5] - 2026-08-09
+
+### Added
+
+- docs(architecture): principles.md — зведення 26 принципів канону і три шари обовʼязковості (normativity: principle/contract/reference) у фронтматері кожної глави
+
 ## [0.30.4] - 2026-08-09
 
 ### Changed
