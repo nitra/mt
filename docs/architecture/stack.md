@@ -1,5 +1,6 @@
 ---
 type: stack
+normativity: reference
 description: 'Конкретні технологічні рішення реалізації архітектури 0.3.0-draft; зміна стеку не змінює архітектуру'
 tags: [stack, rust, bun, tauri]
 timestamp: 2026-07-07

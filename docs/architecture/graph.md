@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Вузли й ОАГ, файловий контракт, derived-стани, два етапи виконання, retry ladder і аудит'
 tags: [graph, contract, states, audit]
 timestamp: 2026-07-07
@@ -330,6 +331,8 @@ context = [task.md] + [a.md|h.md] + [deps/] + [plan_*.md] +
 **Протокол патчу вузла:** `mt stop` наступників (від листів) → `mt invalidate <ціль>` → патч → fenced publish → runner підхоплює нащадків. `mt invalidate` архівує version chain у `history/`; після re-run порівняння hash нового fact: однаковий → нащадки розблоковуються; різний → cascade invalidate вниз. `mt kill` — тільки остаточне видалення піддерева з topology.
 
 ## Retry ladder, engineer, unresolvable
+
+> **Реалізація (не контракт).** Контрактні тут — механізм драбини, лічильник `failed_streak` і три умови `unresolvable`. Конкретні дефолтні значення (`agent_retry_max`, склад щаблів, `MT_ATTEMPT`) — референсні: реалізація може мати інші, лишаючись сумісною. Джерело істини дефолтів — `CONFIG_DEFAULTS` ([operations.md](operations.md)).
 
 До `agent_retry_max` (3) вузол лишається `waiting`; агент ретраїть за драбиною (`MT_ATTEMPT` = failed_streak + 1): 1 — базова; 2 — diagnose-first; 3 — alternative-approach (`model_tier: +1`, `skills_add`). Коротша драбина → останній щабель повторюється.
 

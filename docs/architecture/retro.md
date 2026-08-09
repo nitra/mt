@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Мета-цикл: ретроспективний аналіз audit trail графа, приватні пропозиції виконавцю (opt-in), застосування через штатні механізми'
 tags: [retro, meta-cycle, suggestions, privacy]
 timestamp: 2026-07-08
@@ -92,6 +93,8 @@ impact:
 **Anti-gaming:** порівняння лише в межах класу задач; `impact_min_runs` як поріг confidence; спірні зрізи проходять штатний аудит-механізм ([graph.md](graph.md)). Побічна цінність: `innovation`/`impact`-файли — датасет переносимості оптимізацій між проєктами.
 
 ## Конфігурація
+
+> **Реалізація (не контракт).** Імена ключів і дефолтні значення — референсні; контрактне — opt-in за замовчуванням (принцип «працює на виконавця») і схеми `suggestion`/`innovation`/`impact`.
 
 ```jsonc
 // .mt.json

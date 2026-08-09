@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Спеціалізовані поверхні: surface-профіль як обʼєкт, MCP як нормативний механізм тулів, звʼязка з sandbox, референсні surface'
 tags: [surfaces, tools, mcp, profiles]
 timestamp: 2026-07-07

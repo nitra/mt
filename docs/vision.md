@@ -1,5 +1,6 @@
 ---
 type: vision
+normativity: principle
 description: 'Мета проєкту: платформа управління проєктами/задачами, де виконавці — і люди, і ШІ; пʼять крос-вимірів'
 tags: [vision, mission, goals]
 timestamp: 2026-07-07

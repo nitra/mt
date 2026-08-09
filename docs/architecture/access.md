@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'Акаунти і ключі пристроїв, relay та membership, ролі, три approval-гейти з Ed25519-підписами, push'
 tags: [access, relay, membership, approvals, security]
 timestamp: 2026-07-07

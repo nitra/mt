@@ -1,5 +1,6 @@
 ---
 type: architecture
+normativity: contract
 description: 'CLI-контракт, конфігурація, монорепо, security model, відмовостійкість, bootstrap і наскрізні сценарії'
 tags: [operations, cli, config, security, scenarios]
 timestamp: 2026-07-07
@@ -45,6 +46,8 @@ mt template run <name>            ← позачергова матеріалі�
 `mt cleanup [--older-than N]` (дефолт 7 днів): orphan worktrees без active claim, мертві running-маркери, remote orphan run refs (старші `run_ref_ttl_days`), протухлі archive refs (старші `archive_ttl_days`), resolved-інстанси шаблонів понад `keep` ([recurrence.md](recurrence.md)).
 
 ## Конфігурація (`.mt.json`)
+
+> **Реалізація (не контракт).** Нормативні тут — межа «repo-scoped `.mt.json` vs user-level ENV», порядок пріоритету і `schema_version` як fail-closed-гейт. Імена ключів, їх дефолтні значення і довідник нижче — референсні.
 
 До конфігурації 0.2.0 (claim/publish/budget/retry/audit/model/skill_profiles — без змін) додаються:
 
