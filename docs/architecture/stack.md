@@ -29,7 +29,7 @@ Changelog:
 | Desktop-додатки (macOS) | Tauri v2 — тонкий клієнт + lifecycle agent-server | планується |
 | Mobile (Android) | Tauri v2 — ЛИШЕ клієнт через relay | планується |
 | `ui/` — спільний фронтенд поверхонь | Vue 3 + Vite, plain JS + JSDoc (БЕЗ TypeScript) | планується |
-| `relay/` | Bun-сервіс, plain JS + JSDoc; PostgreSQL | планується |
+| `relay/` | Bun-сервіс, plain JS + JSDoc; store — SQLite або PostgreSQL за спільним контрактом | планується |
 
 ## Правило одного коду контракту
 
@@ -83,9 +83,10 @@ Changelog:
 
 ## Relay-інфраструктура
 
-- Bun + PostgreSQL; auth — інтерфейс `verifySession(token) → {account_id}` із dev-реалізацією (magic tokens), продакшн — Ory Kratos за тим самим інтерфейсом;
+- Bun; сховище — **інтерфейс store** зі схемою за [access.md](access.md), дозволені реалізації: in-memory (dev, без персистентності), **SQLite** і **PostgreSQL**. Вибір — питання деплою, не архітектури: SQLite (єдиний файл, без інфраструктури) достатній для одноінстансного relay, PostgreSQL — коли інстансів кілька або сховище має бути керованим окремо від процесу. Обов'язкова умова для будь-якої реалізації — проходити **спільний контрактний набір тестів**: взаємозамінність доводиться однаковою поведінкою, а не однаковим переліком методів. Це не суперечить принципу «один код контракту» ([principles.md](principles.md), №10): контракт store — це схема й семантика операцій ([access.md](access.md), шар `contract`), а бекенд зберігання належить шару реалізації, і саме контрактний набір не дає реалізаціям розійтись;
+- Auth — інтерфейс `verifySession(token) → {account_id}` із dev-реалізацією (magic tokens), продакшн — Ory Kratos за тим самим інтерфейсом;
 - Push: FCM (data-повідомлення трьох типів — див. [access.md](access.md)); модуль за інтерфейсом, dev-заглушка;
-- Деплой: Dockerfile (oven/bun) + k8s (Deployment + Service; Postgres — CNPG);
+- Деплой: Dockerfile (oven/bun) + k8s (Deployment + Service; SQLite — PVC, PostgreSQL — CNPG);
 - Ліміти: rate limit на з'єднання, кадр ≤ 2 MB, буфер ≤ 200 Envelope/run.
 
 ## Демонізація agent-server
