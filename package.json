@@ -1,6 +1,6 @@
 {
   "name": "@7n/mt",
-  "version": "0.30.8",
+  "version": "0.30.9",
   "description": "Специфікація протоколу MT — граф задач, координація через git, agent-runtime. Реалізації: nitra/mt-rust (повна), nitra/mt-js (JS-клієнт, наразі не публікується)",
   "keywords": [
     "7n",

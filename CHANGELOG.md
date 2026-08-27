@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.30.9] - 2026-08-27
+
+### Changed
+
+- metatask doctrine
+
 ## [0.30.8] - 2026-08-12
 
 ### Changed
